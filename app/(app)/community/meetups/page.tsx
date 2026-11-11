@@ -24,7 +24,7 @@ export default async function MeetupsPage() {
           {!hasCity ? (
             <div className="rx-card rx-empty rx-stack-sm">
               <p className="rx-p">Meetups happen inside city groups. Join your city to see and plan meetups near you.</p>
-              <Link href="/community/cities" className="rx-btn secondary">Find your city</Link>
+              <Link href="/community/cities" className="rx-btn secondary">Join your city group</Link>
             </div>
           ) : list.length === 0 ? (
             <div className="rx-card rx-empty rx-stack-sm">

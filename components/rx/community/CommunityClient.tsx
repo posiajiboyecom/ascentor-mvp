@@ -1,5 +1,6 @@
 'use client';
 
+import { members } from '@/lib/rx/plural';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -43,7 +44,7 @@ export function OpenHouseInvite({ id, count }: { id: string; count: number }) {
   return (
     <div className="rx-card rx-stack-sm rx-rise">
       <div className="rx-row rx-nw" style={{ gap: 12 }}><span className="rx-dimdot"><MessageSquare aria-hidden /></span><div style={{ minWidth: 0 }}><p className="rx-p rx-strong">You’re invited to Open house</p><p className="rx-sm">A general group for every member. Say hello, ask anything.</p></div></div>
-      <p className="rx-sm">{count} members</p>
+      <p className="rx-sm">{members(count)}</p>
       <div className="rx-row">
         <button type="button" className="rx-btn primary" disabled={pending} onClick={() => start(async () => { const r = await joinGroup(id); toast(r.ok ? 'You joined Open house.' : r.error); router.refresh(); })}>Join</button>
         <button type="button" className="rx-link" disabled={pending} onClick={() => start(async () => { await declineOpenHouse(); toast('No problem. Open house is in Groups any time.'); router.refresh(); })}>Not now</button>

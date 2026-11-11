@@ -18,11 +18,11 @@ export const TWITTER_HANDLE = '@ascentorhq';
 export const SUMMIT = {
   name: 'The Elevation Summit 2026',
   description:
-    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit is a movement for purposeful living, leadership, and legacy. 19 November 2026 at Lagos State University, Ojo, with global virtual access. Registration is free.',
+    'One gathering. One decision. The rest of your life. The Elevation Summit 2.0 is a movement for purposeful living, leadership, and legacy. 19 November 2026 at Lagos State University, Ojo, with global virtual access. Registration is free.',
   startDate: '2026-11-19T10:00:00+01:00', // Date Confirmed
   endDate: '2026-11-19T15:00:00+01:00',   // Date Confirmed
   venue: {
-    name: 'Aderemi Makanjuola Lecture Theatre, Lagos State University',
+    name: 'Aderemi Makanjuola Hall, Lagos State University',
     street: 'Lagos State University Main Campus, LASU-Isheri Road',
     locality: 'Ojo',
     region: 'Lagos',

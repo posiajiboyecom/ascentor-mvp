@@ -330,7 +330,7 @@ export default function AccountClient({ profile, email, authProvider, providers,
               <Trash2 size={16} aria-hidden="true" /> Delete account
             </h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-              Permanently deletes your account and personal data. If you have an active subscription, cancel it under Plan first. This cannot be undone.
+              Permanently deletes your account and personal data. If you have an active subscription, cancel it under Settings, Billing first. This cannot be undone.
             </p>
             <div className="flex flex-col gap-2">
               {hasPassword && (

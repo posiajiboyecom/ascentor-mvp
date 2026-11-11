@@ -2,6 +2,7 @@
 // Messages: inbox, message requests, a conversation, and the other member's profile card.
 // Three panes on desktop; one pane at a time on mobile, chosen by the URL.
 
+import { members } from '@/lib/rx/plural';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft, ArrowRight, TriangleAlert } from 'lucide-react';
@@ -60,7 +61,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   let room: null | { kind: 'circle'; id: string; title: string; sub: string; msgs: Awaited<ReturnType<typeof circleMessages>> } | { kind: 'group'; id: string; title: string; sub: string; msgs: Awaited<ReturnType<typeof groupMessages>>; joined: boolean } = null;
   if (selected?.startsWith('c:')) {
     const circle = await getMyCircle('member', selected.slice(2)).catch(() => null);
-    if (circle && circle.pledged) room = { kind: 'circle', id: circle.circle.id, title: threads.find((x) => x.key === selected)?.name ?? 'Circle chat', sub: `${circle.memberCount} members · private`, msgs: await circleMessages(db, circle.circle.id) };
+    if (circle && circle.pledged) room = { kind: 'circle', id: circle.circle.id, title: threads.find((x) => x.key === selected)?.name ?? 'Circle chat', sub: `${members(circle.memberCount)} · private`, msgs: await circleMessages(db, circle.circle.id) };
   } else if (selected?.startsWith('g:')) {
     const { data: g } = await db.from('rx_groups').select('id, name, description').eq('slug', selected.slice(2)).eq('status', 'active').maybeSingle();
     if (g) {

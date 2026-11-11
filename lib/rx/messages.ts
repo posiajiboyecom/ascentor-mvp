@@ -3,6 +3,7 @@ import 'server-only';
 // Reads for the inbox: conversations (Circle chat, direct messages, joined groups) and message requests.
 
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getMe, getMyCircle, namesFor, type Db } from './server';
 import { previewOf } from './media';
 import { relTime } from './dates';
@@ -148,7 +149,8 @@ export async function listRequests(): Promise<RequestItem[]> {
   if (!rows.length) return [];
   const [names, cards, firsts] = await Promise.all([
     namesFor(db, rows.map((r) => r.requested_by)),
-    db.from('rx_member_cards').select('user_id, stage, city').in('user_id', rows.map((r) => r.requested_by)),
+    // rx_member_cards is server-only (members can't read each other's city and stage directly); these ids come from the member's own threads.
+    supabaseAdmin.from('rx_member_cards').select('user_id, stage, city').in('user_id', rows.map((r) => r.requested_by)),
     db.from('dm_messages').select('thread_id, body, created_at').in('thread_id', rows.map((r) => r.id)).order('created_at'),
   ]);
   const card = new Map(((cards.data ?? []) as { user_id: string; stage: string | null; city: string | null }[]).map((c) => [c.user_id, c]));
@@ -162,9 +164,9 @@ export async function listRequests(): Promise<RequestItem[]> {
 
 export interface MemberCard { userId: string; name: string; avatarUrl: string | null; stage: string | null; city: string | null; interests: string[] }
 
+/** The card for someone the member already has a conversation with. Callers pass ids taken from the member's own threads. */
 export async function memberCard(userId: string): Promise<MemberCard | null> {
-  const db = await createClient();
-  const { data } = await db.from('rx_member_cards').select('user_id, full_name, avatar_url, stage, city, interests').eq('user_id', userId).maybeSingle();
+  const { data } = await supabaseAdmin.from('rx_member_cards').select('user_id, full_name, avatar_url, stage, city, interests').eq('user_id', userId).maybeSingle();
   if (!data) return null;
   const d = data as { user_id: string; full_name: string | null; avatar_url: string | null; stage: string | null; city: string | null; interests: string[] | null };
   return { userId: d.user_id, name: d.full_name?.trim() || 'Member', avatarUrl: d.avatar_url, stage: d.stage, city: d.city, interests: d.interests ?? [] };

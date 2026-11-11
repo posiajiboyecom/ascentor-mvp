@@ -1,3 +1,4 @@
+import { members } from '@/lib/rx/plural';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight, MapPin } from 'lucide-react';
@@ -5,7 +6,7 @@ import { getMe } from '@/lib/rx/server';
 import { getCityGroups } from '@/lib/rx/cities';
 import { upcomingMeetups, whenLabel } from '@/lib/rx/meetups';
 import { Aside, Page, Title } from '@/components/rx/ui';
-import { CityList, SuggestCity } from '@/components/rx/pages/CitiesClient';
+import { CityList, JoinCityButton, SuggestCity } from '@/components/rx/pages/CitiesClient';
 import '@/styles/rx-pages.css';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export default async function CitiesPage() {
               <span className="rx-dimdot"><MapPin aria-hidden /></span>
               <div className="grow">
                 <p className="rx-label">Your city</p>
-                <p className="rx-h3">{mine.name} · {mine.count} members</p>
+                <p className="rx-h3">{mine.name} · {members(mine.count)}</p>
                 {next ? (
                   <Link href={`/community/meetups/${next.id}`} className="rx-link" style={{ minHeight: 32, fontSize: 14 }}>
                     Next meetup: {whenLabel(next.startsAt, next.endsAt, me.tz).split(' · ')[0]}, {next.title}<ArrowRight aria-hidden />
@@ -36,9 +37,13 @@ export default async function CitiesPage() {
                   <Link href={`/community/meetups/new?group=${mine.slug}`} className="rx-link" style={{ minHeight: 32, fontSize: 14 }}>
                     No meetup planned yet. Plan one<ArrowRight aria-hidden />
                   </Link>
-                ) : null}
+                ) : (
+                  <p className="rx-sm">You haven’t joined yet. Join to chat with members nearby and see their meetups.</p>
+                )}
               </div>
-              <Link href={`/community/groups/${mine.slug}`} className="rx-btn primary">Open chat</Link>
+              {mine.joined
+                ? <Link href={`/community/groups/${mine.slug}`} className="rx-btn primary">Open chat</Link>
+                : <JoinCityButton id={mine.id} name={mine.name} />}
             </div>
           )}
           <CityList cities={cities.map((c) => ({ id: c.id, slug: c.slug, name: c.name, country: c.country, count: c.count, description: c.description, joined: c.joined, isMine: c.isMine }))} />

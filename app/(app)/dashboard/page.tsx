@@ -53,7 +53,7 @@ export default async function TodayPage() {
 
   const sageLine = state.missed ? 'Welcome back. Today is open.' : plan ? 'Your plan is set. One step is enough.' : 'Let’s set this week’s plan together.';
 
-  // Circle row: waiting for 6 members, or the next meeting.
+  // Circle row: waiting for CIRCLE_MIN_TO_START members, or the next meeting.
   const ready = !!circle && circle.memberCount >= CIRCLE_MIN_TO_START && !!circle.circle.cycle_start;
   let circleRow: MoreRow;
   if (!circle) circleRow = { title: 'Your Circle', meta: 'Being set up', href: '/circle' };
@@ -89,16 +89,16 @@ export default async function TodayPage() {
             </div>
           )}
           {bill.state === 'trialEnding' && (bill.daysLeft ?? 99) <= 3 && (
-            <Banner><b>Your first period ends in {bill.daysLeft} {bill.daysLeft === 1 ? 'day' : 'days'}.</b> Renew before then to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Manage plan<ArrowRight aria-hidden /></Link></div></Banner>
+            <Banner><b>Your first period ends in {bill.daysLeft} {bill.daysLeft === 1 ? 'day' : 'days'}.</b> Renew before then to keep full access.<div><Link href="/settings/billing" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Manage plan<ArrowRight aria-hidden /></Link></div></Banner>
           )}
           {bill.state === 'failed' && (
-            <Banner error><b>We couldn’t take your payment.</b> Update your card within 7 days to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Update card<ArrowRight aria-hidden /></Link></div></Banner>
+            <Banner error><b>We couldn’t take your payment.</b> Update your card within 7 days to keep full access.<div><Link href="/settings/billing" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Update card<ArrowRight aria-hidden /></Link></div></Banner>
           )}
           {bill.state === 'lapsed' && (
             <div className="rx-card rx-stack-sm rx-rise">
               <div className="rx-row rx-nw" style={{ gap: 10 }}><Lock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-gold)' }} /><p className="rx-h3">You’re on light access</p></div>
               <p className="rx-p">Today, your Circle chat and Sage still work. Learn pathways, mentor sessions and joining new groups are paused.</p>
-              <div className="rx-row"><Link href="/settings?tab=plan" className="rx-btn primary">Reactivate {bill.planName}</Link><Link href="/settings?tab=plan" className="rx-link">See plans<ArrowRight aria-hidden /></Link></div>
+              <div className="rx-row"><Link href="/settings/billing" className="rx-btn primary">Reactivate {bill.planName}</Link><Link href="/settings/billing" className="rx-link">See plans<ArrowRight aria-hidden /></Link></div>
             </div>
           )}
           {banner && <AnnouncementBanner id={banner.id} title={banner.title} line={banner.line} btn={banner.btn_label || 'Open'} />}
@@ -119,7 +119,7 @@ export default async function TodayPage() {
             </div>
           )}
 
-          {dayOne && <DayOneCard chatHref={circle?.pledged ? `/circle/chat?c=${circle.circle.id}` : null} lessonHref={lesson ? `/learn/lesson/${lesson.slug}` : null} lessonMeta={lesson ? `${lesson.title} · ${lesson.minutes} min` : ''} />}
+          {dayOne && <DayOneCard chatHref={circle?.pledged ? `/circle/chat?c=${circle.circle.id}` : null} pledgeHref={circle && !circle.pledged ? `/circle?c=${circle.circle.id}` : null} lessonHref={lesson ? `/learn/lesson/${lesson.slug}` : null} lessonMeta={lesson ? `${lesson.title} · ${lesson.minutes} min` : ''} />}
           {allDone && (
             <div className="rx-card rx-stack rx-rise">
               <div className="rx-row rx-nw" style={{ gap: 14 }}><span className="rx-okb"><Check aria-hidden /></span><div><p className="rx-h3">That’s today done.</p><p className="rx-sm">Rest well. See you tomorrow.</p></div></div>

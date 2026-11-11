@@ -33,7 +33,7 @@ export default function NetworkPill() {
   }, []);
 
   if (net === 'weak') {
-    return <div className="rx rx-netpill" role="status"><span className="rx-netdot" />Weak connection · saved data shown</div>;
+    return <div className="rx rx-netpill" role="status"><span className="rx-netdot" />Slow connection · things may take longer</div>;
   }
   if (net === 'offline') {
     return (

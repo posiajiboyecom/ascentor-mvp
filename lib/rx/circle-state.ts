@@ -17,6 +17,8 @@ export interface CircleStateInput {
   mentorName?: string | null;
   nextSessionLabel?: string | null; // for example "Thu 15 Oct, 7:00 PM"
   nextCallLabel?: string | null;
+  /** False until the member has taken the confidentiality pledge (the chat opens after it). Defaults to true. */
+  pledged?: boolean;
   now?: Date;
 }
 
@@ -60,8 +62,10 @@ export function circleState(i: CircleStateInput): CircleState {
     const left = CIRCLE_MIN_TO_START - i.members;
     return {
       headline: `${i.members} of ${CIRCLE_MAX} joined, meetings start at ${CIRCLE_MIN_TO_START}`,
-      detail: left > 0 ? `${plural(left, 'more member', 'more members')} to go. Say hello in the chat while you wait.` : 'Meetings are about to begin.',
-      action: { label: 'Open the chat', to: 'circle' }, steps,
+      detail: left > 0
+        ? `${plural(left, 'more member', 'more members')} to go. ${i.pledged === false ? 'Take the Circle pledge to open the chat and say hello while you wait.' : 'Say hello in the chat while you wait.'}`
+        : 'Meetings are about to begin.',
+      action: { label: i.pledged === false ? 'Take the pledge' : 'Open the chat', to: 'circle' }, steps,
     };
   }
   if (i.round === 'open') {

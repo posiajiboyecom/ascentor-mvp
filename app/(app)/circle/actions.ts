@@ -5,7 +5,7 @@ import { requireMember, getMe, getMyCircle, assignCircle, fail } from '@/lib/rx/
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rxNotify, circleAudience } from '@/lib/rx/notifications';
 import { circleTitle } from '@/lib/rx/circles';
-import { CIRCLES_PER_MEMBER } from '@/lib/rx/constants';
+import { CIRCLE_MAX, CIRCLE_MIN_TO_START, CIRCLES_PER_MEMBER } from '@/lib/rx/constants';
 import type { ActionResult } from '@/lib/rx/types';
 import type { ChatMsg } from '@/lib/rx/chat-types';
 import { circleMessages } from '@/lib/rx/circle';
@@ -186,11 +186,11 @@ export async function joinCircle(circleId: string): Promise<ActionResult<{ name:
     const title = circleTitle(c as { name: string; number: number; interest: string | null });
     const others = await circleAudience(circleId, { except: userId });
     const { count } = await supabaseAdmin.from('circle_seats').select('user_id', { count: 'exact', head: true }).eq('circle_id', circleId).eq('role', 'member');
-    void rxNotify(userId, { kind: 'circle_joined', entityId: circleId, url: `/circle?c=${circleId}`, title: `You joined ${title}`, body: `${count ?? 1} of 8 seats are filled. Say hello in the chat.` });
+    void rxNotify(userId, { kind: 'circle_joined', entityId: circleId, url: `/circle?c=${circleId}`, title: `You joined ${title}`, body: `${count ?? 1} of ${CIRCLE_MAX} seats are filled. Take the pledge, then say hello in the chat.` });
     void rxNotify(others, {
       kind: 'circle_new_member', actorId: userId, entityId: circleId, url: `/circle?c=${circleId}`,
-      title: (count ?? 0) === 6 ? `${title} now has 6 members` : `${me?.firstName ?? 'Someone'} joined ${title}`,
-      body: (count ?? 0) === 6 ? 'Weekly calls and the 90-day cycle begin. You can now choose a mentor together.' : `${count ?? 0} of 8 seats are filled.`,
+      title: (count ?? 0) === CIRCLE_MIN_TO_START ? `${title} now has ${CIRCLE_MIN_TO_START} members` : `${me?.firstName ?? 'Someone'} joined ${title}`,
+      body: (count ?? 0) === CIRCLE_MIN_TO_START ? 'Weekly calls and the 90-day cycle begin. You can now choose a mentor together.' : `${count ?? 0} of ${CIRCLE_MAX} seats are filled.`,
     });
     revalidatePath('/circle');
     return { ok: true, name: title };

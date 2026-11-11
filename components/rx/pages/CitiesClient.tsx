@@ -2,6 +2,7 @@
 
 // City list with search and Join, plus the "Suggest a city" box. Joining uses the existing joinGroup action.
 
+import { members } from '@/lib/rx/plural';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
@@ -41,6 +42,20 @@ function SuggestCity({ initial = '', link = false }: { initial?: string; link?: 
 
 export { SuggestCity };
 
+/** Join button for the "Your city" card when the member's profile city has a group they have not joined yet. */
+export function JoinCityButton({ id, name }: { id: string; name: string }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [pending, start] = useTransition();
+  return (
+    <button type="button" className="rx-btn primary" disabled={pending} onClick={() => start(async () => {
+      const r = await joinGroup(id);
+      toast(r.ok ? `You joined ${name}.` : r.error);
+      router.refresh();
+    })}>{pending ? 'Joining…' : `Join ${name}`}</button>
+  );
+}
+
 function CityCard({ c }: { c: CityRow }) {
   const router = useRouter();
   const toast = useToast();
@@ -50,7 +65,7 @@ function CityCard({ c }: { c: CityRow }) {
       <span className="rx-dimdot"><MapPin aria-hidden /></span>
       <div className="gci">
         <Link href={`/community/groups/${c.slug}`} className="gname">{c.name}{c.isMine ? ' · your city' : ''}</Link>
-        <p className="rx-sm">{c.country} · {c.count} members</p>
+        <p className="rx-sm">{c.country} · {members(c.count)}</p>
         <p className="rx-sm">{c.description}</p>
       </div>
       {c.joined

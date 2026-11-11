@@ -48,3 +48,12 @@ test('days left never goes negative', () => {
   assert.equal(daysLeft('2026-10-01T00:00:00Z', now), 0);
   assert.equal(daysLeft(null, now), null);
 });
+
+test('before the pledge, the waiting Circle points to the pledge, not the chat', () => {
+  const s = circleState({ members: 2, started: false, round: null, mentorPhase: null, pledged: false });
+  assert.match(s.detail ?? '', /Take the Circle pledge/);
+  assert.equal(s.action?.label, 'Take the pledge');
+  const after = circleState({ members: 2, started: false, round: null, mentorPhase: null, pledged: true });
+  assert.match(after.detail ?? '', /Say hello in the chat/);
+  assert.equal(after.action?.label, 'Open the chat');
+});

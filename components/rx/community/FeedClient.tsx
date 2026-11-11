@@ -42,9 +42,20 @@ export default function FeedClient({ initialPosts, initialNext, categories, cate
       {posts.map((p) => <PostCard key={p.id} post={p} canModerate={canModerate} onRemoved={(id) => setPosts((cur) => cur.filter((x) => x.id !== id))} />)}
 
       {posts.length === 0 && (
-        <div className="rx-card rx-empty">
+        <div className="rx-card rx-empty rx-stack-sm">
           <p className="rx-p">{category ? `No posts in ${category} yet. Be the first.` : 'Nothing here yet. Be the first to share something.'}</p>
           {category && <Link href="/community" className="rx-btn secondary">Show all</Link>}
+        </div>
+      )}
+
+      {!category && posts.length < 3 && (
+        <div className="rx-soft rx-stack-sm">
+          <p className="rx-label">Not sure what to post?</p>
+          <ul className="rx-sm" style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
+            <li>Introduce yourself: your city, and what you’re building or learning.</li>
+            <li>Share the practice you set this week and how day one went.</li>
+            <li>Ask a question you’re stuck on. Someone here has been there.</li>
+          </ul>
         </div>
       )}
 

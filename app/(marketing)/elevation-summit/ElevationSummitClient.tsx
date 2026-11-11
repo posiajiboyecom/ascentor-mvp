@@ -87,7 +87,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   }, []);
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
-  const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
+  const heroEyebrow   = hero?.eyebrow    || 'Summit 2.0 · 19 November, 2026';
   const heroHeadline  = 'The Elevation Summit 2.0';
   const heroSubhead   = 'One gathering. One decision. The rest of your life. The Elevation Summit is a one-day convening for people ready to stop drifting and start building. It is where the right question, the right conversation, and the right community meet. Be in the room in Lagos or join us from anywhere in the world. Either way, you will leave with a clearer sense of who you are becoming and what you are building.';
   const heroCtaLabel  = hero?.cta_label  || 'Register Now →';
@@ -101,7 +101,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const regSection = cms?.sections.register?.data as Record<string, string> | undefined;
   const regEyebrow  = regSection?.eyebrow  || 'Event Registration';
   const regHeadline = regSection?.headline || 'Secure your place.';
-  const regSubhead  = regSection?.subhead  || 'Registration is free and open for the inaugural Elevation Summit, 19 November, 2026, Lagos - attend physically or join virtually. Complete the form below - every detail helps us prepare the right experience for you.';
+  const regSubhead  = regSection?.subhead  || 'Registration is free and open for The Elevation Summit 2.0, 19 November, 2026, Lagos - attend physically or join virtually. Complete the form below - every detail helps us prepare the right experience for you.';
 
   const { alert } = useModal();
   const router = useRouter();
@@ -308,7 +308,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       <section style={{ background: '#C8A96E', padding: '1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '1rem' }}>
           {[
-            { value: '19 November, 2026', label: 'Inaugural Gathering', icon: CalendarDays },
+            { value: '19 November, 2026', label: 'Summit 2.0', icon: CalendarDays },
             { value: 'Lagos, Nigeria', label: 'Location', icon: MapPin },
             { value: '1 Day', label: 'Defining Moment', icon: Clock },
             { value: 'Open', label: 'Registration', icon: TicketCheck },
@@ -336,7 +336,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {[
-              { title: 'Not a Motivational Spectacle', icon: Sparkles, description: 'The Summit does not exist to excite you for 72 hours and send you home unchanged. It exists to send you home more built than you arrived.' },
+              { title: 'Not a Motivational Spectacle', icon: Sparkles, description: 'The Summit does not exist to excite you for a day and send you home unchanged. It exists to send you home more built than you arrived.' },
               { title: 'Not a Networking Event', icon: Network, description: 'You will meet extraordinary people. But the purpose is not connection for career advancement - it is the encounter with others who have chosen the same ascent.' },
               { title: 'Not a Conference', icon: Monitor, description: 'There are no passive attendees. Every person in the room is a participant - challenged, accountable, and choosing, in real time, who they will be.' },
             ].map((item) => {
@@ -483,7 +483,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               Aderemi Makanjuola Hall, Lagos State University.
             </h2>
             <p style={{ fontSize: '1.0625rem', color: '#6B7280', lineHeight: 1.8, maxWidth: '560px', marginBottom: '2.5rem' }}>
-              A landmark room for a landmark decision. Set on Iba Road, Lagos, the Hall hosts the inaugural Elevation Summit on 19 November, 2026. Come physically, or join from anywhere in the world.
+              A landmark room for a landmark decision. Set on Iba Road, Lagos, the Hall hosts The Elevation Summit 2.0 on 19 November, 2026. Come physically, or join from anywhere in the world.
             </p>
             <div>
               <a href="#register" className="btn-rust" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>Secure your place →</a>
@@ -558,7 +558,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
             <p style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>
               {activeTab === 'onsite'
-                ? 'Attending in person, Aderemi Makanjuola Lecture Theatre, Lagos.'
+                ? 'Attending in person, Aderemi Makanjuola Hall, Lagos State University.'
                 : 'Joining virtually. Your join link arrives by email once your ticket is confirmed.'}
             </p>
 

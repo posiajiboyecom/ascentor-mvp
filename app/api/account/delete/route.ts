@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     (!profile?.subscription_end || new Date(profile.subscription_end) > new Date());
   if (subscriptionLive) {
     return NextResponse.json(
-      { error: 'You have an active subscription. Cancel it under Plan first, then delete your account, so you are not charged again.', code: 'subscription_active' },
+      { error: 'You have an active subscription. Cancel it under Settings, Billing first, then delete your account, so you are not charged again.', code: 'subscription_active' },
       { status: 409 },
     );
   }

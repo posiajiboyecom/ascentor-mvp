@@ -1,3 +1,4 @@
+import { members } from '@/lib/rx/plural';
 import { redirect } from 'next/navigation';
 import { getMe } from '@/lib/rx/server';
 import { getGroups } from '@/lib/rx/community';
@@ -32,7 +33,7 @@ export default async function GroupsPage() {
           <p className="rx-p">Groups are named by interest and open to every stage.</p>
           <p className="rx-p">Suggestions only change what you see first. You can find every group here.</p>
           <p className="rx-p">Nobody is added to a group automatically.</p>
-          {city && (<><p className="rx-label">City groups</p><GoLink href={`/community/groups/${city.slug}`}>{city.name} · {city.count} members</GoLink></>)}
+          {city && (<><p className="rx-label">City groups</p><GoLink href={`/community/groups/${city.slug}`}>{city.name} · {members(city.count)}</GoLink></>)}
           <p className="rx-label">Can’t find your group?</p>
           <RequestGroup link />
         </Aside>

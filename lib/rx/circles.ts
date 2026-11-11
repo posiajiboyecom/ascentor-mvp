@@ -40,8 +40,8 @@ export async function getMyCircles(): Promise<CircleCard[]> {
  */
 export async function circleCardsFor(userId: string, tz: string, db: SupabaseClient): Promise<CircleCard[]> {
   const me = { userId, tz };
-  const { data: mine } = await db.from('circle_seats').select('circle_id, role, joined_at').eq('user_id', me.userId).order('joined_at', { ascending: true });
-  const seatsOf = (mine ?? []) as { circle_id: string; role: 'member' | 'facilitator'; joined_at: string }[];
+  const { data: mine } = await db.from('circle_seats').select('circle_id, role, joined_at, pledged_at').eq('user_id', me.userId).order('joined_at', { ascending: true });
+  const seatsOf = (mine ?? []) as { circle_id: string; role: 'member' | 'facilitator'; joined_at: string; pledged_at: string | null }[];
   if (!seatsOf.length) return [];
   const ids = seatsOf.map((s) => s.circle_id);
   const homeId = seatsOf.find((s) => s.role === 'member')?.circle_id ?? null;
@@ -97,6 +97,7 @@ export async function circleCardsFor(userId: string, tz: string, db: SupabaseCli
         mentorPhase: (mentor?.status as MentorPhase) ?? null, mentorName: mentor?.human_mentors?.name ?? null,
         nextSessionLabel: nextSession ? whenLabel(nextSession.starts_at, me.tz) : null,
         nextCallLabel: callOpenNow ? 'is open now' : nextCallLabel,
+        pledged: seat.role !== 'member' || !!seat.pledged_at,
       }),
     });
   }

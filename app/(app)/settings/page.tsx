@@ -5,7 +5,7 @@ import { Globe, Instagram, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getMe, namesFor } from '@/lib/rx/server';
 import { Aside, GoLink, Page, Title } from '@/components/rx/ui';
-import { EmailCard, NotificationsCard } from '@/components/rx/settings/SettingsClient';
+import { NotificationsCard } from '@/components/rx/settings/SettingsClient';
 import DeviceCard from '@/components/rx/settings/DeviceCard';
 import AccountTab from '@/components/rx/settings/AccountTab';
 import ProfileTab from '@/components/rx/settings/ProfileTab';
@@ -72,7 +72,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <>
         <NotificationsCard notif={p?.notif ?? {}} annMuted={p?.ann_muted ?? false} quiet={p?.quiet_hours ?? true} zone={zone} />
         <DeviceCard />
-        <EmailCard />
         <div className="rx-card st"><p className="rx-sl">Sage reminders</p><p className="rx-p">How often Sage nudges you, and when.</p><div><GoLink href="/sage/reminders">Reminder settings</GoLink></div></div>
       </>
     );
@@ -99,9 +98,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <Link href="/privacy" className="rx-link" style={{ fontSize: 14 }}>Privacy policy</Link>
           </div>
           <p className="rx-sl">Ascentor</p>
-          <p className="rx-row rx-nw rx-sm" style={{ gap: 8 }}><Globe aria-hidden style={{ width: 16, height: 16 }} />www.joinascentor.com</p>
-          <p className="rx-row rx-nw rx-sm" style={{ gap: 8 }}><Instagram aria-hidden style={{ width: 16, height: 16 }} />Instagram: theelevationsummit</p>
-          <p className="rx-row rx-nw rx-sm" style={{ gap: 8 }}><X aria-hidden style={{ width: 16, height: 16 }} />X: elevatnsummit</p>
+          <p className="rx-row rx-nw rx-sm" style={{ gap: 8 }}><Globe aria-hidden style={{ width: 16, height: 16 }} /><a href="https://www.joinascentor.com" target="_blank" rel="noopener noreferrer" className="rx-link" style={{ minHeight: 0 }}>www.joinascentor.com</a></p>
+          <p className="rx-sl">The Elevation Summit</p>
+          <p className="rx-sm">Ascentor’s annual summit posts here.</p>
+          <a href="https://instagram.com/theelevationsummit" target="_blank" rel="noopener noreferrer" className="rx-row rx-nw rx-sm rx-link" style={{ gap: 8, minHeight: 32 }}><Instagram aria-hidden style={{ width: 16, height: 16 }} />Instagram: @theelevationsummit</a>
+          <a href="https://x.com/elevatnsummit" target="_blank" rel="noopener noreferrer" className="rx-row rx-nw rx-sm rx-link" style={{ gap: 8, minHeight: 32 }}><X aria-hidden style={{ width: 16, height: 16 }} />X: @elevatnsummit</a>
         </Aside>
       </div>
     </Page>

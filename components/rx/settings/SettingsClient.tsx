@@ -19,28 +19,21 @@ export function NotificationsCard({ notif, annMuted, quiet, zone }: { notif: Rec
   return (
     <div className="rx-card st">
       <p className="rx-sl">In the app</p>
-      {NOTIF_TYPES.map((k) => (
+      {NOTIF_TYPES.filter((k) => !k.startsWith('Email: ')).map((k) => (
         <div key={k} className="rx-sb"><span>{k}</span><button type="button" className="rx-toggle" aria-label={k} aria-pressed={n[k]} onClick={() => { const next = { ...n, [k]: !n[k] }; setN(next); persist(next, mute, q); }} /></div>
       ))}
       <div className="rx-sb"><div><p className="rx-p">Mute announcements</p><p className="rx-sm">No notifications. They still appear in the app.</p></div>
         <button type="button" className="rx-toggle" aria-label="Mute announcement notifications" aria-pressed={mute} onClick={() => { setMute(!mute); persist(n, !mute, q, !mute ? 'Announcement notifications muted.' : 'Announcement notifications on.'); }} /></div>
       <div className="rx-sb"><div><p className="rx-p">Quiet hours</p><p className="rx-sm">10:00 PM to 7:00 AM {zone}</p></div>
         <button type="button" className="rx-toggle" aria-label="Quiet hours" aria-pressed={q} onClick={() => { setQ(!q); persist(n, mute, !q); }} /></div>
-    </div>
-  );
-}
-
-/** Email preferences. No backend yet: the switches only hold their state on this screen. */
-export function EmailCard() {
-  const [weekly, setWeekly] = useState(true);
-  const [events, setEvents] = useState(true);
-  return (
-    <div className="rx-card st">
-      <p className="rx-sl">Email</p>
-      <div className="rx-sb"><div><p className="rx-p">Weekly summary</p><p className="rx-sm">Practices kept and what’s next, every Sunday.</p></div>
-        <button type="button" className="rx-toggle" aria-label="Weekly summary" aria-pressed={weekly} onClick={() => setWeekly(!weekly)} /></div>
-      <div className="rx-sb"><div><p className="rx-p">Summit and event news</p><p className="rx-sm">The Elevation Summit and member meetups.</p></div>
-        <button type="button" className="rx-toggle" aria-label="Summit and event news" aria-pressed={events} onClick={() => setEvents(!events)} /></div>
+      <p className="rx-sl" style={{ marginTop: 12 }}>Email</p>
+      {NOTIF_TYPES.filter((k) => k.startsWith('Email: ')).map((k) => {
+        const label = k.slice('Email: '.length);
+        return (
+          <div key={k} className="rx-sb"><span>{label}</span><button type="button" className="rx-toggle" aria-label={`Email: ${label}`} aria-pressed={n[k]} onClick={() => { const next = { ...n, [k]: !n[k] }; setN(next); persist(next, mute, q); }} /></div>
+        );
+      })}
+      <p className="rx-sm">Emails about your account, payments and Summit registration are always sent.</p>
     </div>
   );
 }

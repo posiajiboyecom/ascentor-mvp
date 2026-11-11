@@ -22,13 +22,14 @@ function connection(): NetInfo | undefined {
   return n.connection ?? n.mozConnection ?? n.webkitConnection;
 }
 
-/** Weak by the browser's own estimate: 2g or slower, or a slow round trip, or very little bandwidth. */
+/**
+ * Weak by the browser's own estimate: only 2g or slower. Chrome's rtt and downlink figures are rough, rounded guesses
+ * (a fast 4G connection in Lagos can report a downlink under 0.4 Mbps), so they never decide on their own; the app's
+ * own pings below do.
+ */
 export function looksWeak(c: Pick<NetInfo, 'effectiveType' | 'rtt' | 'downlink'> | undefined): boolean {
   if (!c) return false;
-  if (c.effectiveType === 'slow-2g' || c.effectiveType === '2g') return true;
-  if (typeof c.rtt === 'number' && c.rtt > 1500) return true;
-  if (typeof c.downlink === 'number' && c.downlink > 0 && c.downlink < 0.4) return true;
-  return false;
+  return c.effectiveType === 'slow-2g' || c.effectiveType === '2g';
 }
 
 const PING_TIMEOUT_MS = 3000;

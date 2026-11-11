@@ -56,12 +56,21 @@ export const getLessonProgress = cache(async (): Promise<Map<string, LessonProgr
   return out;
 });
 
-/** This week's lesson: the one anchored to the pathway week, else the first not yet finished. */
+/**
+ * This week's lesson: the one anchored to the pathway week. When that week has no lesson yet, the nearest unfinished
+ * lesson in pathway order (later weeks first, then earlier ones, then unanchored), so a gap never jumps members to a
+ * lesson that only happens to sort first.
+ */
 export function pickWeekLesson(lessons: Lesson[], week: number, progress: Map<string, LessonProgress>): Lesson | null {
   if (!lessons.length) return null;
   const anchored = lessons.find((l) => l.week_no === week);
   if (anchored) return anchored;
-  return lessons.find((l) => !progress.get(l.id)?.completed_at) ?? lessons[0];
+  const open = lessons.filter((l) => !progress.get(l.id)?.completed_at);
+  const byWeek = (a: Lesson, b: Lesson) => (a.week_no ?? 99) - (b.week_no ?? 99);
+  const later = open.filter((l) => l.week_no != null && l.week_no > week).sort(byWeek);
+  const earlier = open.filter((l) => l.week_no != null && l.week_no < week).sort((a, b) => byWeek(b, a));
+  const loose = open.filter((l) => l.week_no == null);
+  return later[0] ?? earlier[0] ?? loose[0] ?? lessons[0];
 }
 
 export interface TodayState {

@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import FloatingSocials from '@/components/layout/FloatingSocials';
 import { openGateOrSignup } from '@/lib/gate-client';
 import { useCart } from '@/lib/shop-cart';
 
 const openGate = () => openGateOrSignup();
+
+/** Registration for The Elevation Summit stays open until the day after the event (19 November 2026, Lagos). */
+const SUMMIT_REG_CLOSES = Date.parse('2026-11-20T00:00:00+01:00');
 
 type PublicHeaderProps = {
   hasBlogPosts?: boolean;
@@ -16,6 +20,9 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { count: cartCount } = useCart();
+  const pathname = usePathname() ?? '';
+  // On the Summit pages the main call to action is registering, not joining the community.
+  const summitCta = pathname.startsWith('/elevation-summit') && Date.now() < SUMMIT_REG_CLOSES;
   const cartBadge = cartCount > 0 ? (
     <span style={{ marginLeft: 6, background: '#B6502A', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '1px 7px' }}>{cartCount}</span>
   ) : null;
@@ -258,9 +265,13 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
             </div>
 
             <div className="ph-desktop-cta" style={{ marginLeft: 'auto', marginRight: '0.75rem' }}>
-              <button className="ph-cta-btn" onClick={openGate} style={{ cursor: 'pointer' }}>
-                Join Community
-              </button>
+              {summitCta ? (
+                <Link href="/elevation-summit#register" className="ph-cta-btn" style={{ textDecoration: 'none' }}>Register free</Link>
+              ) : (
+                <button className="ph-cta-btn" onClick={openGate} style={{ cursor: 'pointer' }}>
+                  Join Community
+                </button>
+              )}
             </div>
 
             <button
@@ -335,9 +346,13 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           >
             Sign in
           </button>
-          <button className="ph-cta-btn" style={{ cursor: 'pointer' }} onClick={() => { setMobileMenuOpen(false); openGate(); }}>
-            Join Community
-          </button>
+          {summitCta ? (
+            <Link href="/elevation-summit#register" className="ph-cta-btn" style={{ textDecoration: 'none', textAlign: 'center' }} onClick={() => setMobileMenuOpen(false)}>Register free</Link>
+          ) : (
+            <button className="ph-cta-btn" style={{ cursor: 'pointer' }} onClick={() => { setMobileMenuOpen(false); openGate(); }}>
+              Join Community
+            </button>
+          )}
         </div>
       </div>
 

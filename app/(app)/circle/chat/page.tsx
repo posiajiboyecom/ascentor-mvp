@@ -1,3 +1,4 @@
+import { members } from '@/lib/rx/plural';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -39,7 +40,7 @@ export default async function CircleChatPage({ searchParams }: { searchParams: P
         <Link href={`/circle?c=${circle.circle.id}`} className="rx-ib" aria-label="Back to Circle"><ArrowLeft aria-hidden /></Link>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p className="rx-h3">Circle chat</p>
-          <p className="rx-sm">{circle.memberCount} members · private</p>
+          <p className="rx-sm">{members(circle.memberCount)} · private</p>
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>

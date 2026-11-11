@@ -3,6 +3,7 @@
 // The 12-step onboarding flow: welcome, reminders, interests, where you are, goal, who it serves, weekly times,
 // time zone, language, baseline survey, your starting point, and your Circle. Each step saves as you go.
 
+import { members } from '@/lib/rx/plural';
 import { useMemo, useRef, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -313,7 +314,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
                   <span className="rx-dimdot"><MessageSquare aria-hidden /></span>
                   <div style={{ minWidth: 0 }}><p className="rx-p rx-strong">You’re invited to Open house</p><p className="rx-sm">A general group for every member. Say hello, ask anything.</p></div>
                 </div>
-                <p className="rx-sm">{finish?.openHouseMembers ?? 0} members</p>
+                <p className="rx-sm">{members(finish?.openHouseMembers ?? 0)}</p>
                 <div className="rx-row">
                   <button type="button" className="rx-btn secondary" disabled={pending}
                     onClick={() => start(async () => { const r = await answerOpenHouse(true); if (r.ok) setOhChoice('joined'); else setError(r.error); })}>Join</button>

@@ -83,10 +83,9 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
         return <p key={t} className="rx-row rx-nw rx-p" style={{ gap: 10, alignItems: 'flex-start' }}><span className={`rx-pd${stepsDone[i] ? ' done' : cur ? ' cur' : ''}`} style={{ marginTop: 2 }}>{stepsDone[i] && <Tick />}</span>{t}</p>;
       })}
       <p className="rx-label">Good to know</p>
+      <p className="rx-p">Your Circle is recommended a few mentors, and the highest vote wins.</p>
+      <p className="rx-p">Mentor sessions are 20 minutes, every two weeks, audio by default. Your Circle picks a time that works for 60% of its active members, and at least 3.</p>
       <p className="rx-p">Mentors give their time for free. The agenda is how your Circle respects it.</p>
-      <p className="rx-label">How it works</p>
-      <p className="rx-p">Your Circle is recommended a few mentors.</p><p className="rx-p">Members vote. The highest vote wins.</p>
-      <p className="rx-p">Your Circle picks a time that works for 60% of its active members, and at least 3.</p><p className="rx-p">Sessions are 20 minutes, every two weeks, audio by default.</p>
       <GoLink href="/experts">Live expert sessions</GoLink>
       {mine.length > 1 && <GoLink href="/sessions">All my Circles</GoLink>}
       {mentorProfile && <GoLink href="/sessions/mentoring">Mentor view</GoLink>}
@@ -99,7 +98,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
         <div className="rx-two">
           <div className="rx-card rx-empty">
             <span className="rx-dimdot" aria-hidden><Users2 /></span>
-            <p className="rx-h2">{state.reason === 'nocircle' ? 'Sessions are for Circles' : 'Mentor sessions begin with 6 members'}</p>
+            <p className="rx-h2">{state.reason === 'nocircle' ? 'Sessions are for Circles' : `Mentor sessions begin with ${READY_MEMBERS} members`}</p>
             <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 440 }}>{state.reason === 'nocircle' ? 'Join your Circle first. Your Circle chooses a mentor together.' : `Your Circle has ${circle.memberCount} of ${READY_MEMBERS} members so far. When it reaches ${READY_MEMBERS}, you can choose a mentor.`}</p>
             {state.reason === 'notready' && <div style={{ width: '100%', maxWidth: 320 }}><Bar pct={(circle.memberCount / READY_MEMBERS) * 100} label={`${circle.memberCount} of ${READY_MEMBERS}`} /></div>}
             <Link href="/circle" className="rx-btn secondary">Go to Circle</Link>

@@ -146,7 +146,7 @@ export async function markSlot(cmId: string, slotId: string, on: boolean): Promi
   } catch (e) { return fail(e); }
 }
 
-/** The facilitator or the mentor confirms a time that at least 6 members can attend. Sessions then repeat every two weeks. */
+/** The facilitator or the mentor confirms a time that enough members can attend (lib/rx/quorum.ts). Sessions then repeat every two weeks. */
 export async function confirmSlot(cmId: string, slotId: string): Promise<ActionResult> {
   try {
     const cm = await mentorUserOf(cmId);

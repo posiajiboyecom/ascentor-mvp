@@ -47,7 +47,7 @@ export default async function LearnPage() {
             <div className="rx-card rx-stack-sm rx-rise">
               <div className="rx-row rx-nw" style={{ gap: 10 }}><Lock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-gold)' }} /><p className="rx-h3">Learn is paused on light access</p></div>
               <p className="rx-p">Your finished lessons, practices and notes are safe. New lessons open again when you reactivate.</p>
-              <div><Link href="/settings?tab=plan" className="rx-btn primary">Reactivate {bill.planName}</Link></div>
+              <div><Link href="/settings/billing" className="rx-btn primary">Reactivate {bill.planName}</Link></div>
             </div>
           )}
           {pathDone && (

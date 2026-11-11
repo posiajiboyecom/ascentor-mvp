@@ -18,8 +18,9 @@ export function RetakeSurvey({ dueLabel, available }: { dueLabel: string; availa
   if (!open) {
     return (
       <div className="rx-stack-sm">
-        <div><button type="button" className="rx-btn primary" disabled={!available} onClick={() => setOpen(true)}>Retake survey</button></div>
-        {!available && <p className="rx-sm">{dueLabel}</p>}
+        {available
+          ? <div><button type="button" className="rx-btn primary" onClick={() => setOpen(true)}>Retake survey</button></div>
+          : <p className="rx-sm">{dueLabel}</p>}
       </div>
     );
   }
