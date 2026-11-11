@@ -2,7 +2,7 @@
 
 // "On this phone": install Ascentor as an app and turn on push notifications for this device.
 // Android and desktop Chrome can install from a button. On iPhone it works too, but only after Ascentor is added to the
-// Home Screen from Safari and opened from there. Push needs that on iPhone, so the card says so plainly.
+// Home Screen (from Safari, or Chrome on iOS 16.4+) and opened from there. Push needs that on iPhone, so the card says so plainly.
 
 import { useEffect, useState } from 'react';
 import { Smartphone } from 'lucide-react';
@@ -72,7 +72,7 @@ export default function DeviceCard() {
       {needsHomeScreen && (
         <div className="rx-soft rx-stack-sm">
           <p className="rx-p rx-strong"><Smartphone aria-hidden style={{ width: 16, height: 16, verticalAlign: '-3px', marginRight: 6 }} />On iPhone</p>
-          <p className="rx-sm">Open Ascentor in Safari, tap the Share button, then Add to Home Screen. Open Ascentor from your home screen, then come back here to turn on notifications.</p>
+          <p className="rx-sm">In Safari or Chrome, tap the Share button, then Add to Home Screen. Open Ascentor from the new icon on your home screen, then come back here to turn on notifications. Needs iOS 16.4 or newer.</p>
         </div>
       )}
 
