@@ -51,14 +51,14 @@ On Hostinger, `contact@` works only if it exists in hPanel as an **Email Forward
 6. Only after step 5 works: in Vercel set `MAIL_ALLOW_ALIASES=true`, and (optional) set `SUPPORT_EMAIL` and `NEXT_PUBLIC_SUPPORT_EMAIL` to `contact@joinascentor.com`, `MAIL_REPLY_TO` to the same, then redeploy.
 
 ## What the code does now
-All addresses live in `lib/contact.ts` and default to the real mailbox `a.samuel@joinascentor.com`. Nothing defaults to `contact@` or `hello@`.
+All addresses live in `lib/contact.ts`. Sending defaults to the real mailbox `a.samuel@joinascentor.com`; the address shown to visitors defaults to `joinascentor@gmail.com`. Nothing defaults to `contact@` or `hello@`.
 
 | Env variable | Controls | Default |
 |---|---|---|
 | `MAIL_FROM` | the From line of every mail (`EMAIL_FROM` still read) | `Ascentor <a.samuel@joinascentor.com>` |
 | `MAIL_REPLY_TO` | where replies go | `a.samuel@joinascentor.com` |
 | `ADMIN_NOTIFY_EMAIL` | team alerts (sign-ups, contact form, Summit, payments) | `a.samuel@joinascentor.com` |
-| `SUPPORT_EMAIL` and `NEXT_PUBLIC_SUPPORT_EMAIL` | the address shown to visitors (set both to the same value) | `a.samuel@joinascentor.com` |
+| `SUPPORT_EMAIL` and `NEXT_PUBLIC_SUPPORT_EMAIL` | the address shown to visitors (set both to the same value) | `joinascentor@gmail.com` (a.samuel@ is reserved for serious business mail; the CEO moves those across from the Gmail inbox) |
 | `MAIL_ALLOW_ALIASES` | set `true` to stop redirecting mail addressed to `contact@` | unset |
 
 Other facts:
