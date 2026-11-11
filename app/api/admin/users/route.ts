@@ -19,6 +19,7 @@ import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { guardApi, isOwnerUserId } from '@/lib/admin/api-guard';
 import { can } from '@/lib/admin/areas';
+import { pgTerm } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +34,7 @@ async function getCaller(userId: string): Promise<{ role: UserRole; permissions:
 
 function sanitizeSearch(s: string): string {
   // Remove characters that have special meaning in Supabase/PostgREST ilike filter strings.
-  return s.replace(/[%*,]/g, '');
+  return pgTerm(s, 80);
 }
 
 export async function GET(req: NextRequest) {
@@ -58,8 +59,8 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || '';
     const status = searchParams.get('status') || '';
-    const page = parseInt(searchParams.get('page') || '0');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = Math.max(0, parseInt(searchParams.get('page') || '0') || 0);
+    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '50') || 50));
 
     let query = supabase
       .from('profiles')

@@ -7,13 +7,14 @@ import { createClient } from '@/lib/supabase/server';
 import { sendPushToUser } from '@/lib/push';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as memberSchemas from '@/lib/validation/schemas/member';
+import { safeEqual } from '@/lib/security';
 
 // Guard: only callable from within the app (service key) or same origin
 export async function POST(req: NextRequest) {
   try {
     // Verify internal secret so random callers can't spam notifications
     const secret = req.headers.get('x-push-secret');
-    if (secret !== process.env.PUSH_INTERNAL_SECRET) {
+    if (!safeEqual(secret, process.env.PUSH_INTERNAL_SECRET)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

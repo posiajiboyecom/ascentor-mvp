@@ -11,6 +11,7 @@ import { AREA_KEYS, can, legacyAreaFor, areaOf } from '@/lib/admin/areas';
 import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 import '@/styles/admin-ledger.css';
 import '@/styles/admin-console.css';
+import type { Metadata } from 'next';
 
 // ═══════════════════════════════════════════════════════════
 // Admin layout
@@ -40,6 +41,9 @@ import '@/styles/admin-console.css';
 // in globals.css (public/fonts/metropolis/). The previous Google Fonts
 // link (Cormorant Garamond / Syne / DM Mono) was removed, none of those
 // families are referenced by the Ledger tokens anymore.
+
+// Private area: never indexed, even if a URL leaks.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();

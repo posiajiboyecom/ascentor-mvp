@@ -74,6 +74,6 @@ export async function GET(req: NextRequest) {
   ];
 
   const ok = results.every((r) => r.ok);
-  console.log('[cron/daily]', JSON.stringify(results.map((r) => ({ n: r.name, ok: r.ok, ms: r.ms }))));
+  console.info('[cron/daily]', JSON.stringify(results.map((r) => ({ n: r.name, ok: r.ok, ms: r.ms }))));
   return NextResponse.json({ ok, results }, { status: ok ? 200 : 207 });
 }

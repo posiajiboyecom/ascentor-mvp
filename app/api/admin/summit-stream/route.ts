@@ -21,6 +21,7 @@ import { sendEventDayEmails } from '@/lib/summitEventDay';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { guardApi } from '@/lib/admin/api-guard';
+import { maskEmail } from '@/lib/log-safe';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         failed++;
         failedNames.push(r.full_name);
-        console.error('[admin/summit-stream] send failed for', r.email, err);
+        console.error('[admin/summit-stream] send failed for', maskEmail(r.email), err instanceof Error ? err.message : err);
       }
     }));
 

@@ -31,6 +31,7 @@ export const metadata: Metadata = {
     default: 'Partner Portal',
     template: '%s | Ascentor Partner Portal',
   },
+  robots: { index: false, follow: false },
 };
 
 export default async function PartnerLayout({

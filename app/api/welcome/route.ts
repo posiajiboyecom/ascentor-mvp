@@ -3,13 +3,14 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
+import { safeEqual } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
   try {
     // Guard: only callable from within the app (payment/verify calls with service role)
     // Accept either an internal secret header OR a valid Supabase session
     const internalSecret = req.headers.get('x-internal-secret');
-    const isInternal = internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
+    const isInternal = safeEqual(internalSecret, process.env.INTERNAL_API_SECRET);
 
     // A signed-in member can only trigger THEIR OWN welcome: identity comes from the
     // session, never from the request body (the body used to let any member send

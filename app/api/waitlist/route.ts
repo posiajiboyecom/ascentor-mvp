@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/nodemailer';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 // ── Lazy clients (never executed at build/module-eval time) ─
 function getSupabase() {
@@ -70,6 +71,8 @@ function buildConfirmationEmailHtml({
 
 // ── POST /api/waitlist ─────────────────────────────────────
 export async function POST(request: NextRequest) {
+  const limited = await limitPublic(request, 'waitlist', 10, 600);
+  if (limited) return limited;
   try {
     const parsed = await parseJson(request, publicSchemas.waitlist);
     if (!parsed.ok) return parsed.response;

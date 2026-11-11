@@ -44,6 +44,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // ── Production hardening ────────────────────────────────────────
+  // No "X-Powered-By: Next.js" fingerprint, no public source maps, and console.log/debug stripped
+  // from production bundles (error / warn / info stay, so operational logs still reach Vercel).
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+  reactStrictMode: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn', 'info'] } : false,
+  },
+
   // Keep these on the server only - they use Node.js built-ins
   // or native binaries that don't exist in the browser.
   //
@@ -84,6 +94,7 @@ const nextConfig: NextConfig = {
 
   // ── Images ───────────────────────────────────────────────────────
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',

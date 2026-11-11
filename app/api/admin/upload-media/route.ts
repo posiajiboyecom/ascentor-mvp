@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { guardApi } from '@/lib/admin/api-guard';
+import { sniffFile, sniffMatches } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,6 +72,9 @@ export async function POST(req: NextRequest) {
     // Use server-validated extension - never derive from file.name or client input
     const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const buffer   = await file.arrayBuffer();
+    if (!sniffMatches(sniffFile(buffer), file.type)) {
+      return NextResponse.json({ error: 'The file contents don’t match its type.' }, { status: 400 });
+    }
 
     const { data: buckets } = await supabase.storage.listBuckets();
     if (!buckets?.find(b => b.name === BUCKET)) {

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   if (chargingMode() === 'off') return NextResponse.json({ ok: true, mode: 'off' });
   try {
     const summary = await runBillingCycle();
-    console.log('[cron/billing]', JSON.stringify(summary));
+    console.info('[cron/billing]', JSON.stringify(summary));
     return NextResponse.json({ ok: summary.errors === 0, ...summary }, { status: summary.errors === 0 ? 200 : 207 });
   } catch (err) {
     console.error('[cron/billing] failed:', err instanceof Error ? err.message : 'unknown');

@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { sniffFile, svgIsSafe } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -99,18 +100,27 @@ export async function POST(req: NextRequest) {
       }, { status: 503 });
     }
 
-    // ── 5. Build storage path ────────────────────────────────
-    // Use a stable name per asset type so re-uploads overwrite the old file
-    // (no orphaned files accumulating in storage).
-    const ext      = file.name.split('.').pop()?.toLowerCase() || 'png';
+    // ── 5. Verify the real file type (magic bytes) and build the storage path ──
+    // The extension and content type come from the bytes, never from the client's file name or MIME,
+    // so "logo.html" declared as image/png can't be stored as HTML. SVG must not carry script.
+    const arrayBuffer = await file.arrayBuffer();
+    const sniffed = sniffFile(arrayBuffer);
+    const EXT_FOR: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg' };
+    if (!sniffed || !EXT_FOR[sniffed] || !ALLOWED_TYPES.includes(sniffed)) {
+      return NextResponse.json({ error: 'File must be an image (JPEG, PNG, WebP, GIF, or SVG)' }, { status: 400 });
+    }
+    if (sniffed === 'image/svg+xml' && !svgIsSafe(new TextDecoder().decode(arrayBuffer))) {
+      return NextResponse.json({ error: 'That SVG contains scripts or links that aren’t allowed. Export a plain SVG or a PNG.' }, { status: 400 });
+    }
+    const ext      = EXT_FOR[sniffed];
+    // Stable name per asset type so re-uploads overwrite the old file (no orphans).
     const filePath = `${partner.id}/${assetType}.${ext}`;
 
     // ── 6. Upload (upsert so re-uploads overwrite) ────────────
-    const arrayBuffer = await file.arrayBuffer();
     const { error: uploadErr } = await supabase.storage
       .from(BUCKET)
       .upload(filePath, arrayBuffer, {
-        contentType:  file.type,
+        contentType:  sniffed,
         upsert:       true,   // overwrite previous logo/favicon
         cacheControl: '3600',
       });

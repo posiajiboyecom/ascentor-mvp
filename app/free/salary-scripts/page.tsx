@@ -1,9 +1,11 @@
 import LeadMagnetPage from '@/components/LeadMagnetPage';
+import { generatePageMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'The Salary Negotiation Script Pack, Free Download | Ascentor',
+export const metadata = generatePageMetadata({
+  title: 'The Salary Negotiation Script Pack, Free Download',
   description: '5 word-for-word scripts for every salary conversation. Copy, adapt, use. Free template pack.',
-};
+  path: '/free/salary-scripts',
+});
 
 export default function SalaryScriptsPage() {
   return (

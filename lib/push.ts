@@ -55,7 +55,7 @@ async function sendFCMPush(token: string, payload: PushPayload): Promise<void> {
   //     notification: { title: payload.title, body: payload.body },
   //     data: { url: payload.url ?? '' },
   //   });
-  console.warn('[push] FCM not yet configured, skipping native push for token:', token);
+  console.warn('[push] FCM not yet configured, skipping native push for token ending', String(token).slice(-6));
 }
 
 /**

@@ -235,6 +235,7 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const startTime = useRef(Date.now());
 
   const questions = survey.questions;
@@ -272,13 +273,26 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
     // Submit
     setSubmitting(true);
     const duration = Math.round((Date.now() - startTime.current) / 1000);
+    setSubmitError(null);
     try {
-      await fetch(`/api/survey/${survey.slug}`, {
+      const res = await fetch(`/api/survey/${survey.slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers, metadata: { duration_seconds: duration } }),
       });
-    } catch { /* swallow, still show thank you */ }
+      if (!res.ok) {
+        // Keep the answers on screen so nothing is lost; the person can simply press Submit again.
+        setSubmitError(res.status === 429
+          ? 'Lots of people are submitting right now. Please wait a few seconds and press Submit again.'
+          : 'We couldn’t save your answers. Please press Submit again.');
+        setSubmitting(false);
+        return;
+      }
+    } catch {
+      setSubmitError('You seem to be offline. Check your connection and press Submit again.');
+      setSubmitting(false);
+      return;
+    }
     setSubmitting(false);
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -377,6 +391,9 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
             )}
           </button>
         </div>
+        {submitError && (
+          <p role="alert" style={{ marginTop: '14px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: '#B42318', lineHeight: 1.5 }}>{submitError}</p>
+        )}
       </div>
     </div>
   );

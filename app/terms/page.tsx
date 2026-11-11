@@ -2,11 +2,13 @@
 import Link from 'next/link';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
+import { generatePageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Terms & Conditions | Ascentor',
-  description: 'Terms of Service and Privacy Policy for Ascentor leadership coaching platform.',
-};
+export const metadata: Metadata = generatePageMetadata({
+  title: 'Terms & Conditions',
+  description: 'The terms of service for Ascentor, the platform of The Elevation Summit: accounts, memberships, payments, community conduct and your rights.',
+  path: '/terms',
+});
 
 export default function TermsPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from 'next';
 // app/(app)/layout.tsx
 // Shared shell for all authenticated member screens (Home, Coach, Circle,
 // Sessions, Learn, Account, Referral). Renders the collapsible sidebar
@@ -14,6 +15,19 @@ import { asBool, getSettings } from '@/lib/admin/settings';
 import ReferralRedeem from '@/components/ReferralRedeem';
 import '@/styles/rx.css';
 import '@/styles/rx-messaging.css';
+
+// The signed-in shell behaves like the native app: no accidental pinch/double-tap zoom.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#FAFAF8',
+};
+
+// Member pages are private: never indexed even if a URL leaks.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AppLayout({
   children,

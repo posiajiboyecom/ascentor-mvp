@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApi } from '@/lib/admin/api-guard';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { auditAdmin } from '@/lib/admin/audit';
+import { sniffFile, sniffMatches } from '@/lib/security';
 
 const BUCKET = 'content-media';
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -26,6 +27,8 @@ export async function POST(req: NextRequest) {
     const ext = EXT[file.type];
     if (!ext) return NextResponse.json({ error: 'Use a PNG, JPG or WebP image.' }, { status: 400 });
     if (file.size > MAX_BYTES) return NextResponse.json({ error: 'That image is over 2 MB. Export it smaller (1280 × 720 is plenty).' }, { status: 400 });
+    const bytes = await file.arrayBuffer();
+    if (!sniffMatches(sniffFile(bytes), file.type)) return NextResponse.json({ error: 'That file isn’t a valid image.' }, { status: 400 });
 
     let lesson: { id: string; title: string } | null = null;
     if (id) {
@@ -37,7 +40,7 @@ export async function POST(req: NextRequest) {
     const path = `lesson-thumbnails/${id || 'new'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { data: buckets } = await supabaseAdmin.storage.listBuckets();
     if (!buckets?.find((b) => b.name === BUCKET)) await supabaseAdmin.storage.createBucket(BUCKET, { public: true, fileSizeLimit: 8 * 1024 * 1024 });
-    const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(path, await file.arrayBuffer(), { contentType: file.type, upsert: false });
+    const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(path, bytes, { contentType: file.type, upsert: false });
     if (upErr) return NextResponse.json({ error: 'We could not upload that image. Try again.' }, { status: 500 });
 
     const { data: { publicUrl } } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);

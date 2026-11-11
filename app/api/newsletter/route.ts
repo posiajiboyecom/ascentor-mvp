@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +11,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  const limited = await limitPublic(req, 'newsletter', 10, 600);
+  if (limited) return limited;
   try {
     const parsed = await parseJson(req, publicSchemas.newsletterSubscribe);
     if (!parsed.ok) return parsed.response;

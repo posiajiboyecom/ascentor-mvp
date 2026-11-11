@@ -144,6 +144,33 @@ const PUBLIC_ROUTES = [
   '/admin-login',
 ];
 
+// Origins allowed to make state-changing API calls besides the request's own host
+// (which covers partner subdomains and custom domains served by this app). No wildcard: a stray or
+// taken-over subdomain must not be able to make cross-origin writes.
+const TRUSTED_ORIGINS = new Set(
+  [
+    'https://joinascentor.com',
+    'https://www.joinascentor.com',
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+    // Capacitor native shells
+    'capacitor://localhost',
+    'https://localhost',
+    ...(process.env.CORS_EXTRA_ORIGINS ?? '').split(',').map((s) => s.trim()),
+  ].filter(Boolean).map((o) => o!.replace(/\/+$/, '')),
+);
+
+function originAllowed(origin: string, request: NextRequest): boolean {
+  if (TRUSTED_ORIGINS.has(origin)) return true;
+  let o: URL;
+  try { o = new URL(origin); } catch { return false; }
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host;
+  if (o.host === host) return true;
+  if (process.env.NODE_ENV !== 'production' && (o.hostname === 'localhost' || o.hostname === '127.0.0.1')) return true;
+  return false;
+}
+
 // Where an unauthenticated visitor is sent for a given path.
 const loginPathFor = (pathname: string) =>
   pathname === '/admin' || pathname.startsWith('/admin/') ? '/admin-login' : '/login';
@@ -153,6 +180,19 @@ export default async function proxy(request: NextRequest) {
 
   // Generate a fresh nonce for every request (M-06)
   const nonce = crypto.randomBytes(16).toString('base64');
+
+  // ── Cross-origin write guard (CORS / CSRF) ─────────────────────────
+  // The API sends no Access-Control-Allow-* headers, so browsers already refuse cross-origin READS.
+  // Cross-site WRITES still reach the handler, though, so a state-changing /api request carrying an
+  // Origin header must come from this host or a trusted origin. Server-to-server callers (Paystack
+  // webhook, Vercel Cron, internal push triggers) send no Origin and are unaffected; they verify their
+  // own signatures/secrets. Server Actions get Next's own built-in origin check.
+  if (pathname.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    if (origin && !originAllowed(origin, request)) {
+      return NextResponse.json({ error: 'Cross-origin request blocked' }, { status: 403 });
+    }
+  }
 
   // Always pass through static files (no CSP needed on binary assets)
   if (

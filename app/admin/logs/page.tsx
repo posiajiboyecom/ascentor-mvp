@@ -138,7 +138,9 @@ export default function AdminAuditLogsPage() {
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
       if (entityFilter !== 'all') query = query.eq('entity_type', entityFilter);
-      if (searchQuery)             query = query.or(`action.ilike.%${searchQuery}%,entity_id.ilike.%${searchQuery}%`);
+      // Strip PostgREST syntax characters so the search box can't add filter conditions.
+      const term = searchQuery.replace(/[^\p{L}\p{N}\s@+\-._]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+      if (term)                    query = query.or(`action.ilike.%${term}%,entity_id.ilike.%${term}%`);
 
       const { data, error } = await query;
       if (error) throw error;

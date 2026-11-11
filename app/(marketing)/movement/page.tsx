@@ -5,12 +5,14 @@ import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import PublicShell from '@/components/layout/PublicShell';
 import GateButton from '@/components/GateButton';
 import { Brain, Shield, Briefcase, Users, Globe, Clock, Landmark, Lightbulb, Star, Building } from 'lucide-react';
+import { generatePageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = generatePageMetadata({
   title: 'The Movement',
   description:
     'A generation is drifting. Ascentor and The Elevation Summit exist to change that. Discover the ideology, the conviction, and the vision behind the movement.',
-};
+  path: '/movement',
+});
 
 const dimensions = [
   {

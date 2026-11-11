@@ -32,6 +32,7 @@ import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 import { sendEmail } from '@/lib/nodemailer';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as partnerSchemas from '@/lib/validation/schemas/partner';
+import { pgTerm } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page   = Math.max(1, parseInt(searchParams.get('page')  || '1'));
     const limit  = Math.min(100, parseInt(searchParams.get('limit') || '50'));
-    const search = searchParams.get('search')?.trim() || '';
+    const search = pgTerm(searchParams.get('search'), 80);
     const status = searchParams.get('status') || 'all';
     const offset = (page - 1) * limit;
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 // GET /api/survey/[slug] - fetch published survey
 export async function GET(
@@ -32,6 +33,9 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  // Per survey, and roomy: a whole venue (or a mobile carrier's shared IP) may submit at once.
+  const limited = await limitPublic(req, `survey:${slug.slice(0, 80)}`, 100, 600);
+  if (limited) return limited;
   const supabase = await createClient();
 
   const parsed = await parseJson(req, publicSchemas.surveySubmit);

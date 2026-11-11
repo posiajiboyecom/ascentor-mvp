@@ -252,6 +252,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           <div className="summit-hero-image">
             <img
               src="/images/elevation-summit-flyer-v3.jpg"
+              width={1200}
+              height={1600}
+              fetchPriority="high"
+              decoding="async"
               alt="The Elevation Summit: The Rise We Choose, 19 November 2026, Aderemi Makanjuola Hall, Lagos State University"
               style={{ width: '100%', height: 'auto', borderRadius: '1rem', display: 'block', border: '5px solid #0F0F0E' }}
             />
@@ -444,6 +448,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
                   key={src}
                   src={src}
                   alt="Aderemi Makanjuola Hall, Lagos State University"
+                  fetchPriority={i === 0 ? 'auto' : 'low'}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
                   style={{
                     position: 'absolute',
                     inset: 0,
@@ -714,7 +721,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               <img
                 key={`left-${i}`}
                 src={src}
-                alt="Elevation Summit moment"
+                alt="Attendees at a past Elevation Summit gathering"
+                loading="lazy"
+                decoding="async"
                 style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
               />
             ))}
@@ -727,7 +736,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               <img
                 key={`right-${i}`}
                 src={src}
-                alt="Elevation Summit moment"
+                alt="Attendees at a past Elevation Summit gathering"
+                loading="lazy"
+                decoding="async"
                 style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
               />
             ))}
@@ -782,12 +793,12 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         <div className="pm-outer">
           <div className="pm-track pm-left">
             {[1, 2, 3, 4].flatMap((_, i) => [
-              <a key={`r1-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
-              <a key={`r1-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" /></a>,
-              <a key={`r1-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
-              <a key={`r1-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
-              <a key={`r1-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" /></a>,
-              <a key={`r1-tor-${i}`} href="https://torstudio.co" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/tor-studio-logo.png"      alt="Tor Studio"   className="pm-logo" /></a>,
+              <a key={`r1-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r1-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r1-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r1-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r1-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r1-tor-${i}`} href="https://torstudio.co" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/tor-studio-logo.png"      alt="Tor Studio"   className="pm-logo" loading="lazy" decoding="async" /></a>,
             ])}
           </div>
         </div>
@@ -796,12 +807,12 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         <div className="pm-outer" style={{ marginTop: '2rem' }}>
           <div className="pm-track pm-right">
             {[1, 2, 3, 4].flatMap((_, i) => [
-              <a key={`r2-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
-              <a key={`r2-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" /></a>,
-              <a key={`r2-tor-${i}`} href="https://torstudio.co" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/tor-studio-logo.png"      alt="Tor Studio"   className="pm-logo" /></a>,
-              <a key={`r2-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
-              <a key={`r2-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" /></a>,
-              <a key={`r2-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
+              <a key={`r2-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r2-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r2-tor-${i}`} href="https://torstudio.co" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/tor-studio-logo.png"      alt="Tor Studio"   className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r2-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r2-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" loading="lazy" decoding="async" /></a>,
+              <a key={`r2-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" loading="lazy" decoding="async" /></a>,
             ])}
           </div>
         </div>

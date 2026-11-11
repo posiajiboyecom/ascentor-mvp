@@ -12,24 +12,26 @@ import { SITE_URL } from '@/lib/seo';
 
 export const revalidate = 3600; // regenerate at most hourly
 
+// Only canonical, indexable, 200-status pages belong here. Left out on purpose:
+//   /how-it-works, /who-its-for, /mentor-apply, /products, /summit (they redirect, see next.config.ts),
+//   /signup and /login (gated / noindex), /partner (partner portal, signed-in), /events (no index page).
 const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
-  { path: '',                  priority: 1.0, changeFrequency: 'weekly' },
-  { path: '/elevation-summit', priority: 1.0, changeFrequency: 'weekly' },
-  { path: '/about',            priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/how-it-works',     priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/who-its-for',      priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/shop',             priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/blog',             priority: 0.9, changeFrequency: 'daily' },
-  { path: '/movement',         priority: 0.7, changeFrequency: 'monthly' },
-  { path: '/manifesto',        priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/events',           priority: 0.7, changeFrequency: 'weekly' },
-  { path: '/careers',          priority: 0.4, changeFrequency: 'monthly' },
-  { path: '/contact',          priority: 0.5, changeFrequency: 'yearly' },
-  { path: '/mentor-apply',     priority: 0.5, changeFrequency: 'monthly' },
-  { path: '/partner',          priority: 0.5, changeFrequency: 'monthly' },
-  { path: '/signup',           priority: 0.6, changeFrequency: 'yearly' },
-  { path: '/privacy',          priority: 0.2, changeFrequency: 'yearly' },
-  { path: '/terms',            priority: 0.2, changeFrequency: 'yearly' },
+  { path: '',                               priority: 1.0, changeFrequency: 'weekly' },
+  { path: '/elevation-summit',              priority: 1.0, changeFrequency: 'weekly' },
+  { path: '/about',                         priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/movement',                      priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/manifesto',                     priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/blog',                          priority: 0.9, changeFrequency: 'daily' },
+  { path: '/shop',                          priority: 0.8, changeFrequency: 'weekly' },
+  { path: '/donate',                        priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/newsletter',                    priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/free/leadership-playbook',      priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/free/promotion-blueprint',      priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/free/salary-scripts',           priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/careers',                       priority: 0.4, changeFrequency: 'monthly' },
+  { path: '/contact',                       priority: 0.5, changeFrequency: 'yearly' },
+  { path: '/privacy',                       priority: 0.2, changeFrequency: 'yearly' },
+  { path: '/terms',                         priority: 0.2, changeFrequency: 'yearly' },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -78,6 +80,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // Shop tables may not exist yet.
+  }
+
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data: events } = await supabase.from('public_events').select('slug, updated_at').eq('is_published', true).limit(500);
+    for (const e of events ?? []) {
+      if (!e.slug) continue;
+      entries.push({ url: `${SITE_URL}/events/${e.slug}`, lastModified: new Date(e.updated_at || now), changeFrequency: 'weekly', priority: 0.6 });
+    }
+  } catch {
+    // Events are optional in the sitemap.
   }
 
   return entries;

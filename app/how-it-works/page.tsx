@@ -9,7 +9,7 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 }
 
 export const metadata: Metadata = {
-  title: 'How It Works | Ascentor',
+  title: 'How It Works',
   description:
     "From sign-up to your first breakthrough, here's exactly how Sage, human experts, and peer circles work together for your growth.",
 };

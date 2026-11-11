@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { addOrUpdateSubscriber } from '@/lib/mailerlite';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 // ═══════════════════════════════════════════════════════════
 // POST /api/lead-magnet
@@ -68,6 +69,8 @@ const MAGNETS: Record<string, {
 };
 
 export async function POST(req: NextRequest) {
+  const limited = await limitPublic(req, 'lead-magnet', 10, 600);
+  if (limited) return limited;
   try {
     const parsed = await parseJson(req, publicSchemas.leadMagnet);
     if (!parsed.ok) return parsed.response;

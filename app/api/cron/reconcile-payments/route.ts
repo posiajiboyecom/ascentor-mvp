@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const summary = await reconcilePayments();
-    console.log('[cron/reconcile-payments]', JSON.stringify(summary));
+    console.info('[cron/reconcile-payments]', JSON.stringify(summary));
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {
     console.error('[cron/reconcile-payments] failed:', err);

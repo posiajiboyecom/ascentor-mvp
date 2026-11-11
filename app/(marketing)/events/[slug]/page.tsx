@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import EventPageClient from './EventPageClient';
 import PublicShell from '@/components/layout/PublicShell';
+import { SITE_URL, generatePageMetadata, getPublicEventSchema, getBreadcrumbSchema, jsonLdString } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,16 +17,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const { data } = await supabaseAdmin
     .from('public_events')
-    .select('title, tagline')
+    .select('title, tagline, description')
     .eq('slug', slug)
     .eq('is_published', true)
     .single();
 
-  if (!data) return { title: 'Event | Ascentor' };
-  return {
-    title: `${data.title} | Ascentor`,
-    description: data.tagline || undefined,
-  };
+  if (!data) return { title: 'Event not found', robots: { index: false } };
+  return generatePageMetadata({
+    title: data.title,
+    description: data.tagline || data.description?.slice(0, 160) || `${data.title}, an Ascentor event.`,
+    path: `/events/${slug}`,
+  });
 }
 
 export default async function EventPage({ params }: Props) {
@@ -40,8 +42,15 @@ export default async function EventPage({ params }: Props) {
 
   if (!event) notFound();
 
+  const eventLd = getPublicEventSchema(event);
+  const crumbs = getBreadcrumbSchema([
+    { name: 'Home', url: SITE_URL },
+    { name: event.title, url: `${SITE_URL}/events/${slug}` },
+  ]);
+
   return (
     <PublicShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(eventLd ? [eventLd, crumbs] : crumbs) }} />
       <EventPageClient event={event} />
     </PublicShell>
   );

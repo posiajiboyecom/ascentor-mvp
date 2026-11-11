@@ -5,11 +5,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendSessionReminder } from '@/lib/reminders';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as memberSchemas from '@/lib/validation/schemas/member';
+import { safeEqual } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-internal-secret');
   const configuredSecret = process.env.INTERNAL_API_SECRET;
-  if (!secret || !configuredSecret || secret !== configuredSecret) {
+  if (!safeEqual(secret, configuredSecret)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

@@ -23,6 +23,7 @@ import { referralLink } from '@/lib/summitReferral';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { guardApi } from '@/lib/admin/api-guard';
+import { maskEmail } from '@/lib/log-safe';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -329,7 +330,7 @@ async function remindAll() {
       sentIds.push(r.id);
     } catch (err) {
       failed++;
-      console.error('[admin/summit-registrations] reminder failed for', r.email, (err as Error).message);
+      console.error('[admin/summit-registrations] reminder failed for', maskEmail(r.email), (err as Error).message);
     }
   }
   await markReminded(sentIds);
