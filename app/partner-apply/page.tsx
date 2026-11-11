@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
-import { Palette, Coins, Bot, Users, Check, Sparkles } from 'lucide-react';
+import { Palette, BookOpen, Bot, Users, Check, Sparkles } from 'lucide-react';
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg-input)', color: 'var(--text)',
@@ -114,7 +114,7 @@ export default function PartnerApplyPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 32 }}>
           {[
             { Icon: Palette, title: 'Your brand', sub: 'Logo, colours, domain' },
-            { Icon: Coins, title: '70% revenue', sub: 'Of every member payment' },
+            { Icon: BookOpen, title: 'Your content', sub: 'Your own courses and events' },
             { Icon: Bot, title: 'AI coach', sub: 'Sage, fully branded' },
             { Icon: Users, title: 'Your members', sub: 'Invite & manage' },
           ].map(({ Icon, title, sub }) => (
@@ -197,8 +197,7 @@ export default function PartnerApplyPage() {
               {agreed && <span style={{ color: '#000', fontSize: 11, fontWeight: 900 }}><Check size={13} aria-hidden="true" /></span>}
             </button>
             <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6 }}>
-              I agree to the Ascentor Partner Terms. I understand I receive 70% of revenue,
-              Ascentor receives 30%, and I cannot extract member data from the platform.
+              I agree to the Ascentor Partner Terms and understand I cannot extract member data from the platform.
             </p>
           </div>
 

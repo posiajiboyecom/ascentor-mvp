@@ -79,10 +79,10 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('partners')
     .select(`
-      id, name, slug, subdomain, custom_domain, status, plan_tier,
-      revenue_share_percent, created_at, updated_at, onboarded_at,
+      id, name, slug, subdomain, custom_domain, status,
+      created_at, updated_at, onboarded_at,
       owner_id,
-      features, plan_overrides,
+      features,
       profiles!partners_owner_id_fkey (
         full_name, email, avatar_url, subscription_plan
       )
@@ -136,11 +136,11 @@ export async function PATCH(req: NextRequest) {
 
   const parsed = await parseJson(req, adminSchemas.partnerAdminAction);
   if (!parsed.ok) return parsed.response;
-  const { partnerId, action, revenue_share, plan_tier: requestedTier } = parsed.data;
+  const { partnerId, action } = parsed.data;
 
   const { data: partner } = await supabase
     .from('partners')
-    .select('id, name, status, subdomain, owner_id, revenue_share_percent')
+    .select('id, name, status, subdomain, owner_id')
     .eq('id', partnerId)
     .single();
 
@@ -153,24 +153,6 @@ export async function PATCH(req: NextRequest) {
     reinstate: 'active',
   };
 
-  if (action === 'update_revenue_share') {
-    if (typeof revenue_share !== 'number' || revenue_share < 0 || revenue_share > 100) {
-      return NextResponse.json({ error: 'revenue_share must be 0–100' }, { status: 400 });
-    }
-    await supabase
-      .from('partners')
-      .update({ revenue_share_percent: revenue_share, updated_at: new Date().toISOString() })
-      .eq('id', partnerId);
-
-    await logAudit(adminId, 'partner_revenue_share_updated', partnerId, {
-      partner_name: partner.name,
-      old_share:    partner.revenue_share_percent,
-      new_share:    revenue_share,
-    });
-
-    return NextResponse.json({ success: true });
-  }
-
   const newStatus = STATUS_MAP[action];
   if (!newStatus) return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
 
@@ -179,20 +161,6 @@ export async function PATCH(req: NextRequest) {
     updated_at: new Date().toISOString(),
   };
 
-  if (action === 'approve' && typeof revenue_share === 'number') {
-    update.revenue_share_percent = revenue_share;
-  }
-
-  // Set plan_tier on approval - default to 'starter' if not provided
-  if (action === 'approve') {
-    const tier = requestedTier && ['starter','growth','pro'].includes(requestedTier)
-      ? requestedTier : 'starter';
-    update.plan_tier = tier;
-    if (typeof revenue_share !== 'number') {
-      update.revenue_share_percent = tier === 'pro' ? 80 : tier === 'growth' ? 70 : 65;
-    }
-  }
-
   // FIX BUG-09: set onboarded_at when approving so partners don't get
   // stuck in the onboarding redirect loop after approval.
   if (action === 'approve' && !partner.status.includes('active')) {
@@ -200,23 +168,6 @@ export async function PATCH(req: NextRequest) {
   }
 
   await supabase.from('partners').update(update).eq('id', partnerId);
-
-  // Create initial subscription row on approval
-  if (action === 'approve') {
-    const tier      = update.plan_tier || 'starter';
-    const amountMap: Record<string, number> = { starter: 10000, growth: 30000, pro: 70000 };
-    void Promise.resolve(
-      supabase.from('partner_subscriptions').insert({
-        partner_id:           partnerId,
-        plan_tier:            tier,
-        billing_cycle:        'monthly',
-        amount_ngn:           amountMap[tier] ?? 10000,
-        status:               'active',
-        current_period_start: new Date().toISOString(),
-        current_period_end:   new Date(Date.now() + 30 * 86400000).toISOString(),
-      })
-    ).catch(() => {});
-  }
 
   // Notify partner owner
   try {

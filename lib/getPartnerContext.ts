@@ -145,8 +145,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
       .from('partners')
       .select(`
         id, name, slug, subdomain, custom_domain, status, owner_id,
-        revenue_share_percent, paystack_subaccount_code,
-        brand, features, plan_overrides,
+        brand, features,
         created_at, updated_at, onboarded_at
       `)
       .or(
@@ -171,11 +170,8 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
       partner: {
         id: '', name: '', slug: '', subdomain: '', custom_domain: null,
         status: 'pending' as const, owner_id: '',
-        revenue_share_percent: 0,
-        paystack_subaccount_code: null,
         brand: DEFAULT_BRAND,
         features: { ai_coach: true, community: true, experts: true, courses: true, referrals: false, own_courses: false, own_events: false },
-        plan_overrides: null,
         created_at: '', updated_at: '', onboarded_at: null,
       },
       cssVars: buildCssVars(DEFAULT_BRAND),

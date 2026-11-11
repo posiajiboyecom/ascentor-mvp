@@ -7,13 +7,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deleteVideoObjects } from '@/lib/r2';
-import { requireAdmin } from '@/lib/video/requireAdmin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_req: NextRequest, { params }: Ctx) {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+export async function GET(req: NextRequest, { params }: Ctx) {
+  const _g = await guardApi('pathways', 'view', req);
+  if ('error' in _g) return _g.res;
   const { id } = await params;
 
   const { data, error } = await supabaseAdmin
@@ -26,8 +26,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+  const _g = await guardApi('pathways', 'edit', req);
+  if ('error' in _g) return _g.res;
   const { id } = await params;
 
   const body = await req.json().catch(() => ({}));
@@ -42,9 +42,9 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+export async function DELETE(req: NextRequest, { params }: Ctx) {
+  const _g = await guardApi('pathways', 'full', req);
+  if ('error' in _g) return _g.res;
   const { id } = await params;
 
   try {

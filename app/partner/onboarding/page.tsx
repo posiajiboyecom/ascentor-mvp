@@ -16,13 +16,12 @@ export default async function PartnerOnboardingPage() {
   // FIX WL-13: Query partners table (not the old tenants table)
   const { data: tenant } = await supabase
     .from('partners')
-    .select('id, name, subdomain, status, brand, ai_config, plan_overrides, onboarded_at')
+    .select('id, name, subdomain, status, brand, ai_config, onboarded_at')
     .eq('owner_id', user.id)
     .single();
 
   const brand        = (tenant as any)?.brand        || {};
   const aiConfig     = (tenant as any)?.ai_config    || {};
-  const planOverrides = (tenant as any)?.plan_overrides || {};
 
   const steps = [
     {
@@ -43,14 +42,6 @@ export default async function PartnerOnboardingPage() {
     },
     {
       num: 3,
-      title: 'Set your pricing',
-      description: 'Connect your Paystack plan codes so your users can subscribe.',
-      href: '/partner/pricing',
-      done: !!(planOverrides.monthly_plan_code || planOverrides.annual_plan_code),
-      action: 'Configure pricing',
-    },
-    {
-      num: 4,
       title: 'Invite your first user',
       description: 'Share your platform URL or send a direct invite link.',
       href: '/partner/members',
@@ -58,7 +49,7 @@ export default async function PartnerOnboardingPage() {
       action: 'View members',
     },
     {
-      num: 5,
+      num: 4,
       title: 'Go live',
       description: `Your platform is live at ${tenant?.subdomain ? `${tenant.subdomain}.joinascentor.com` : 'yourname.joinascentor.com'}`,
       href: tenant?.subdomain ? `https://${tenant.subdomain}.joinascentor.com` : '#',

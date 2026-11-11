@@ -10,43 +10,41 @@ export const spec: ScreenSpec = {
   area: "partners",
   group: "Marketing",
   title: "Partners",
-  sub: "Organisations with their own Ascentor space and a revenue share.",
+  sub: "Organisations with their own Ascentor space. Partners have no plan and pay nothing.",
   cols: [
     "Partner",
     "Type",
     "Members",
-    "Revenue share",
     "Status"
   ],
-  statusCol: 4,
+  statusCol: 3,
   actions: [
     {
       id: "approve",
       label: "Approve",
-      col: 4,
+      col: 3,
       to: "Active"
     },
     {
       id: "suspend",
       label: "Suspend",
-      col: 4,
+      col: 3,
       to: "Suspended",
-      confirm: "Their members keep access until the end of the month."
+      confirm: "Their members lose access to the partner space."
     },
     {
       id: "reject",
       label: "Reject",
-      col: 4,
+      col: 3,
       to: "Rejected"
     }
   ],
   quick: 0
 };
 
-// Same rules as PATCH /api/admin/partners (the Partners page): approve activates, sets onboarded_at, opens a first subscription
-// row and emails the owner; suspend emails the owner. partners.status only allows pending/active/suspended/churned.
+// Same rules as PATCH /api/admin/partners (the Partners page): approve activates, sets onboarded_at and emails the owner;
+// suspend emails the owner. partners.status only allows pending/active/suspended/churned.
 const LABEL: Record<string, string> = { pending: 'Pending', active: 'Active', suspended: 'Suspended', churned: 'Churned', rejected: 'Rejected' };
-const TIER_AMOUNT: Record<string, number> = { starter: 10000, growth: 30000, pro: 70000 };
 
 async function emailOwner(ownerId: string | null, partner: { name: string; subdomain: string }, kind: 'approve' | 'suspend') {
   try {
@@ -81,7 +79,7 @@ const screen: ScreenModule = {
   spec,
   async load() {
     const { data, error } = await supabaseAdmin.from('partners')
-      .select('id, name, status, revenue_share_percent').order('created_at', { ascending: false }).limit(200);
+      .select('id, name, status').order('created_at', { ascending: false }).limit(200);
     if (error) throw new Error(error.message);
     const members: Record<string, number> = {};
     const { data: m } = await supabaseAdmin.from('partner_members').select('partner_id').neq('status', 'removed').limit(50000);
@@ -89,7 +87,7 @@ const screen: ScreenModule = {
     return {
       rows: (data ?? []).map((r: any) => ({
         id: String(r.id),
-        cells: [r.name || '-', '-', members[r.id] ? count(members[r.id]) : '-', r.revenue_share_percent != null ? `${r.revenue_share_percent}%` : '-', LABEL[r.status] ?? r.status ?? '-'],
+        cells: [r.name || '-', '-', members[r.id] ? count(members[r.id]) : '-', LABEL[r.status] ?? r.status ?? '-'],
       })),
       note: (data?.length ?? 0) >= 200 ? 'Showing the 200 newest partners.' : 'Partner type is not recorded yet.',
     };
@@ -113,20 +111,15 @@ const screen: ScreenModule = {
 
     if (p.status === 'active') return { ok: false, error: 'This partner is already active.' };
     if (p.status === 'suspended') {
-      // Same as the page's reinstate: no email, no new subscription.
+      // Same as the page's reinstate: no email.
       const { error } = await supabaseAdmin.from('partners').update({ status: 'active', updated_at: now }).eq('id', rowId);
       if (error) return { ok: false, error: 'We could not update this partner.' };
       return { ok: true, message: `${p.name} is active again.` };
     }
     if (p.status !== 'pending') return { ok: false, error: 'Only a pending or suspended partner can be approved.' };
-    const tier = 'starter';
     const { error } = await supabaseAdmin.from('partners')
-      .update({ status: 'active', plan_tier: tier, revenue_share_percent: 65, onboarded_at: now, updated_at: now }).eq('id', rowId);
+      .update({ status: 'active', onboarded_at: now, updated_at: now }).eq('id', rowId);
     if (error) return { ok: false, error: 'We could not update this partner.' };
-    await supabaseAdmin.from('partner_subscriptions').insert({
-      partner_id: rowId, plan_tier: tier, billing_cycle: 'monthly', amount_ngn: TIER_AMOUNT[tier], status: 'active',
-      current_period_start: now, current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
-    });
     await emailOwner(p.owner_id, p, 'approve');
     return { ok: true, message: `${p.name} is approved.` };
   },

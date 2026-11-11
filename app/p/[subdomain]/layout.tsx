@@ -65,8 +65,7 @@ export default async function SubdomainLayout({
       .from('partners')
       .select(`
         id, name, slug, subdomain, custom_domain, status, owner_id,
-        revenue_share_percent, paystack_subaccount_code,
-        brand, features, plan_overrides,
+        brand, features,
         created_at, updated_at, onboarded_at
       `)
       .eq('subdomain', subdomain.toLowerCase())

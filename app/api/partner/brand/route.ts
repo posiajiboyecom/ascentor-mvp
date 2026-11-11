@@ -1,17 +1,7 @@
 // ============================================================
 // FILE LOCATION: app/api/partner/brand/route.ts
-//
-// BUG FIXED:
-//   BUG-03 - The GET handler selected column 'paystack_secret_key'
-//             (a plaintext column that does not exist in the schema).
-//             The actual encrypted column is 'paystack_secret_key_enc'.
-//             This caused has_paystack_key to always be false, so the
-//             settings page never showed the "Paystack connected"
-//             badge even for partners who had connected their key.
-//
-// PREVIOUS FIXES PRESERVED:
-//   W-04 - border_color validation and safe brand save.
-//   W-08 - has_paystack_key boolean returned; raw key stripped from response.
+// GET: the partner's brand. POST: save it (validated; every partner can hide "Powered by Ascentor").
+// Partners have no plan and no payments: there is no tier or Paystack key here.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -65,20 +55,13 @@ export async function POST(req: NextRequest) {
 
     const { data: partner } = await supabase
       .from('partners')
-      .select('id, owner_id, subdomain, custom_domain, status, plan_tier')
+      .select('id, owner_id, subdomain, custom_domain, status')
       .eq('id', partnerId)
       .single();
 
     if (!partner) return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
     if (partner.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (partner.status === 'suspended') return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
-
-    if (brand.hide_ascentor_branding && partner.plan_tier !== 'pro') {
-      return NextResponse.json({
-        error: 'Removing "Powered by Ascentor" branding requires the Partner Pro plan.',
-        code:  'plan_upgrade_required',
-      }, { status: 403 });
-    }
 
     const validationError = validateBrand(brand);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
@@ -138,27 +121,15 @@ export async function GET(req: NextRequest) {
     const { data: { user }, error } = await authClient.auth.getUser();
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // FIX BUG-03: was selecting 'paystack_secret_key' (wrong/nonexistent column).
-    // The encrypted column is 'paystack_secret_key_enc'. Selecting the wrong name
-    // made has_paystack_key always evaluate to false.
     const { data: partner } = await supabase
       .from('partners')
-      .select('id, brand, subdomain, custom_domain, status, revenue_share_percent, features, plan_overrides, plan_tier, paystack_secret_key_enc')
+      .select('id, brand, subdomain, custom_domain, status, features')
       .eq('owner_id', user.id)
       .single();
 
     if (!partner) return NextResponse.json({ error: 'No partner account found' }, { status: 404 });
 
-    // Compute boolean - the actual key value is NEVER sent to the client
-    const has_paystack_key = Boolean(
-      (partner as any).paystack_secret_key_enc &&
-      ((partner as any).paystack_secret_key_enc as string).length > 0
-    );
-
-    // Strip the encrypted key before sending the response
-    const { paystack_secret_key_enc: _stripped, ...safePartner } = partner as any;
-
-    return NextResponse.json({ partner: { ...safePartner, has_paystack_key } });
+    return NextResponse.json({ partner });
 
   } catch (err: any) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

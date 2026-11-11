@@ -15,9 +15,9 @@
 //
 // FIX: PROTECTED_API_PREFIXES now includes /api/pay (was /api/payment,
 // which never matched), /api/partner, and /api/community.
-// Webhook endpoints (/api/pay/webhook, /api/partner/webhook) are
-// explicitly public - Paystack/partner platforms call them without
-// a user session and they verify their own signatures internally.
+// The webhook endpoint (/api/pay/webhook) is
+// explicitly public - Paystack calls it without
+// a user session and it verifies its own signature internally.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
@@ -93,8 +93,6 @@ const PUBLIC_API_ROUTES = [
   '/api/auth',
   // Paystack webhook - verified internally via HMAC signature
   '/api/pay/webhook',
-  // Partner platform webhook - verified internally
-  '/api/partner/webhook',
   // Checkout pending - non-destructive marketing hook, called pre-auth
   '/api/checkout-pending',
   // Vercel Cron - authenticates itself with the CRON_SECRET bearer token

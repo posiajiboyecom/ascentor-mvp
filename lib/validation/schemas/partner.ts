@@ -1,6 +1,6 @@
 // lib/validation/schemas/partner.ts
 // Request schemas for the white-label partner portal (/api/partner/*).
-import { z, text, optionalText, email, uuid, nullableText, paymentReference } from '../common';
+import { z, text, optionalText, email, uuid, nullableText } from '../common';
 
 const hexColor = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Use a 6-digit hex colour like #C8A96E.');
 const optionalHex = z.union([hexColor, z.literal('')]).optional();
@@ -26,14 +26,8 @@ export const brandSave = z.strictObject({
   }),
 });
 
-const planOverrides = z.record(
-  z.string().max(60),
-  z.union([z.string().max(200), z.number().min(0).max(1_000_000_000), z.boolean(), z.null()]),
-);
-
 export const configPatch = z.strictObject({
   name: text(120, 'Name').optional(),
-  plan_overrides: planOverrides.optional(),
 });
 
 const subdomain = z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,30}$/, 'Subdomain must be 3 to 30 lowercase letters, numbers, or hyphens.');
@@ -42,7 +36,6 @@ export const settingsPatch = z.strictObject({
   partnerId: uuid.optional(),
   subdomain: subdomain.optional(),
   custom_domain: z.union([z.string().trim().max(253), z.null()]).optional(),
-  plan_overrides: planOverrides.optional(),
   ai_persona_prompt: z.string().max(8000).optional(),
 });
 
@@ -90,7 +83,6 @@ export const courseUpdate = z.strictObject({
   thumbnail_url: courseFields.thumbnail_url.optional(),
   is_published: z.boolean().optional(),
   sort_order: z.number().int().min(0).max(100_000).optional(),
-  plan_tier: z.string().max(40).optional(),
 });
 
 export const courseDelete = z.strictObject({ courseId: uuid });
@@ -137,18 +129,6 @@ export const membersInvite = z
 export const memberAction = z.strictObject({
   memberId: uuid,
   action: z.enum(['suspend', 'remove', 'reinstate', 'resend_invite']),
-});
-
-export const paymentVerify = z.strictObject({
-  reference: paymentReference,
-  plan: z.string().trim().min(1).max(40),
-  billing: z.string().trim().min(1).max(20),
-  partner_id: uuid,
-});
-
-export const subscriptionChange = z.strictObject({
-  requested_tier: z.enum(['starter', 'growth', 'pro']),
-  billing_cycle: z.enum(['monthly', 'annual']).optional(),
 });
 
 export const eventDeleteQuery = z.strictObject({ eventId: uuid });

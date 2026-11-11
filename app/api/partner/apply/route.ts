@@ -79,17 +79,15 @@ export async function POST(req: NextRequest) {
           platform_name: platform_name.trim(),
           tagline: null,
         },
-        revenue_share_percent: 70, // default - can be adjusted per partner
         features: {
           ai_coach: true, community: true, experts: false,
           courses: true,
           // referrals: false by default - no partner-facing referral UI exists yet.
           // Enable manually per partner once the UI ships.
           referrals: false,
-          // own_courses / own_events gated by plan_tier - false at apply time,
-          // enabled automatically once partner upgrades to Growth or Pro.
-          own_courses: false,
-          own_events:  false,
+          // Partners have no plan: every partner can add its own courses and events.
+          own_courses: true,
+          own_events:  true,
         },
       })
       .select()

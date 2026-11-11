@@ -6,14 +6,13 @@
 // Full partner management for Ascentor root admin:
 //   - Tab filter: All | Pending | Active | Suspended | Rejected
 //   - Search by name or subdomain
-//   - Per-row: Approve (with revenue share input) | Suspend | Reject | Reinstate
-//   - Inline revenue share editor
-//   - Stats: member counts, total revenue per partner
+//   - Per-row: Approve | Suspend | Reject | Reinstate
+//   - Member counts per partner (partners have no plan and no payments)
 //   - Approval sends email to partner owner
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Check, X, Coins } from 'lucide-react';
+import { Check, X, Building2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -27,7 +26,6 @@ type Partner = {
   subdomain: string;
   custom_domain: string | null;
   status: PartnerStatus;
-  revenue_share_percent: number;
   created_at: string;
   owner_id: string;
   features: Record<string, boolean>;
@@ -38,7 +36,6 @@ type Partner = {
     subscription_plan: string | null;
   } | null;
   member_counts: { active?: number; invited?: number; suspended?: number };
-  total_revenue_ngn: number;
 };
 
 type Breakdown = Record<string, number>;
@@ -62,10 +59,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
-function fmt(n: number) {
-  return `₦${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`;
-}
-
 function relDate(iso: string) {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (d === 0) return 'Today';
@@ -78,11 +71,9 @@ function relDate(iso: string) {
 function ActionMenu({
   partner,
   onAction,
-  onEditRevenue,
 }: {
   partner: Partner;
   onAction: (id: string, action: string) => void;
-  onEditRevenue: (partner: Partner) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -100,7 +91,6 @@ function ActionMenu({
     { label: 'Reinstate',         action: 'reinstate', show: partner.status === 'suspended' || partner.status === 'rejected' },
     { label: 'Suspend',           action: 'suspend',   show: partner.status === 'active'    },
     { label: 'Reject',            action: 'reject',    color: '#EF4444', show: partner.status === 'pending' },
-    { label: 'Edit Revenue Share', special: 'revenue', show: true },
     { label: 'View Subdomain ↗',  special: 'link',     show: true },
   ].filter(a => a.show);
 
@@ -129,7 +119,6 @@ function ActionMenu({
               key={i}
               onClick={() => {
                 setOpen(false);
-                if (a.special === 'revenue') { onEditRevenue(partner); return; }
                 if (a.special === 'link') { window.open(`https://${partner.subdomain}.joinascentor.com`, '_blank'); return; }
                 if (a.action) onAction(partner.id, a.action);
               }}
@@ -138,7 +127,7 @@ function ActionMenu({
                 padding: '10px 14px', border: 'none', background: 'transparent',
                 cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 color: a.color || 'var(--admin-text)',
-                borderTop: i > 0 && (a.special === 'revenue') ? '1px solid var(--admin-border)' : 'none',
+                borderTop: i > 0 && a.special === 'link' ? '1px solid var(--admin-border)' : 'none',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -152,7 +141,7 @@ function ActionMenu({
   );
 }
 
-// ── Approve modal (sets revenue share on first approval) ──
+// ── Approve modal ──
 function ApproveModal({
   partner,
   onConfirm,
@@ -160,12 +149,10 @@ function ApproveModal({
   loading,
 }: {
   partner: Partner;
-  onConfirm: (share: number) => void;
+  onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
 }) {
-  const [share, setShare] = useState(partner.revenue_share_percent || 70);
-
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 200,
@@ -184,39 +171,12 @@ function ApproveModal({
           Approve {partner.name}
         </h3>
         <p style={{ fontSize: 13, color: 'var(--admin-text-muted)', marginBottom: 20, lineHeight: 1.6 }}>
-          Set the revenue share percentage for this partner. They receive this % of every member subscription payment.
+          Their platform goes live at {partner.subdomain}.joinascentor.com and the owner gets an email.
         </p>
-
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--admin-text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>
-            Revenue Share (%)
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <input
-              type="range"
-              min={30} max={90} step={5}
-              value={share}
-              onChange={e => setShare(Number(e.target.value))}
-              style={{ flex: 1, accentColor: '#E8A020' }}
-            />
-            <span style={{
-              fontSize: 22, fontWeight: 700,
-              color: '#E8A020',
-              fontFamily: "'Metropolis', serif",
-              minWidth: 48, textAlign: 'right',
-            }}>
-              {share}%
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--admin-text-faint)' }}>Partner: {share}%</span>
-            <span style={{ fontSize: 11, color: 'var(--admin-text-faint)' }}>Ascentor: {100 - share}%</span>
-          </div>
-        </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => onConfirm(share)}
+            onClick={() => onConfirm()}
             disabled={loading}
             style={{
               flex: 1, padding: '11px 0', borderRadius: 9, border: 'none',
@@ -244,59 +204,6 @@ function ApproveModal({
   );
 }
 
-// ── Revenue share edit modal ──────────────────────────────
-function RevenueModal({
-  partner,
-  onConfirm,
-  onCancel,
-  loading,
-}: {
-  partner: Partner;
-  onConfirm: (share: number) => void;
-  onCancel: () => void;
-  loading: boolean;
-}) {
-  const [share, setShare] = useState(partner.revenue_share_percent);
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 200,
-      background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-    }}>
-      <div style={{
-        background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)',
-        borderRadius: 14, padding: 28, width: '100%', maxWidth: 380,
-      }}>
-        <h3 style={{ fontFamily: "'Metropolis', serif", fontSize: 20, color: 'var(--admin-text-heading)', marginBottom: 16 }}>
-          Edit Revenue Share: {partner.name}
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <input
-            type="range" min={30} max={90} step={5}
-            value={share}
-            onChange={e => setShare(Number(e.target.value))}
-            style={{ flex: 1, accentColor: '#E8A020' }}
-          />
-          <span style={{ fontSize: 22, fontWeight: 700, color: '#E8A020', fontFamily: "'Metropolis', serif", minWidth: 48, textAlign: 'right' }}>
-            {share}%
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => onConfirm(share)} disabled={loading}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 9, border: 'none', background: '#E8A020', color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: loading ? 0.5 : 1 }}>
-            {loading ? 'Saving...' : 'Save'}
-          </button>
-          <button onClick={onCancel}
-            style={{ padding: '10px 16px', borderRadius: 9, border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text-muted)', fontSize: 13, cursor: 'pointer' }}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────
 function AdminPartnersPageInner() {
   const supabase = createClient();
   const searchParams = useSearchParams();
@@ -317,7 +224,6 @@ function AdminPartnersPageInner() {
 
   // Modals
   const [approveTarget, setApproveTarget] = useState<Partner | null>(null);
-  const [revenueTarget, setRevenueTarget] = useState<Partner | null>(null);
 
   // ── Deep-link: ?action=approve&id=xxx opens approve modal ──
   // Triggered by the one-click link in the founder notification email
@@ -403,7 +309,6 @@ function AdminPartnersPageInner() {
         suspend:              'Partner suspended',
         reject:               'Application rejected',
         reinstate:            'Partner reinstated',
-        update_revenue_share: 'Revenue share updated',
       };
       setToast({ type: 'success', text: msgs[action] || 'Done' });
       fetchPartners(page);
@@ -412,7 +317,6 @@ function AdminPartnersPageInner() {
     }
     setActionLoad(null);
     setApproveTarget(null);
-    setRevenueTarget(null);
   }
 
   const tabs: { id: Tab; label: string }[] = [
@@ -436,7 +340,7 @@ function AdminPartnersPageInner() {
           Partners
         </h1>
         <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>
-          Review applications, manage access, and set revenue splits
+          Review applications and manage access
         </p>
       </div>
 
@@ -491,8 +395,8 @@ function AdminPartnersPageInner() {
       {/* Table */}
       <div style={{ background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)', borderRadius: 12, overflow: 'hidden' }}>
         {/* Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 80px 90px 100px 40px', padding: '10px 18px', borderBottom: '1px solid var(--admin-border)', background: 'rgba(255,255,255,0.02)' }}>
-          {['Partner', 'Status', 'Members', 'Revenue', 'Share', ''].map((h, i) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 80px 40px', padding: '10px 18px', borderBottom: '1px solid var(--admin-border)', background: 'rgba(255,255,255,0.02)' }}>
+          {['Partner', 'Status', 'Members', ''].map((h, i) => (
             <span key={i} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--admin-text-faint)' }}>{h}</span>
           ))}
         </div>
@@ -501,7 +405,7 @@ function AdminPartnersPageInner() {
           <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--admin-text-muted)', fontSize: 13 }}>Loading...</div>
         ) : partners.length === 0 ? (
           <div style={{ padding: '52px 0', textAlign: 'center' }}>
-            <p style={{ color: '#E8A020', opacity: 0.3, marginBottom: 10 }}><Coins size={24} aria-hidden="true" /></p>
+            <p style={{ color: '#E8A020', opacity: 0.3, marginBottom: 10 }}><Building2 size={24} aria-hidden="true" /></p>
             <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>
               {tab === 'pending' ? 'No pending applications.' : 'No partners found.'}
             </p>
@@ -515,7 +419,7 @@ function AdminPartnersPageInner() {
 
             return (
               <div key={p.id} className="prow" style={{
-                display: 'grid', gridTemplateColumns: '1fr 90px 80px 90px 100px 40px',
+                display: 'grid', gridTemplateColumns: '1fr 90px 80px 40px',
                 padding: '14px 18px', alignItems: 'center',
                 borderBottom: isLast ? 'none' : '1px solid var(--admin-border)',
                 opacity: isLoading ? 0.5 : 1, transition: 'opacity 0.15s',
@@ -555,16 +459,6 @@ function AdminPartnersPageInner() {
                   )}
                 </div>
 
-                {/* Revenue */}
-                <p style={{ fontSize: 12, fontWeight: 600, color: p.total_revenue_ngn > 0 ? '#10B981' : 'var(--admin-text-faint)' }}>
-                  {p.total_revenue_ngn > 0 ? fmt(p.total_revenue_ngn) : '-'}
-                </p>
-
-                {/* Revenue share */}
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#E8A020', fontFamily: "'Metropolis', serif" }}>
-                  {p.revenue_share_percent}%
-                </p>
-
                 {/* Actions */}
                 <ActionMenu
                   partner={p}
@@ -572,7 +466,6 @@ function AdminPartnersPageInner() {
                     if (action === 'approve') { setApproveTarget(p); return; }
                     doAction(id, action);
                   }}
-                  onEditRevenue={setRevenueTarget}
                 />
               </div>
             );
@@ -600,18 +493,8 @@ function AdminPartnersPageInner() {
         <ApproveModal
           partner={approveTarget}
           loading={actionLoad === approveTarget.id}
-          onConfirm={share => doAction(approveTarget.id, 'approve', { revenue_share: share })}
+          onConfirm={() => doAction(approveTarget.id, 'approve')}
           onCancel={() => setApproveTarget(null)}
-        />
-      )}
-
-      {/* Revenue share modal */}
-      {revenueTarget && (
-        <RevenueModal
-          partner={revenueTarget}
-          loading={actionLoad === revenueTarget.id}
-          onConfirm={share => doAction(revenueTarget.id, 'update_revenue_share', { revenue_share: share })}
-          onCancel={() => setRevenueTarget(null)}
         />
       )}
 

@@ -1,5 +1,5 @@
 ﻿'use client';
-// app/partner/courses/page.tsx - full partner course manager with tier gating
+// app/partner/courses/page.tsx - full partner course manager
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { confirmAction } from '@/components/Modal';
@@ -16,12 +16,10 @@ const S: Record<string,React.CSSProperties> = {
 };
 
 interface Course { id:string; title:string; description:string|null; youtube_id:string; thumbnail_url:string|null; category:string|null; difficulty:string|null; is_published:boolean; }
-interface TierInfo { name:string; maxCourses:number; featureEnabled:boolean; courseCount:number; }
 
 export default function PartnerCoursesPage() {
   const apiBase = useApiBase();
   const [courses,  setCourses]  = useState<Course[]>([]);
-  const [tier,     setTier]     = useState<TierInfo|null>(null);
   const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving,   setSaving]   = useState(false);
@@ -30,18 +28,10 @@ export default function PartnerCoursesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [cRes, sRes] = await Promise.all([
-      fetch(`${apiBase}/api/partner/courses`),
-      fetch(`${apiBase}/api/partner/subscription`),
-    ]);
-    const [cData, sData] = await Promise.all([cRes.json(), sRes.json()]);
+    const cRes = await fetch(`${apiBase}/api/partner/courses`);
+    const cData = await cRes.json();
     if (!cRes.ok) { setError(cData.error||'Failed to load'); setLoading(false); return; }
     setCourses(cData.courses || []);
-    if (sRes.ok) {
-      const t = sData.plan?.tier;
-      const cfg = sData.allTiers?.[t];
-      setTier({ name: sData.plan?.name, maxCourses: cfg?.maxCourses ?? 0, featureEnabled: sData.plan?.features?.ownCourses ?? false, courseCount: sData.usage?.courses?.current ?? 0 });
-    }
     setLoading(false);
   }, [apiBase]);
 
@@ -71,35 +61,16 @@ export default function PartnerCoursesPage() {
 
   if (loading) return <div style={{ color:'#5F6672', fontSize:'13px' }}>Loading…</div>;
 
-  if (tier && !tier.featureEnabled) return (
-    <div style={{ maxWidth:'560px' }}>
-      <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Courses</h1>
-      <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'28px' }}>Create and publish your own course library.</p>
-      <div style={{ ...S.card, border:'1px solid rgba(232,160,32,0.2)', background:'rgba(232,160,32,0.04)', textAlign:'center', padding:'48px 32px' }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin:'0 auto 12px', display:'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <p style={{ fontSize:'16px', fontWeight:600, color:'#161616', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
-        <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'24px', lineHeight:1.6 }}>Create your own branded course library with YouTube videos, difficulty levels, and categories.</p>
-        <a href="/admin/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
-      </div>
-    </div>
-  );
-
-  const atLimit = tier ? (tier.maxCourses !== -1 && courses.length >= tier.maxCourses) : false;
-  const limitStr = tier?.maxCourses === -1 ? `${courses.length} courses` : `${courses.length} of ${tier?.maxCourses}`;
-
   return (
     <div style={{ maxWidth:'720px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'24px' }}>
         <div>
           <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Courses</h1>
           <p style={{ fontSize:'13px', color:'#5F6672' }}>
-            {limitStr} used{tier?.maxCourses !== -1 && <span style={{ color: atLimit?'#EF4444':'rgba(22,22,22,0.25)' }}>, {tier?.name} plan</span>}
+            {courses.length} {courses.length === 1 ? 'course' : 'courses'}
           </p>
         </div>
-        {!atLimit && !showForm
-          ? <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Add course</button>
-          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(22,22,22,0.05)', color:'#5F6672', border:'1px solid #E6E3DD', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for more</a>
-        }
+        {!showForm && <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Add course</button>}
       </div>
 
       {error && <p style={{ color:'#EF4444', fontSize:'13px', marginBottom:'12px' }}>{error}</p>}

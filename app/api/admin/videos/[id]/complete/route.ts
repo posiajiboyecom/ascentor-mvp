@@ -7,12 +7,12 @@ import { NextResponse } from 'next/server';
 import { tasks } from '@trigger.dev/sdk/v3';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { headObject } from '@/lib/r2';
-import { requireAdmin } from '@/lib/video/requireAdmin';
+import { guardApi } from '@/lib/admin/api-guard';
 import type { transcodeVideo } from '@/src/trigger/transcode-video';
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const _g = await guardApi('pathways', 'edit', req);
+  if ('error' in _g) return _g.res;
   const { id } = await params;
 
   const { data: video } = await supabaseAdmin

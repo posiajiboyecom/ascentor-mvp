@@ -147,7 +147,7 @@ export default function DemoGatePage() {
               <div className="dg-step-num">3</div>
               <p className="dg-step-text">
                 Once approved, you receive <strong>full demo access</strong> and can log in
-                to explore the platform including NGN pricing.
+                to explore the platform.
               </p>
             </div>
           </div>
@@ -166,11 +166,7 @@ export default function DemoGatePage() {
 
           <p className="dg-secondary">
             Already approved?{' '}
-            <a href="/login?redirect=/pricing">Log in to view NGN pricing</a>
-            {' '}·{' '}
-            <a href="https://joinascentor.com/pricing" target="_blank" rel="noopener noreferrer">
-              Main pricing page
-            </a>
+            <a href="/login">Log in</a>
           </p>
         </div>
 

@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { presignPut, VIDEO_KEYS } from '@/lib/r2';
-import { requireAdmin } from '@/lib/video/requireAdmin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const MIME_TO_EXT: Record<string, string> = {
   'video/mp4': 'mp4',
@@ -22,9 +22,9 @@ const MIME_TO_EXT: Record<string, string> = {
 // A single R2 PUT accepts up to 5 GB.
 const MAX_BYTES = 5 * 1024 * 1024 * 1024;
 
-export async function GET() {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+export async function GET(req: NextRequest) {
+  const _g = await guardApi('pathways', 'view', req);
+  if ('error' in _g) return _g.res;
 
   const { data, error } = await supabaseAdmin
     .from('ascentor_videos')
@@ -37,8 +37,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+  const _g = await guardApi('pathways', 'edit', req);
+  if ('error' in _g) return _g.res;
 
   let body: { title?: string; contentType?: string; size?: number };
   try {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     status: 'uploading',
     source_key: sourceKey,
     size_bytes: size,
-    created_by: gate.userId,
+    created_by: _g.staff.userId,
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

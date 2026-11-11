@@ -72,8 +72,6 @@ export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/partner/courses': partner.courseUpdate,
   '/api/partner/events': partner.eventUpdate,
   '/api/partner/members': partner.memberAction,
-  '/api/partner/payment/verify': partner.paymentVerify,
-  '/api/partner/subscription': partner.subscriptionChange,
 
   // admin
   '/api/admin/agents': admin.agentTrigger,

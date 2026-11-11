@@ -1,5 +1,5 @@
 'use client';
-// app/partner/events/page.tsx - partner expert event scheduler with tier gating
+// app/partner/events/page.tsx - partner expert event scheduler
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { confirmAction } from '@/components/Modal';
@@ -12,7 +12,6 @@ const S: Record<string,React.CSSProperties> = {
 };
 
 interface Event { id:string; title:string; expert_name:string; expert_bio:string|null; scheduled_at:string; duration_minutes:number; max_attendees:number|null; meeting_url:string|null; topic:string|null; status:string; current_attendees:number; }
-interface TierInfo { name:string; maxPerMonth:number; featureEnabled:boolean; eventsThisMonth:number; canCreate:boolean; }
 
 const STATUS_STYLE: Record<string,{ bg:string; color:string }> = {
   draft:     { bg:'rgba(22,22,22,0.06)',  color:'#5F6672' },
@@ -28,7 +27,6 @@ function formatDate(iso: string) {
 export default function PartnerEventsPage() {
   const apiBase = useApiBase();
   const [events,   setEvents]   = useState<Event[]>([]);
-  const [tier,     setTier]     = useState<TierInfo|null>(null);
   const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving,   setSaving]   = useState(false);
@@ -41,20 +39,10 @@ export default function PartnerEventsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [eRes, sRes] = await Promise.all([
-      fetch(`${apiBase}/api/partner/events?view=${view}`),
-      fetch(`${apiBase}/api/partner/subscription`),
-    ]);
-    const [eData, sData] = await Promise.all([eRes.json(), sRes.json()]);
+    const eRes = await fetch(`${apiBase}/api/partner/events?view=${view}`);
+    const eData = await eRes.json();
     if (!eRes.ok) { setError(eData.error||'Failed to load'); setLoading(false); return; }
     setEvents(eData.events || []);
-    if (eRes.ok) setTier({
-      name:           eData.tier?.name        ?? '',
-      maxPerMonth:    eData.tier?.maxEventsPerMonth ?? 0,
-      featureEnabled: eData.tier?.featureEnabled ?? false,
-      eventsThisMonth: eData.tier?.eventsThisMonth ?? 0,
-      canCreate:      eData.tier?.canCreate   ?? false,
-    });
     setLoading(false);
   }, [view, apiBase]);
 
@@ -90,38 +78,14 @@ export default function PartnerEventsPage() {
 
   if (loading) return <div style={{ color:'#5F6672', fontSize:'13px' }}>Loading…</div>;
 
-  // Locked state
-  if (tier && !tier.featureEnabled) return (
-    <div style={{ maxWidth:'560px' }}>
-      <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Expert Events</h1>
-      <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'28px' }}>Schedule live sessions, masterclasses, and Q&amp;As for your members.</p>
-      <div style={{ ...S.card, border:'1px solid rgba(232,160,32,0.2)', background:'rgba(232,160,32,0.04)', textAlign:'center', padding:'48px 32px' }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin:'0 auto 12px', display:'block' }}>
-          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        <p style={{ fontSize:'16px', fontWeight:600, color:'#161616', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
-        <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'24px', lineHeight:1.6 }}>
-          Schedule your own live sessions and masterclasses. Growth partners get 10 events per month. Pro partners get unlimited.
-        </p>
-        <a href="/admin/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
-      </div>
-    </div>
-  );
-
-  const atLimit = tier ? (tier.maxPerMonth !== -1 && tier.eventsThisMonth >= tier.maxPerMonth) : false;
-  const monthStr = tier?.maxPerMonth === -1 ? 'Unlimited' : `${tier?.eventsThisMonth} of ${tier?.maxPerMonth} this month`;
-
   return (
     <div style={{ maxWidth:'720px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'24px' }}>
         <div>
           <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Expert Events</h1>
-          <p style={{ fontSize:'13px', color: atLimit?'#EF4444':'rgba(22,22,22,0.4)' }}>{monthStr}</p>
+          <p style={{ fontSize:'13px', color:'rgba(22,22,22,0.4)' }}>Live sessions, masterclasses and Q&amp;As for your members.</p>
         </div>
-        {!atLimit && !showForm
-          ? <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Schedule event</button>
-          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(22,22,22,0.05)', color:'#5F6672', border:'1px solid #E6E3DD', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for unlimited</a>
-        }
+        {!showForm && <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Schedule event</button>}
       </div>
 
       {error && <p style={{ color:'#EF4444', fontSize:'13px', marginBottom:'12px' }}>{error}</p>}

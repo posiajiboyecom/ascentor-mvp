@@ -11,7 +11,7 @@
 //     not flat columns like accent_color / surface_color that don't exist).
 //
 // NOTE: Brand styling (logo, colours, fonts) should go through /api/partner/brand.
-//       This route handles top-level partner metadata: name, subdomain, plan_overrides.
+//       This route handles top-level partner metadata (name).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -37,7 +37,7 @@ export async function GET() {
   // ── FIX: query partners table, not the dead tenants table ──
   const { data: partner, error } = await supabaseService
     .from('partners')
-    .select('id, name, slug, subdomain, custom_domain, status, revenue_share_percent, brand, features, plan_overrides, ai_config, created_at, updated_at, onboarded_at')
+    .select('id, name, slug, subdomain, custom_domain, status, brand, features, ai_config, created_at, updated_at, onboarded_at')
     .eq('owner_id', user.id)
     .single();
 
@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest) {
   // Brand styling → /api/partner/brand
   // AI persona    → /api/partner/settings (ai_persona_prompt)
   // Domain        → /api/partner/domain
-  const ALLOWED_FIELDS = ['name', 'plan_overrides'] as const;
+  const ALLOWED_FIELDS = ['name'] as const;
 
   const updates: Record<string, unknown> = {};
   for (const field of ALLOWED_FIELDS) {

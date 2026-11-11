@@ -22,7 +22,7 @@ export default async function PartnerOverviewPage() {
   // FIX: was querying dead `tenants` table with flat columns. Migrated to `partners`.
   const { data: tenant } = await supabase
     .from('partners')
-    .select('id, name, subdomain, brand, ai_config, plan_overrides, status')
+    .select('id, name, subdomain, brand, ai_config, status')
     .eq('owner_id', user.id)
     .single();
 
@@ -30,7 +30,7 @@ export default async function PartnerOverviewPage() {
   const aiConfig = (tenant as any)?.ai_config || {};
 
   // Fetch basic stats using partner_members (not tenant_id which belongs to old schema)
-  const stats = { users: 0, sessions: 0, activeSubscriptions: 0 };
+  const stats = { users: 0, sessions: 0 };
 
   if (tenant) {
     const [usersRes, sessionsRes] = await Promise.all([
@@ -182,7 +182,7 @@ export default async function PartnerOverviewPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '12px',
           marginBottom: '28px',
         }}
@@ -190,7 +190,6 @@ export default async function PartnerOverviewPage() {
         {[
           { label: 'Total users', value: stats.users },
           { label: 'Coaching sessions', value: stats.sessions },
-          { label: 'Active plans', value: stats.activeSubscriptions },
         ].map(({ label, value }) => (
           <div
             key={label}

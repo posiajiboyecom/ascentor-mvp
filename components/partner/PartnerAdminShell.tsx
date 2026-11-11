@@ -25,7 +25,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  ListChecks, Palette, Bot, Users, BookOpen, CalendarDays, Tag, Coins, BarChart3, CreditCard, Settings, Menu, X,
+  ListChecks, Palette, Bot, Users, BookOpen, CalendarDays, BarChart3, Settings, Menu, X,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -37,10 +37,7 @@ function getNavItems(base: string): { href: string; label: string; icon: LucideI
     { href: `${base}/members`,      label: 'Members',      icon: Users, desc: 'Invite & manage'        },
     { href: `${base}/courses`,      label: 'Courses',      icon: BookOpen, desc: 'Your course library'    },
     { href: `${base}/events`,       label: 'Events',       icon: CalendarDays, desc: 'Expert sessions'        },
-    { href: `${base}/pricing`,      label: 'Pricing',      icon: Tag, desc: 'Member plan prices'     },
-    { href: `${base}/revenue`,      label: 'Revenue',      icon: Coins, desc: 'Earnings & splits'      },
     { href: `${base}/analytics`,    label: 'Analytics',    icon: BarChart3, desc: 'Engagement data'        },
-    { href: `${base}/subscription`, label: 'Subscription', icon: CreditCard, desc: 'Your Ascentor plan'     },
     { href: `${base}/settings`,     label: 'Settings',     icon: Settings, desc: 'Domain & config'        },
   ];
 }
@@ -48,12 +45,10 @@ function getNavItems(base: string): { href: string; label: string; icon: LucideI
 // ── Shared nav list - used by both desktop sidebar and mobile drawer ──
 function NavList({
   pathname,
-  revenueSharePercent,
   onNavClick,
   basePath,
 }: {
   pathname: string;
-  revenueSharePercent: number;
   onNavClick?: () => void;
   basePath: string;
 }) {
@@ -95,28 +90,6 @@ function NavList({
         );
       })}
 
-      {/* Revenue share badge */}
-      <div style={{
-        marginTop: 'auto', padding: '12px 12px',
-        borderRadius: 10, border: '1px solid var(--border)',
-        background: 'var(--bg-card)',
-      }}>
-        <p style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: 4,
-        }}>
-          Your revenue share
-        </p>
-        <p style={{
-          fontSize: 22, fontWeight: 700, color: 'var(--accent)',
-          fontFamily: 'var(--font-heading)',
-        }}>
-          {revenueSharePercent}%
-        </p>
-        <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>
-          of every member payment
-        </p>
-      </div>
     </>
   );
 }
@@ -237,7 +210,6 @@ export default function PartnerAdminShell({
         >
           <NavList
             pathname={pathname}
-            revenueSharePercent={partner.revenue_share_percent}
             basePath={basePath}
           />
         </aside>
@@ -270,7 +242,6 @@ export default function PartnerAdminShell({
             >
               <NavList
                 pathname={pathname}
-                revenueSharePercent={partner.revenue_share_percent}
                 onNavClick={() => setMobileOpen(false)}
                 basePath={basePath}
               />

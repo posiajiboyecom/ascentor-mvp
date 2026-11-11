@@ -6,14 +6,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { requireAdmin } from '@/lib/video/requireAdmin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const TABLES = { rx_lesson: 'rx_lessons' } as const;
 
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin();
-  if (gate instanceof NextResponse) return gate;
+  const _g = await guardApi('pathways', 'edit', req);
+  if ('error' in _g) return _g.res;
 
   const body = (await req.json().catch(() => ({}))) as { kind?: string; targetId?: string; videoId?: string | null };
   const table = TABLES[body.kind as keyof typeof TABLES];

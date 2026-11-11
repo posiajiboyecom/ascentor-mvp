@@ -24,10 +24,8 @@ interface OverviewStats {
   totalCompletions: number;
   completionRate:  number;
   totalSessions:   number;
-  totalRevenue:    number;
 }
 
-interface RevenueTrendItem { month: string; amount: number; }
 interface MemberGrowthItem { week: string;  count:  number; }
 interface CourseStatItem {
   id:          string;
@@ -39,7 +37,6 @@ interface CourseStatItem {
 
 interface AnalyticsData {
   overview:     OverviewStats;
-  revenueTrend: RevenueTrendItem[];
   memberGrowth: MemberGrowthItem[];
   courseStats:  CourseStatItem[];
 }
@@ -177,12 +174,10 @@ export default function PartnerAnalyticsPage() {
     );
   }
 
-  const { overview, revenueTrend, memberGrowth, courseStats } = data;
+  const { overview, memberGrowth, courseStats } = data;
   const activePct = overview.totalMembers > 0
     ? Math.round((overview.activeMembers / overview.totalMembers) * 100)
     : 0;
-
-  const maxRevenue = Math.max(...revenueTrend.map(r => r.amount), 1);
 
   return (
     <div style={{ maxWidth: '820px' }}>
@@ -280,34 +275,6 @@ export default function PartnerAnalyticsPage() {
           </div>
         </>
       )}
-
-      {/* ── Row 4: Revenue trend ── */}
-      <p style={C.sectionTitle}>Revenue trend, your share (last 6 months)</p>
-      <div style={C.card}>
-        {revenueTrend.every(r => r.amount === 0) ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: '#5F6672', fontSize: '13px' }}>
-            No revenue recorded yet. Revenue will appear here once members start subscribing.
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div>
-                <div style={C.label}>Total (6 months)</div>
-                <div style={{ fontSize: '22px', fontWeight: 500, color: '#10B981' }}>
-                  ₦{overview.totalRevenue.toLocaleString()}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={C.label}>Best month</div>
-                <div style={{ fontSize: '22px', fontWeight: 500, color: '#161616' }}>
-                  ₦{Math.max(...revenueTrend.map(r => r.amount)).toLocaleString()}
-                </div>
-              </div>
-            </div>
-            <BarChart data={revenueTrend} valueKey="amount" labelKey="month" color="#10B981" maxHeight={80} />
-          </>
-        )}
-      </div>
 
       {/* ── Health score ── */}
       <p style={C.sectionTitle}>Platform health</p>

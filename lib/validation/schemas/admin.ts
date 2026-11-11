@@ -89,9 +89,7 @@ export const marketingCms = z.discriminatedUnion('action', [
 // ── Partners ──────────────────────────────────────────────────────────────────
 export const partnerAdminAction = z.strictObject({
   partnerId: uuid,
-  action: z.enum(['approve', 'suspend', 'reject', 'reinstate', 'update_revenue_share']),
-  revenue_share: z.number().min(0).max(100).optional(),
-  plan_tier: z.enum(['starter', 'growth', 'pro']).optional(),
+  action: z.enum(['approve', 'suspend', 'reject', 'reinstate']),
 });
 
 // ── Payments ──────────────────────────────────────────────────────────────────

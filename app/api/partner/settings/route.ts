@@ -1,7 +1,7 @@
 // app/api/partner/settings/route.ts
 //
-// PATCH /api/partner/settings - handles subdomain, custom_domain,
-//   plan_overrides, and ai_persona_prompt changes on the partners table.
+// PATCH /api/partner/settings - handles subdomain, custom_domain
+//   and ai_persona_prompt changes on the partners table.
 //   Calls clearPartnerCache when subdomain changes.
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest) {
 
     const parsed = await parseJson(req, partnerSchemas.settingsPatch);
     if (!parsed.ok) return parsed.response;
-    const { partnerId, subdomain, custom_domain, plan_overrides, ai_persona_prompt } = parsed.data;
+    const { partnerId, subdomain, custom_domain, ai_persona_prompt } = parsed.data;
 
     // Look up partner by owner
     const { data: partner } = await supabase
@@ -66,16 +66,6 @@ export async function PATCH(req: NextRequest) {
 
     if (custom_domain !== undefined) {
       updates.custom_domain = custom_domain || null;
-    }
-
-    if (plan_overrides !== undefined) {
-      // Merge with existing plan_overrides rather than replacing
-      const { data: current } = await supabase
-        .from('partners')
-        .select('plan_overrides')
-        .eq('id', partner.id)
-        .single();
-      updates.plan_overrides = { ...(current?.plan_overrides || {}), ...plan_overrides };
     }
 
     if (ai_persona_prompt !== undefined) {

@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
-import { canAddEvent, getTierConfig, hasFeature } from '@/lib/partnerTier';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
@@ -25,7 +24,7 @@ async function getPartner(req: NextRequest) {
 
   const { data: partner } = await supabase
     .from('partners')
-    .select('id, owner_id, status, plan_tier')
+    .select('id, owner_id, status')
     .eq('owner_id', user.id)
     .single();
 
@@ -58,30 +57,8 @@ export async function GET(req: NextRequest) {
     const { data: events, error } = await query;
     if (error) throw error;
 
-    // Count events created this calendar month (for limit display)
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-
-    const { count: thisMonthCount } = await supabase
-      .from('partner_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('partner_id', partner.id)
-      .gte('created_at', monthStart.toISOString());
-
-    const cfg = getTierConfig(partner.plan_tier);
-
-    return NextResponse.json({
-      events: events || [],
-      tier: {
-        name:              cfg.name,
-        maxEventsPerMonth: cfg.maxEventsPerMonth,
-        eventsThisMonth:   thisMonthCount ?? 0,
-        canCreate:         hasFeature(partner.plan_tier, 'ownEvents') &&
-                           canAddEvent(partner.plan_tier, thisMonthCount ?? 0),
-        featureEnabled:    hasFeature(partner.plan_tier, 'ownEvents'),
-      },
-    });
+    // Partners have no plan or limits: every partner can schedule events.
+    return NextResponse.json({ events: events || [] });
   } catch (err) {
     console.error('[Partner Events GET]', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -94,37 +71,6 @@ export async function POST(req: NextRequest) {
     const result = await getPartner(req);
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
     const { partner } = result;
-
-    // ── Tier gate ─────────────────────────────────────────
-    if (!hasFeature(partner.plan_tier, 'ownEvents')) {
-      return NextResponse.json({
-        error: 'Scheduling your own expert events requires the Growth plan or above.',
-        upgrade_required: true,
-        current_tier: partner.plan_tier,
-      }, { status: 403 });
-    }
-
-    // Count events this calendar month
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-
-    const { count: thisMonthCount } = await supabase
-      .from('partner_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('partner_id', partner.id)
-      .gte('created_at', monthStart.toISOString());
-
-    if (!canAddEvent(partner.plan_tier, thisMonthCount ?? 0)) {
-      const cfg = getTierConfig(partner.plan_tier);
-      return NextResponse.json({
-        error: `You have reached the ${cfg.maxEventsPerMonth} events/month limit on the ${cfg.name} plan.`,
-        upgrade_required: true,
-        current_tier: partner.plan_tier,
-        events_this_month: thisMonthCount,
-        max_per_month: cfg.maxEventsPerMonth,
-      }, { status: 403 });
-    }
 
     const parsed = await parseJson(req, partnerSchemas.eventCreate);
     if (!parsed.ok) return parsed.response;

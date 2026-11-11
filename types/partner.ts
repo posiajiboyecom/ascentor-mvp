@@ -48,20 +48,8 @@ export interface PartnerFeatures {
   experts:    boolean;
   courses:    boolean;
   referrals:  boolean;   // FIX BUG-05: was missing; apply/route.ts inserts this field
-  own_courses: boolean;  // partner can create their own courses (Growth+)
-  own_events:  boolean;  // partner can schedule their own expert events (Growth+)
-}
-
-// ── Plan overrides ────────────────────────────────────────
-export interface PartnerPlanOverrides {
-  explorer_name?:      string;
-  explorer_price_usd?: number;
-  builder_name?:       string;
-  builder_price_usd?:  number;
-  climber_name?:       string;
-  climber_price_usd?:  number;
-  trial_days?:         number;
-  [key: string]:       string | number | undefined;
+  own_courses: boolean;  // partner can create their own courses
+  own_events:  boolean;  // partner can schedule their own expert events
 }
 
 // ── Partner ───────────────────────────────────────────────
@@ -73,13 +61,8 @@ export interface Partner {
   custom_domain:            string | null;
   status:                   'pending' | 'active' | 'suspended' | 'rejected';
   owner_id:                 string;
-  revenue_share_percent:    number;
-  paystack_subaccount_code: string | null;
-  paystack_secret_key?:     string | null;   // present on GET brand response as boolean flag only
   brand:                    PartnerBrand;
   features:                 PartnerFeatures;
-  plan_overrides:           PartnerPlanOverrides | null;
-  plan_tier?:               'starter' | 'growth' | 'pro' | null;
   created_at:               string;
   updated_at:               string;
   onboarded_at:             string | null;

@@ -62,7 +62,6 @@ export async function GET(req: NextRequest) {
       enrollmentsRes,
       completionsRes,
       sessionsRes,
-      revenueRes,
       recentMembersRes,
       courseStatsRes,
     ] = await Promise.all([
@@ -86,12 +85,6 @@ export async function GET(req: NextRequest) {
             .gte('created_at', ninetyDaysAgo)
         : Promise.resolve({ data: [], error: null }),
 
-      supabase.from('partner_transactions')
-        .select('partner_share_ngn, paid_at')
-        .eq('partner_id', partnerId)
-        .gte('paid_at', new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString())
-        .order('paid_at', { ascending: true }),
-
       supabase.from('partner_members')
         .select('joined_at, created_at')
         .eq('partner_id', partnerId)
@@ -107,7 +100,6 @@ export async function GET(req: NextRequest) {
     const enrollments  = enrollmentsRes.data || [];
     const completions  = completionsRes.data || [];
     const sessions     = sessionsRes.data || [];
-    const transactions = revenueRes.data || [];
     const recentMembers = recentMembersRes.data || [];
     const courses      = courseStatsRes.data || [];
 
@@ -123,22 +115,6 @@ export async function GET(req: NextRequest) {
       ? Math.round((totalCompletions / totalEnrollments) * 100)
       : 0;
     const totalSessions = sessions.length;
-
-    // ── Revenue trend (last 6 months) ─────────────────────
-    const revenueTrend: { month: string; amount: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthLabel = d.toLocaleDateString('en-NG', { month: 'short', year: '2-digit' });
-      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-      const monthEnd   = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      const amount = transactions
-        .filter(t => {
-          const paid = new Date(t.paid_at);
-          return paid >= monthStart && paid <= monthEnd;
-        })
-        .reduce((sum, t) => sum + Number(t.partner_share_ngn), 0);
-      revenueTrend.push({ month: monthLabel, amount });
-    }
 
     // ── Per-course stats ───────────────────────────────────
     const courseEnrollmentMap: Record<string, number> = {};
@@ -186,9 +162,7 @@ export async function GET(req: NextRequest) {
         totalCompletions,
         completionRate,
         totalSessions,
-        totalRevenue: transactions.reduce((s, t) => s + Number(t.partner_share_ngn), 0),
       },
-      revenueTrend,
       courseStats,
       memberGrowth,
     });
