@@ -1,4 +1,5 @@
 import 'server-only';
+import { alertCirclesWaiting } from '@/lib/adminAlerts';
 // lib/rx/formation.ts
 // Two hourly jobs (run from /api/cron/hourly, which Trigger.dev calls every hour; the daily cron runs them too):
 //
@@ -50,14 +51,8 @@ export async function formCircles(opts: { reportWaiting?: boolean } = {}): Promi
     });
   }
   if (opts.reportWaiting && r.waiting.length) {
-    const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('role', 'admin');
-    const adminIds = ((admins ?? []) as { id: string }[]).map((a) => a.id);
-    await rxNotify(adminIds, {
-      kind: 'circle_new_member', entityId: r.waiting[0], url: '/admin/c/circles',
-      title: `${r.waiting.length} ${r.waiting.length === 1 ? 'Circle has' : 'Circles have'} been forming for over 48 hours`,
-      body: 'They have fewer than 3 members and no matching Circle with room (usually a different language). New members still fill them first; you can move members or invite more.',
-      lines: r.waiting.map(title),
-    });
+    // A team matter, so it goes to the team mailbox, not into admins' member notifications.
+    await alertCirclesWaiting(r.waiting.map(title));
   }
   return { merged: r.merged.length, started: r.started.length, waiting: r.waiting.length };
 }

@@ -247,6 +247,9 @@ select.rx-in { appearance: auto; }
 
 /* ── announcements ────────────────────────────────────────────────────────── */
 .rx-annbar { display: flex; gap: 12px; align-items: flex-start; padding: 14px 8px 8px 16px; border-radius: var(--rx-r); background: color-mix(in srgb, var(--rx-rust) 7%, var(--rx-card)); border: 1px solid var(--rx-border); box-shadow: var(--rx-shadow); }
+/* On phones the bell sits well in from the right edge, so a panel anchored to it ran off the left of the screen.
+   Below 520px it spans the screen instead (8px each side), just under the header. */
+@media (max-width: 519.98px) { .rx .rx-drop { position: fixed; left: 8px; right: 8px; width: auto; top: calc(64px + env(safe-area-inset-top)); } }
 .rx-drop { position: absolute; top: 56px; right: 8px; width: min(380px, calc(100vw - 16px)); z-index: 130; background: var(--rx-card); border: 1px solid var(--rx-border); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.16); padding: 12px; display: flex; flex-direction: column; gap: 2px; }
 
 /* ── onboarding: welcome, stage, circle ───────────────────────────────────── */

@@ -45,3 +45,16 @@ export async function alertEventRegistration(info: { eventTitle: string; name: s
       goldButton('Open public events', `${BASE}/admin/c/events`),
   );
 }
+
+/** Daily: Circles still forming after 48 hours with nowhere to merge (lib/rx/formation.ts). Sent to the team, not to members' bells. */
+export async function alertCirclesWaiting(names: string[]) {
+  const n = names.length;
+  await send(
+    `${n} ${n === 1 ? 'Circle is' : 'Circles are'} still forming after 48 hours`,
+    'Admin Notification',
+    `${n} ${n === 1 ? 'Circle needs' : 'Circles need'} a hand.`,
+    p('These have fewer than 3 members and no matching Circle with room, usually because of a different language. New members still fill them first. You can move members or invite more.') +
+      summaryBox(names.slice(0, 20).map((name, i) => summaryRow(String(i + 1), esc(name))).join('')) +
+      goldButton('Open Circles', `${BASE}/admin/c/circles`),
+  );
+}

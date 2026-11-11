@@ -383,7 +383,12 @@
 }
 .sh-palette-input { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px; border-bottom: 1px solid var(--sh-border); }
 .sh-palette-input > svg { width: 18px; height: 18px; color: var(--sh-muted); flex-shrink: 0; }
-.sh-palette-input input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--sh-fg); font: inherit; font-size: 15px; }
+.sh-palette-input input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--sh-fg); font: inherit; font-size: 16px; }
+/* The global input focus ring (and .rx *:focus-visible) drew a box around just the text field, cutting through the
+   divider. The whole search bar shows focus instead: an accent line along its bottom edge. */
+.sh-palette .sh-palette-input input:focus,
+.sh-palette .sh-palette-input input:focus-visible { outline: none !important; border: 0 !important; box-shadow: none; }
+.sh-palette-input:focus-within { box-shadow: inset 0 -2px 0 var(--sh-accent); }
 .sh-palette-list { overflow-y: auto; padding: 6px; }
 .sh-palette-group { margin: 10px 10px 4px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--sh-faint); }
 .sh-palette-item {
