@@ -21,7 +21,7 @@ export interface Convo { tab: TabKey; id: string; title: string; kind: string; l
 export interface ListRow { id: string; cells: string[] }
 export interface TabList { rows: ListRow[]; note?: string }
 
-const PLAN_LABEL: Record<string, string> = { explorer: 'Seeker', builder: 'Builder', leader: 'Leader', climber: 'Climber' };
+const PLAN_LABEL: Record<string, string> = { explorer: 'Seeker', builder: 'Builder', leader: 'Leader' };
 
 // ── small helpers ───────────────────────────────────────────────────────────
 
