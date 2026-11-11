@@ -64,37 +64,6 @@ function withNonce(res: NextResponse, nonce: string): NextResponse {
   return res;
 }
 
-// ── CHECKOUT / FREE MODE SWITCH ───────────────────────────────
-// Source of truth: `platform_settings` table in Supabase.
-//   Row: { key: 'checkout_enabled', value: 'true' | 'false' }
-// Toggle from Admin Overview → flips the DB row instantly.
-// No redeploy needed.
-//
-// The env var FREE_MODE=true acts as a hard override (useful for
-// local dev or emergencies) and takes precedence over the DB value.
-// ──────────────────────────────────────────────────────────────
-
-async function isCheckoutEnabled(supabase: ReturnType<typeof createServerClient>): Promise<boolean> {
-  // Hard override via env var
-  if (process.env.FREE_MODE === 'true') return false;
-
-  try {
-    const { data } = await supabase
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'checkout_enabled')
-      .single();
-    // If row missing, default to enabled (paid mode)
-    return data ? data.value === 'true' : true;
-  } catch {
-    // If table doesn't exist yet, default to enabled
-    return true;
-  }
-}
-
-// Routes that require a paid subscription
-const PAID_ROUTES = ['/learn', '/courses'];
-
 // Page routes that require authentication
 const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
@@ -126,8 +95,6 @@ const PUBLIC_API_ROUTES = [
   '/api/pay/webhook',
   // Partner platform webhook - verified internally
   '/api/partner/webhook',
-  // Public promo code GET (used on checkout page before auth)
-  '/api/pay/promo',
   // Checkout pending - non-destructive marketing hook, called pre-auth
   '/api/checkout-pending',
   // Vercel Cron - authenticates itself with the CRON_SECRET bearer token
@@ -153,7 +120,6 @@ const PROTECTED_API_PREFIXES = [
   '/api/partner',    // 16 routes - all require auth except /webhook (exempted above)
   '/api/community',  // checkin, circle, read, voice-upload
   '/api/referral',
-  '/api/subscription',
   '/api/billing',    // billing v2 member API (each route also checks BILLING_V2 and the session)
   '/api/usage',
   '/api/push',
@@ -365,46 +331,8 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ── Subscription gate for paid pages ─────────────────────────────
-  if (user && PAID_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
-    const checkoutOn = await isCheckoutEnabled(supabase);
-    if (checkoutOn) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_plan, subscription_status, subscription_end')
-        .eq('id', user.id)
-        .single();
-
-      if (!checkAccess(profile)) {
-        const checkoutUrl = new URL('/checkout', request.url);
-        checkoutUrl.searchParams.set('reason', 'subscription_required');
-        checkoutUrl.searchParams.set('from', pathname);
-        return NextResponse.redirect(checkoutUrl);
-      }
-    }
-  }
-
+  // Paid features are gated inside the app by Billing v2 (lib/billing/access.ts), never here.
   return withNonce(response, nonce);
-}
-
-function checkAccess(profile: any): boolean {
-  if (!profile) return false;
-
-  const { subscription_status, subscription_end } = profile;
-
-  if (subscription_status === 'active' || subscription_status === 'trialing') {
-    if (subscription_end) {
-      return new Date(subscription_end) > new Date();
-    }
-    return true;
-  }
-
-  // Cancelled but still within billing period
-  if (subscription_status === 'cancelled' && subscription_end) {
-    return new Date(subscription_end) > new Date();
-  }
-
-  return false;
 }
 
 export const config = {
