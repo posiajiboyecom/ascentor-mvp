@@ -3,7 +3,7 @@
 // A lesson: watch or read, reflect, and turn it into this week's practice.
 
 import Link from 'next/link';
-import { useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, Play } from 'lucide-react';
 import { saveReflection, setLessonPractice } from '@/app/(app)/learn/lesson/actions';
@@ -27,11 +27,61 @@ export default function LessonView(p: LessonViewProps) {
   const toast = useToast();
   const [read, setRead] = useState(p.startRead || p.format === 'Reading');
   const [reflection, setReflection] = useState(p.reflection);
+  const [reflState, setReflState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [draft, setDraft] = useState<PlanData>(p.draft ?? EMPTY_PLAN);
   const [done, setDone] = useState(p.practiceSet);
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
   const video = p.hostedVideoUrl ? ({ provider: 'hls', url: p.hostedVideoUrl } as const) : parseVideo(p.videoUrl);
+
+  // ── Reflection autosave ───────────────────────────────────────────────────────────────────────────────────────
+  // Saves a moment after typing stops, and again on blur, when the tab is hidden or closed, and when leaving the
+  // page, so an answer is never lost to a missed blur. The latest text is also mirrored in sessionStorage: going
+  // Back restores this page from the router cache with the reflection it had when first loaded, and the mirror
+  // puts the member's newest answer back.
+  const draftKey = `rx-reflection:${p.id}`;
+  const latest = useRef(p.reflection);
+  const savedText = useRef(p.reflection);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flush = useCallback(() => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    const text = latest.current;
+    if (text === savedText.current) return;
+    savedText.current = text;
+    setReflState('saving');
+    void saveReflection(p.id, text).then((r) => {
+      if (r.ok) setReflState((st) => (st === 'saving' ? 'saved' : st));
+      else { savedText.current = '\u0000'; setReflState('error'); }
+    }).catch(() => { savedText.current = '\u0000'; setReflState('error'); });
+  }, [p.id]);
+
+  const onReflection = (text: string) => {
+    setReflection(text);
+    latest.current = text;
+    try { sessionStorage.setItem(draftKey, text); } catch { /* storage unavailable: autosave still runs */ }
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 800);
+  };
+
+  useEffect(() => {
+    let mirrored: string | null = null;
+    try { mirrored = sessionStorage.getItem(draftKey); } catch { /* ignore */ }
+    if (mirrored !== null && mirrored !== p.reflection) {
+      setReflection(mirrored);
+      latest.current = mirrored;
+      flush(); // make sure the server has it too
+    }
+    const onHide = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', flush);
+      flush(); // leaving the lesson inside the app
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.id]);
 
   // Sage can hand a drafted practice to this lesson.
   useEffect(() => {
@@ -82,7 +132,10 @@ export default function LessonView(p: LessonViewProps) {
         <div className="rx-card rx-stack-sm">
           <label htmlFor="refl" className="rx-h3">Which part of your day already happens without effort?</label>
           <textarea id="refl" className="rx-in" placeholder="A few words is enough" value={reflection} maxLength={2000}
-            onChange={(e) => setReflection(e.target.value)} onBlur={() => { void saveReflection(p.id, reflection); }} />
+            onChange={(e) => onReflection(e.target.value)} onBlur={flush} />
+          <p className="rx-sm" aria-live="polite" style={{ minHeight: 18, color: reflState === 'error' ? 'var(--rx-danger)' : undefined }}>
+            {reflState === 'saving' ? 'Saving…' : reflState === 'saved' ? 'Saved' : reflState === 'error' ? 'Couldn’t save. Check your connection; we’ll try again as you type.' : ''}
+          </p>
         </div>
       </div>
 
