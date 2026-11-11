@@ -234,6 +234,7 @@
   .sh-sidebar {
     position: fixed; top: 0; bottom: 0; left: 0;
     width: min(300px, 86vw);
+    padding-top: env(safe-area-inset-top);
     transform: translateX(-102%);
     box-shadow: none;
   }
@@ -257,6 +258,8 @@
   backdrop-filter: saturate(160%) blur(12px);
   -webkit-backdrop-filter: saturate(160%) blur(12px);
   border-bottom: 1px solid var(--sh-border);
+  /* Installed app on iPhone (viewport-fit=cover + black-translucent status bar): keep the header below the status bar. */
+  padding-top: env(safe-area-inset-top);
 }
 .sh-header-row { display: flex; align-items: center; gap: 10px; height: 60px; padding: 0 16px; }
 @media (min-width: 1024px) { .sh-header-row { padding: 0 24px; } }

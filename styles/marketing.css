@@ -63,6 +63,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  padding-top: env(safe-area-inset-top); /* below the iPhone status bar in the installed app */
   backdrop-filter: blur(12px);
 }
 

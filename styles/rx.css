@@ -210,7 +210,7 @@ select.rx-in { appearance: auto; }
 }
 
 /* ── onboarding frame ─────────────────────────────────────────────────────── */
-.rx-ob { min-height: 100dvh; background: var(--rx-bg); display: grid; grid-template-columns: minmax(0, 1fr); }
+.rx-ob { min-height: 100dvh; padding-top: env(safe-area-inset-top); background: var(--rx-bg); display: grid; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 1024px) { .rx-ob.with-side { grid-template-columns: minmax(0, 1fr) 480px; } }
 .rx-ob-main { display: flex; flex-direction: column; min-height: 100dvh; padding: 16px 16px 0; }
 @media (min-width: 1024px) { .rx-ob-main { padding: 28px 64px 0; } }
@@ -253,7 +253,7 @@ select.rx-in { appearance: auto; }
 @keyframes rx-draw { from { stroke-dashoffset: 420; } to { stroke-dashoffset: 0; } }
 .rx-welcome { min-height: 100dvh; display: flex; flex-direction: column; position: relative; }
 .rx-welcome-art { position: relative; height: 380px; overflow: hidden; background: linear-gradient(180deg, #FAF6EC, #FAFAF8); }
-.rx-welcome-logo { position: absolute; top: 18px; left: 16px; z-index: 2; height: 40px; width: auto; }
+.rx-welcome-logo { position: absolute; top: calc(18px + env(safe-area-inset-top)); left: 16px; z-index: 2; height: 40px; width: auto; }
 .rx-welcome-body { flex: 1; display: flex; flex-direction: column; padding: 16px 20px 28px; gap: 14px; }
 .rx-welcome-actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 @media (min-width: 1024px) {
@@ -349,7 +349,7 @@ a.rx-opt { text-decoration: none; }
 
 /* -- audio call ------------------------------------------------------------ */
 .rx-call { position: fixed; inset: 0; z-index: 9000; background: var(--rx-bg); display: flex; align-items: stretch; justify-content: center; overflow-y: auto; }
-.rx-call-panel { width: 100%; max-width: 720px; padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 20px; }
+.rx-call-panel { width: 100%; max-width: 720px; padding: calc(20px + env(safe-area-inset-top)) 16px 32px; display: flex; flex-direction: column; gap: 20px; }
 @media (min-width: 1024px) { .rx-call { background: rgba(20,20,20,.38); align-items: center; } .rx-call-panel { background: var(--rx-card); border-radius: 12px; padding: 28px; border: 1px solid var(--rx-border); max-height: 92vh; overflow-y: auto; } }
 .rx-call-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .rx-call-warn { color: var(--rx-gold); }

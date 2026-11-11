@@ -117,7 +117,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           background: rgba(250,250,248,0.98);
           backdrop-filter: blur(16px);
           box-shadow: -8px 0 32px rgba(0,0,0,0.08);
-          padding: 80px 1.5rem 2rem;
+          padding: calc(80px + env(safe-area-inset-top)) 1.5rem 2rem;
           display: flex;
           flex-direction: column;
           gap: 0;
@@ -225,6 +225,9 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           position: 'sticky',
           top: 0,
           zIndex: 50,
+          // Installed app on iPhone: the page runs under the status bar, so push the header below it.
+          // Zero in a normal browser tab.
+          paddingTop: 'env(safe-area-inset-top)',
           background: scrolled ? 'rgba(250,250,248,0.92)' : 'rgba(250,250,248,0.72)',
           backdropFilter: 'blur(14px)',
           WebkitBackdropFilter: 'blur(14px)',

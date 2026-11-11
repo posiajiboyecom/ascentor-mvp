@@ -79,6 +79,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // cover: the page runs edge to edge in the installed app; every top bar adds env(safe-area-inset-top) so it sits
+  // below the iPhone status bar (PublicHeader, styles/shell.css .sh-header, styles/signal.css .sg-top).
   viewportFit: 'cover',
   themeColor: '#FAFAF8',
 };
