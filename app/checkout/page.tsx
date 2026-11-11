@@ -54,9 +54,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     if (await getSubscription(me.userId)) redirect('/settings/billing');
     // Currency is decided here from where the member is: naira in Nigeria, US dollars everywhere else. No switch.
     const [cards, groupStatus, closed, currency] = await Promise.all([listCards(me.userId), getGroupStatus(me.userId), closedPlanIds(), visitorCurrency()]);
-    // Default tier from the onboarding stage: Seeking is Seeker, Building and Leading are Builder. Leaders never pick a Leader plan here.
-    const suggested: Tier = me.profile?.stage === 'Building' || me.profile?.stage === 'Leading' ? 'builder' : 'explorer';
-    const defaultTier: Tier = closed.includes(suggested) ? (PAID_TIERS.find((t) => !closed.includes(t)) ?? suggested) : suggested;
+    // The member picks their own plan; nothing is suggested from their stage. defaultTier is only a placeholder until they pick.
+    const defaultTier: Tier = PAID_TIERS.find((t) => !closed.includes(t)) ?? 'explorer';
     const v2 = PAID_TIERS.every((t) => closed.includes(t)) ? (
       <div className="rx">
         <div className="rx-card rx-stack-sm" style={{ maxWidth: 560, margin: '32px auto' }}>

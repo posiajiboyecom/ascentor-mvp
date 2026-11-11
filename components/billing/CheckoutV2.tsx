@@ -2,7 +2,7 @@
 
 // components/billing/CheckoutV2.tsx
 // Checkout v2 (BILLING_V2=on). Three steps:
-//   1 Plan     tier (Seeker or Builder, defaulted from the member's stage), monthly or yearly with the saving explained,
+//   1 Plan     tier (Seeker, Builder or Pinnacle, chosen by the member: nothing is pre-selected), monthly or yearly with the saving explained,
 //              solo or group (start a group, or use a group code or link), BOTH prices shown for a group.
 //   2 Card     saved cards and "Add a card" (a ₦50 or $1 check, refunded). A default card is needed to continue.
 //   3 Confirm  free for 7 days, first charge on day 8 with the exact date and amount, cancel before to pay nothing. Starts the trial.
@@ -69,6 +69,8 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
   const [choice, setChoice] = useState<Choice>({
     tier: defaultTier, cycle: 'monthly', groupMode: hasGroupPrice && (existingGroupCode || presetCode) ? 'join' : 'solo', code: existingGroupCode ?? presetCode ?? '',
   });
+  // The member chooses their own plan. Nothing is pre-selected; the rest of step 1 opens once they pick.
+  const [picked, setPicked] = useState(false);
   const [cards, setCards] = useState<CardView[]>(initialCards);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -83,7 +85,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
     if (q.get('card') === 'verify') {
       try {
         const saved = sessionStorage.getItem(STORE);
-        if (saved) setChoice((c) => ({ ...c, ...(JSON.parse(saved) as Partial<Choice>) }));
+        if (saved) { setChoice((c) => ({ ...c, ...(JSON.parse(saved) as Partial<Choice>) })); setPicked(true); }
       } catch { /* the member simply picks again */ }
       setStep(2);
     }
@@ -195,8 +197,8 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
             <legend className="rx-sl" style={{ marginBottom: 8 }}>1. Choose your plan</legend>
             <div className="bl-tiers bl-tiers-3" role="group" aria-label="Plan">
               {PAID_TIERS.map((t) => (
-                <button key={t} type="button" aria-pressed={choice.tier === t} className="bl-choice" disabled={closedTiers.includes(t)}
-                  style={closedTiers.includes(t) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => set({ tier: t })}>
+                <button key={t} type="button" aria-pressed={picked && choice.tier === t} className="bl-choice" disabled={closedTiers.includes(t)}
+                  style={closedTiers.includes(t) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => { set({ tier: t }); setPicked(true); }}>
                   <span className="t">{tierLabel(t)}{closedTiers.includes(t) ? ' · not open right now' : ''}</span>
                   <span className="p">{formatNaira(priceFor(t, 'solo', 'monthly'))} a month</span>
                   <span className="d">{TIER_INFO[t].blurb}</span>
@@ -204,8 +206,10 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
                 </button>
               ))}
             </div>
-            <p className="rx-sm">Your stage sets the plan we suggest. You can choose any plan.</p>
+            <p className="rx-sm">Choose the plan that fits you. You can change it later in Settings, Billing.</p>
           </fieldset>
+
+          {picked && <>
 
           <fieldset className="rx-stack-sm" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
             <legend className="rx-sl" style={{ marginBottom: 8 }}>2. Monthly or yearly</legend>
@@ -252,8 +256,10 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
             )}
           </fieldset>}
 
+          </>}
+
           {error && <div className="bl-msg bad" role="alert">{error}</div>}
-          <div><button type="button" className="rx-btn primary block bl-focus" disabled={busy} onClick={toCard}>{busy ? 'One moment...' : 'Continue to your card'}</button></div>
+          <div><button type="button" className="rx-btn primary block bl-focus" disabled={busy || !picked} onClick={toCard}>{busy ? 'One moment...' : picked ? 'Continue to your card' : 'Choose a plan to continue'}</button></div>
         </div>
       )}
 
