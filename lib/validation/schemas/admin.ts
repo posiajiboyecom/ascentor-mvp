@@ -116,7 +116,7 @@ export const userAdminAction = z.discriminatedUnion('action', [
   z.strictObject({ targetUserId: uuid, action: z.literal('change_role'), value: z.enum(['member', 'moderator', 'admin']) }),
   z.strictObject({ targetUserId: uuid, action: z.literal('ban'), value: z.string().trim().max(500).optional() }),
   z.strictObject({ targetUserId: uuid, action: z.literal('unban') }),
-  z.strictObject({ targetUserId: uuid, action: z.literal('change_plan'), value: z.enum(['free', 'explorer', 'builder', 'leader']) }),
+  z.strictObject({ targetUserId: uuid, action: z.literal('change_plan'), value: z.enum(['free', 'explorer', 'builder', 'pinnacle', 'leader']) }),
   z.strictObject({ targetUserId: uuid, action: z.literal('delete') }),
 ]);
 

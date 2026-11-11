@@ -1,6 +1,6 @@
 // lib/plans-config.ts
 // Plan prices for screens that show the two plans side by side (admin Plans, analytics, marketing pages).
-// Ascentor sells exactly two plans, Seeker (stored as 'explorer') and Builder, through Billing v2.
+// Ascentor sells exactly three plans, Seeker (stored as 'explorer'), Builder and Pinnacle, through Billing v2.
 // The prices are NOT decided here: they come from lib/billing/catalog.ts (solo prices), the one place prices live,
 // so nothing can show a price that checkout does not charge.
 
@@ -25,7 +25,7 @@ function fromCatalog(id: Tier, name: string): PlanPricing {
 
 /** Seeker, then Builder (solo prices; group prices live in the catalog and the checkout). */
 export function getPlanPricing(): PlanPricing[] {
-  return [fromCatalog('explorer', 'Seeker'), fromCatalog('builder', 'Builder')];
+  return [fromCatalog('explorer', 'Seeker'), fromCatalog('builder', 'Builder'), fromCatalog('pinnacle', 'Pinnacle')];
 }
 
 export function getPlanPricingMap(): Record<string, PlanPricing> {

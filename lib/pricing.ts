@@ -1,6 +1,6 @@
 // lib/pricing.ts
 // Pure plan-pricing types and helpers. NO prices live here: they come from lib/billing/catalog.ts via
-// lib/plans-config.ts. Ascentor sells two plans, Seeker (stored as 'explorer') and Builder.
+// lib/plans-config.ts. Ascentor sells three plans, Seeker (stored as 'explorer'), Builder and Pinnacle.
 
 export interface PlanPricing {
   id:             string   // profiles.subscription_plan value

@@ -1,6 +1,6 @@
 // ============================================================
 // Session limits per plan.
-// Ascentor has two paid plans (Billing v2): Seeker (stored as 'explorer') and Builder. Everything else is free.
+// Ascentor has three paid plans (Billing v2): Seeker (stored as 'explorer'), Builder and Pinnacle. Everything else is free.
 // Plan values are normalised by lib/planTier.ts, so retired values (climber, premium, …) get the free limits and
 // invited Leaders get Builder limits.
 // ============================================================
@@ -48,10 +48,20 @@ const BUILDER_LIMITS: PlanLimits = {
   courseAccess: 'full',
 };
 
+const PINNACLE_LIMITS: PlanLimits = {
+  coachingSessions: -1,       // unlimited
+  sessionLength: -1,          // unlimited Sage
+  expertSessions: 4,          // 4 expert sessions/month, with held seats (app/api/experts/register)
+  communityPosts: -1,
+  communityLimit: -1,
+  courseAccess: 'full',
+};
+
 const LIMITS: Record<PlanTier, PlanLimits> = {
   free:     FREE_LIMITS,
   explorer: EXPLORER_LIMITS,
   builder:  BUILDER_LIMITS,
+  pinnacle: PINNACLE_LIMITS,
 };
 
 /** Limits for any stored plan value (normalised: retired values are free, Leader is Builder). */

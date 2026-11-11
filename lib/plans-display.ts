@@ -1,6 +1,6 @@
 // lib/plans-display.ts
 // The one place that maps database plan ids to the names members see.
-// Ascentor sells two plans (Billing v2, lib/billing/catalog.ts): Seeker (stored as 'explorer') and Builder.
+// Ascentor sells three plans (Billing v2, lib/billing/catalog.ts): Seeker (stored as 'explorer'), Builder and Pinnacle.
 // Any other stored value is from the retired billing system and is shown as Free (see lib/planTier.ts).
 //
 // Leader is not a plan. Invited facilitators are flagged with profiles.leader_free and lead for free; where a
@@ -12,6 +12,7 @@ export const PLAN_DISPLAY_NAME: Record<PlanTier, string> = {
   free: 'Free',
   explorer: 'Seeker',
   builder: 'Builder',
+  pinnacle: 'Pinnacle',
 };
 
 /** Member-facing name for any stored plan value. Retired values show as Free. */
@@ -20,13 +21,14 @@ export function planDisplayName(raw: string | null | undefined): string {
   return PLAN_DISPLAY_NAME[normalisePlan(raw)];
 }
 
-/** The two plans members can buy, in order. */
-export const FEATURED_PLANS = ['explorer', 'builder'] as const;
+/** The plans members can buy, in order. */
+export const FEATURED_PLANS = ['explorer', 'builder', 'pinnacle'] as const;
 export type FeaturedPlan = (typeof FEATURED_PLANS)[number];
 
 export const PLAN_BULLETS: Record<FeaturedPlan, string[]> = {
   explorer: ['Your Circle and weekly meetings', 'Learn pathways and Sage · AI coach', 'Circle mentorship on foundations'],
   builder: ['Everything in Seeker', 'Industry mentorship with a view of the global tech ecosystem', 'Remote internships and work experience', 'Opportunities for business owners'],
+  pinnacle: ['Everything in Builder', 'A private 20-minute mentor session every month', 'Unlimited Sage · AI coach', 'Four live expert sessions a month, with seats held for you', 'Priority support'],
 };
 
 /** True when moving from `from` to `to` is an upgrade. */

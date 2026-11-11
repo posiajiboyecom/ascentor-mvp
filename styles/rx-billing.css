@@ -29,6 +29,8 @@
 .bl-steps li.cur { background: var(--rx-rust); }
 .bl-tiers { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .bl-tiers { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 640px) and (max-width: 899px) { .bl-tiers-3 { grid-template-columns: 1fr; } }
+@media (min-width: 900px) { .bl-tiers-3 { grid-template-columns: 1fr 1fr 1fr; } }
 .bl-choice { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 16px; border-radius: var(--rx-r); border: 1px solid var(--rx-border); background: var(--rx-card); color: var(--rx-ink); cursor: pointer; font-family: inherit; min-height: 44px; min-width: 0; }
 .bl-choice:hover { border-color: var(--rx-line); }
 .bl-choice:disabled { opacity: .55; cursor: not-allowed; }

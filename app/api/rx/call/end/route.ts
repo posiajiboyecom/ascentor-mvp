@@ -17,7 +17,12 @@ export async function POST(req: Request) {
   try { b = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
   if (!b.circleId || !UUID.test(b.circleId)) return NextResponse.json({ error: 'Unknown Circle.' }, { status: 400 });
 
-  if (b.kind === 'mentor') {
+  if (b.kind === 'private') {
+    // circleId carries the private session id. Only its mentor ends the call for both.
+    const { data: s } = await supabaseAdmin.from('private_mentor_sessions').select('id, human_mentors!inner(user_id)').eq('id', b.circleId).eq('human_mentors.user_id', user.id).maybeSingle();
+    if (!s) return NextResponse.json({ error: 'Only the mentor can end this call.' }, { status: 403 });
+    await deleteRoom(`private-${b.circleId}`);
+  } else if (b.kind === 'mentor') {
     const { data: cm } = await supabaseAdmin.from('circle_mentors').select('id, human_mentors!inner(user_id)').eq('circle_id', b.circleId).eq('human_mentors.user_id', user.id).in('status', ['active', 'scheduling', 'paused']).maybeSingle();
     if (!cm) return NextResponse.json({ error: 'Only the mentor can end this call.' }, { status: 403 });
     await deleteRoom(`circle-${b.circleId}-mentor`);

@@ -22,7 +22,7 @@ export interface OverviewData {
 const TZ = 'Africa/Lagos';
 const DAY = 864e5;
 const num = (n: number) => n.toLocaleString('en-US');
-const PAID_PLANS = ['explorer', 'builder'];
+const PAID_PLANS = ['explorer', 'builder', 'pinnacle'];
 
 async function count(q: PromiseLike<{ count: number | null; error: unknown }>): Promise<number> {
   try { const r = await q; return r.error ? 0 : r.count ?? 0; } catch { return 0; }
@@ -75,7 +75,7 @@ export async function getOverview(canView: (area: string) => boolean): Promise<O
   const settings = await getSettings();
   const agendaMin = asInt(settings['mentor.agenda_questions'], 3, 1, 50);
 
-  const [members, newWeek, paying, trialing, light, seeker, builder, leader, failed, flagsOpen, reportsOpen, cityReqs, toPack, mentorsPending, circ, noAgenda, waiting] = await Promise.all([
+  const [members, newWeek, paying, trialing, light, seeker, builder, pinnacle, leader, failed, flagsOpen, reportsOpen, cityReqs, toPack, mentorsPending, circ, noAgenda, waiting] = await Promise.all([
     count(head('profiles')),
     count(head('profiles').gte('created_at', weekAgo)),
     count(head('profiles').eq('subscription_status', 'active').in('subscription_plan', PAID_PLANS)),
@@ -83,6 +83,7 @@ export async function getOverview(canView: (area: string) => boolean): Promise<O
     count(head('profiles').eq('subscription_status', 'free')),
     count(head('profiles').eq('subscription_status', 'active').eq('subscription_plan', 'explorer')),
     count(head('profiles').eq('subscription_status', 'active').eq('subscription_plan', 'builder')),
+    count(head('profiles').eq('subscription_status', 'active').eq('subscription_plan', 'pinnacle')),
     count(head('profiles').eq('subscription_status', 'active').eq('subscription_plan', 'leader')),
     count(head('payment_attempts').eq('status', 'failed')),
     count(head('rx_flags').eq('status', 'open')),
@@ -114,7 +115,7 @@ export async function getOverview(canView: (area: string) => boolean): Promise<O
   } catch { /* zeros */ }
   const weeks = buckets.map((v, i) => { const d = new Date(firstMonday + i * 7 * DAY + 12 * 3600e3); return { x: `${d.toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric' })} ${d.toLocaleDateString('en-GB', { timeZone: TZ, month: 'long' }).slice(0, 3)}`, v }; });
 
-  const plans: PlanBar[] = [{ label: 'Seeker', v: seeker }, { label: 'Builder', v: builder }, { label: 'Leaders (free)', v: leader }];
+  const plans: PlanBar[] = [{ label: 'Seeker', v: seeker }, { label: 'Builder', v: builder }, { label: 'Pinnacle', v: pinnacle }, { label: 'Leaders (free)', v: leader }];
   plans.push({ label: 'First period', v: trialing }, { label: 'Light access', v: light });
 
   const items: AttnItem[] = [

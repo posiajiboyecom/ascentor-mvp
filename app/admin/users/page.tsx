@@ -27,7 +27,7 @@ interface User {
 }
 
 const ROLES = ['member', 'moderator', 'admin'];
-const PLANS = ['', 'explorer', 'builder', 'leader'];
+const PLANS = ['', 'explorer', 'builder', 'pinnacle', 'leader'];
 const STATUSES = ['', 'free', 'trialing', 'active', 'cancelled', 'past_due'];
 
 const G = 'var(--ledger-gold)';

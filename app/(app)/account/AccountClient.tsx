@@ -525,7 +525,7 @@ export default function AccountClient({ profile, email, authProvider, providers,
 }
 
 // ═══ PLAN TAB ═══
-// Ascentor sells two plans, Seeker and Builder, through Billing v2. This tab only says which one the member is on
+// Ascentor sells three plans, Seeker, Builder and Pinnacle, through Billing v2. This tab only says which one the member is on
 // and sends them to Billing, where plans, cards and history are managed.
 
 function PlanTab({ profile }: { profile: any }) {
@@ -534,7 +534,7 @@ function PlanTab({ profile }: { profile: any }) {
     <div className="rounded-xl p-5" style={{ border: '1px solid rgba(22,22,22,0.08)', background: '#FFFFFF' }}>
       <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7A7260' }}>Current plan</p>
       <p className="mt-1 text-2xl font-bold" style={{ color: '#161616' }}>{planName}</p>
-      <p className="mt-2 text-sm" style={{ color: '#4A4537' }}>Ascentor has two plans, Seeker and Builder. Choose or change your plan, manage your card and see your payments in Billing.</p>
+      <p className="mt-2 text-sm" style={{ color: '#4A4537' }}>Ascentor has three plans: Seeker, Builder and Pinnacle. Choose or change your plan, manage your card and see your payments in Billing.</p>
       <a href="/settings/billing" className="mt-4 inline-block rounded-lg px-4 py-2.5 text-sm font-semibold" style={{ background: '#A8894E', color: '#FFFFFF' }}>Open Billing</a>
     </div>
   );

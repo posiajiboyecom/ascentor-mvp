@@ -108,3 +108,16 @@ test('donations: naira limits in Nigeria, dollar limits elsewhere', () => {
   assert.equal(usd.safeParse({ ...base, amount: 4 }).success, false);
   assert.equal(donateFormSchemaFor('NGN').safeParse({ ...base, amount: 400 }).success, false);
 });
+
+test('Pinnacle: ₦12,000 / ₦120,000, group ₦9,000 / ₦99,000; $15 / $150 with no group discount', () => {
+  assert.equal(C.priceFor('pinnacle', 'solo', 'monthly'), 1_200_000);
+  assert.equal(C.priceFor('pinnacle', 'solo', 'yearly'), 12_000_000);
+  assert.equal(C.priceFor('pinnacle', 'group', 'monthly'), 900_000);
+  assert.equal(C.priceFor('pinnacle', 'group', 'yearly'), 9_900_000);
+  assert.equal(C.priceFor('pinnacle', 'solo', 'monthly', 'USD'), 1500);
+  assert.equal(C.priceFor('pinnacle', 'group', 'yearly', 'USD'), 15000);
+  assert.equal(C.planCodeFor('pinnacle', 'group', 'yearly'), 'pinnacle_group_annual');
+  assert.equal(C.tierLabel('pinnacle'), 'Pinnacle');
+  assert.deepEqual([...C.PAID_TIERS], ['explorer', 'builder', 'pinnacle']);
+  assert.equal(C.PLANS.length, 12);
+});

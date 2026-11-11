@@ -98,7 +98,7 @@ const playCallEndSound = () => playChime([[660, 0, 0.16], [440, 0.14, 0.22]]);
 /** A soft two-note rising chime, like a camera switching on. */
 const playCameraOnSound = () => playChime([[520, 0, 0.09], [780, 0.08, 0.14]]);
 
-export default function CallScreen({ circleId, kind, sessionId, backHref, firstName }: { circleId: string; kind: 'circle' | 'mentor'; sessionId?: string; backHref: string; firstName: string }) {
+export default function CallScreen({ circleId, kind, sessionId, backHref, firstName }: { circleId: string; kind: 'circle' | 'mentor' | 'private'; sessionId?: string; backHref: string; firstName: string }) {
   const router = useRouter();
   const toast = useToast();
   const [phase, setPhase] = useState<Phase>('loading');
@@ -544,7 +544,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
   const isOwner = info?.state === 'open' ? info.isOwner : false;
   const left = info ? new Date(info.endsAt).getTime() - now : 0;
-  const title = info?.title ?? (kind === 'circle' ? 'Weekly Circle call' : 'Mentor session');
+  const title = info?.title ?? (kind === 'circle' ? 'Weekly Circle call' : kind === 'private' ? 'Private mentor session' : 'Mentor session');
 
   // ── the Signal interface ──────────────────────────────────────────────────
   if (phase === 'incall' && info) {
@@ -559,7 +559,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     const cams = parts.filter(cameraOn).length;
     const camsLabel = cams === 0 ? 'Audio only' : cams === parts.length ? 'All cameras on' : `${cams} ${cams === 1 ? 'camera' : 'cameras'} on`;
     const elapsed = Math.max(0, now - new Date(info.startsAt).getTime());
-    const badge = kind === 'circle' ? (info.circleNumber ? `Circle ${info.circleNumber}` : 'Circle') : 'Mentor';
+    const badge = kind === 'circle' ? (info.circleNumber ? `Circle ${info.circleNumber}` : 'Circle') : kind === 'private' ? 'Private' : 'Mentor';
     const sessionName = info.circleName ?? title;
 
     const cur = agenda && agenda.items.length ? agenda.items[agenda.index] : null;

@@ -40,6 +40,7 @@ type Msg = {
   message: string;
   status: string;
   created_at: string;
+  priority?: boolean | null;
 };
 
 const SUBJECT_LABELS: Record<string, string> = {
@@ -109,6 +110,7 @@ export default function AdminInboxPage() {
     const { data, error } = await supabase
       .from('contact_messages')
       .select('*')
+      .order('priority', { ascending: false })
       .order('created_at', { ascending: false });
     if (!error) setMessages(data || []);
     setLoading(false);
@@ -237,6 +239,7 @@ export default function AdminInboxPage() {
                         {msg.name}
                       </span>
                       <StatusPill status={msg.status} />
+                      {msg.priority && <span style={{ fontFamily: B.fontUI, fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em', padding: '2px 8px', borderRadius: 999, background: 'rgba(180,83,42,0.12)', color: '#B4532A' }}>PRIORITY · PINNACLE</span>}
                     </div>
                     <span style={{ fontFamily: B.fontUI, fontSize: '12px', color: B.muted }}>{subLabel}</span>
                   </div>

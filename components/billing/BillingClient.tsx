@@ -115,7 +115,7 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
               ? <p className="rx-p">You lead for free while you facilitate a Circle. There is nothing to pay and no card is needed.</p>
               : checkoutOn
               ? <p className="rx-p">You do not have a plan yet. Start with 7 days free. You add a card, and you are not charged until day 8. Cancel any time before then and you pay nothing.</p>
-              : <p className="rx-p">Paid plans aren’t open yet. Everything you have today keeps working, and we’ll let you know when Seeker and Builder open.</p>}
+              : <p className="rx-p">Paid plans aren’t open yet. Everything you have today keeps working, and we’ll let you know when Seeker, Builder and Pinnacle open.</p>}
           </div>
         )}
 

@@ -22,6 +22,8 @@ export interface BillingViewData {
   referralCode: string | null;
   sub: null | {
     state: SubState; tier: Tier; cycle: Cycle; priceType: PriceType; planName: string;
+    /** A change the member asked for that starts at the next billing date (paid plans only). */
+    scheduled: { tier: Tier; cycle: Cycle; planName: string } | null;
     trialEndsAt: string | null; nextChargeAt: string | null; periodEnd: string | null; graceEndsAt: string | null;
     cancelAtPeriodEnd: boolean; failedCount: number; access: 'full' | 'light';
   };
@@ -62,6 +64,7 @@ export async function loadBillingView(userId: string, visitorCurrency: Currency 
     subView = {
       state: sub.state, tier: sub.tier, cycle: sub.cycle, priceType: sub.priceType,
       planName: `${tierLabel(sub.tier)}, ${sub.cycle === 'yearly' ? 'yearly' : 'monthly'}`,
+      scheduled: change && (change.tier !== sub.tier || change.cycle !== sub.cycle) ? { ...change, planName: `${tierLabel(change.tier)}, ${change.cycle === 'yearly' ? 'yearly' : 'monthly'}` } : null,
       trialEndsAt: iso(sub.trialEndsAt), nextChargeAt: iso(sub.nextChargeAt), periodEnd: iso(sub.periodEnd), graceEndsAt: iso(sub.graceEndsAt),
       cancelAtPeriodEnd: sub.cancelAtPeriodEnd, failedCount: sub.failedCount,
       access: accessLevel({ state: sub.state, periodEnd: sub.periodEnd }, now),
@@ -70,7 +73,7 @@ export async function loadBillingView(userId: string, visitorCurrency: Currency 
 
   type PayRow = { id: string; plan_id: string | null; billing: string | null; amount: number | null; currency: string | null; paid_at: string | null; created_at: string; metadata: { credit_applied_kobo?: number; price_type?: string } | null };
   const history: HistoryRow[] = ((pays.data ?? []) as PayRow[]).map((x) => {
-    const tier = x.plan_id === 'builder' ? 'Builder' : x.plan_id === 'explorer' ? 'Seeker' : x.plan_id === 'leader' ? 'Leader' : 'Plan';
+    const tier = x.plan_id === 'pinnacle' ? 'Pinnacle' : x.plan_id === 'builder' ? 'Builder' : x.plan_id === 'explorer' ? 'Seeker' : x.plan_id === 'leader' ? 'Leader' : 'Plan';
     const credit = x.metadata?.credit_applied_kobo ?? 0;
     const payCurrency: Currency = isCurrency(x.currency) ? x.currency : 'NGN';
     return {

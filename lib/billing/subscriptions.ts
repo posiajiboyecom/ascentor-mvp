@@ -32,7 +32,7 @@
 
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { planCodeFor, getPlan, priceFor, planAmount, groupDiscountApplies, isCurrency, type Tier, type Cycle, type PriceType, type Currency } from './catalog';
+import { isPaidTier, planCodeFor, getPlan, priceFor, planAmount, groupDiscountApplies, isCurrency, type Tier, type Cycle, type PriceType, type Currency } from './catalog';
 import {
   addDays, trialEndsAt as trialEnd, firstChargeAt, isActiveState, countActiveMembers, decideFirstChargePrice, resolveRenewalPriceType,
   computeCreditLots, availableCreditKobo, type SubState, type LedgerRow, type FirstChargeDecision,
@@ -225,7 +225,7 @@ async function defaultCardId(userId: string, currency?: Currency): Promise<strin
 const currencyName = (c: Currency) => (c === 'USD' ? 'US dollars' : 'naira');
 
 export async function startTrial(userId: string, input: { tier: Tier; cycle: Cycle; currency?: Currency }, now = new Date()): Promise<Result<{ subscription: Subscription }>> {
-  if (input.tier !== 'explorer' && input.tier !== 'builder') return { ok: false, error: 'Choose Seeker or Builder.' };
+  if (!isPaidTier(input.tier)) return { ok: false, error: 'Choose Seeker, Builder or Pinnacle.' };
   if (input.cycle !== 'monthly' && input.cycle !== 'yearly') return { ok: false, error: 'Choose monthly or yearly.' };
   const currency: Currency = input.currency ?? 'NGN';
   const card = await defaultCardId(userId, currency);
@@ -338,7 +338,7 @@ export async function changePlan(userId: string, change: { tier?: Tier; cycle?: 
   if (!isActiveState(sub.state)) return { ok: false, error: 'Reactivate your subscription first.' };
   const tier = change.tier ?? sub.tier;
   const cycle = change.cycle ?? sub.cycle;
-  if ((tier !== 'explorer' && tier !== 'builder') || (cycle !== 'monthly' && cycle !== 'yearly')) return { ok: false, error: 'That plan does not exist.' };
+  if (!isPaidTier(tier) || (cycle !== 'monthly' && cycle !== 'yearly')) return { ok: false, error: 'That plan does not exist.' };
 
   if (sub.state === 'trial') {
     // Nothing has been paid yet, so the choice applies straight away.

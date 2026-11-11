@@ -57,6 +57,34 @@ const circleName = (c?: { name: string; number: number; interest: string | null 
 interface Sess { id: string; circle_id: string; circle_mentor_id: string; mentor_id: string | null; starts_at: string; status: string }
 const statusOf = (s: Sess) => (s.status === 'cancelled' ? 'Cancelled' : s.status === 'held' || new Date(s.starts_at).getTime() < Date.now() ? 'Held' : 'Booked');
 
+// ── Pinnacle private sessions (private_mentor_sessions), listed alongside Circle sessions ──────────────────
+async function privateSessionRows(): Promise<RowData[]> {
+  const { data } = await supabaseAdmin.from('private_mentor_sessions').select('id, member_id, starts_at, status, human_mentors(name)').order('starts_at', { ascending: false }).limit(LIST_CAP);
+  const list = (data ?? []) as unknown as { id: string; member_id: string; starts_at: string; status: string; human_mentors: { name: string } | null }[];
+  if (!list.length) return [];
+  const { data: ps } = await supabaseAdmin.from('profiles').select('id, full_name').in('id', [...new Set(list.map((r) => r.member_id))]);
+  const name = new Map(((ps ?? []) as { id: string; full_name: string | null }[]).map((p) => [p.id, p.full_name ?? 'Member']));
+  return list.map((r) => {
+    const st = r.status === 'cancelled' ? 'Cancelled' : new Date(r.starts_at).getTime() < Date.now() ? 'Held' : 'Booked';
+    return { id: `private:${r.id}`, cells: [`Private · ${name.get(r.member_id) ?? 'Member'} (Pinnacle)`, r.human_mentors?.name ?? '-', when(r.starts_at), '-', st === 'Booked' ? 'Ready' : '-', st] };
+  });
+}
+
+async function actOnPrivate(actionId: string, id: string): Promise<ActionResult> {
+  if (actionId === 'nudge-the-circle') return { ok: false, error: 'Private sessions are booked with an agenda, so there is nothing to nudge.' };
+  const { data } = await supabaseAdmin.from('private_mentor_sessions').select('id, member_id, starts_at, status, slot_id, human_mentors(user_id)').eq('id', id).maybeSingle();
+  const s = data as unknown as { id: string; member_id: string; starts_at: string; status: string; slot_id: string | null; human_mentors: { user_id: string | null } | null } | null;
+  if (!s) return { ok: false, error: 'That session no longer exists.' };
+  if (s.status !== 'scheduled' || new Date(s.starts_at).getTime() < Date.now()) return { ok: false, error: 'Only upcoming booked sessions can be changed.' };
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin.from('private_mentor_sessions').update({ status: 'cancelled', cancelled_by: 'admin', cancel_reason: 'Cancelled by admin', cancelled_at: now, updated_at: now }).eq('id', id).eq('status', 'scheduled');
+  if (error) throw error;
+  if (s.slot_id) await supabaseAdmin.from('mentor_slots').update({ taken: false }).eq('id', s.slot_id);
+  const ids = [s.member_id, ...(s.human_mentors?.user_id ? [s.human_mentors.user_id] : [])];
+  await rxNotify(ids, { kind: 'private_cancelled', entityId: id, url: '/sessions/private', title: 'A private mentor session was cancelled', body: `The session on ${when(s.starts_at)} was cancelled by the Ascentor team. The member can book another time.` });
+  return { ok: true, message: 'Session cancelled. The member and mentor have been told.' };
+}
+
 const screen: ScreenModule = {
   spec,
 
@@ -67,7 +95,8 @@ const screen: ScreenModule = {
     ]);
     const sessions = (ss ?? []) as Sess[];
     const open = (rounds ?? []) as { id: string; circle_id: string; closes_at: string }[];
-    if (!sessions.length && !open.length) return { rows: [], note: 'No mentor sessions yet. They appear once a Circle has chosen a mentor and booked a time.' };
+    const privateRows = await privateSessionRows();
+    if (!sessions.length && !open.length && !privateRows.length) return { rows: [], note: 'No mentor sessions yet. They appear once a Circle has chosen a mentor and booked a time.' };
 
     const circleIds = [...new Set([...sessions.map((s) => s.circle_id), ...open.map((r) => r.circle_id)])];
     const mentorIds = [...new Set(sessions.map((s) => s.mentor_id).filter((x): x is string => !!x))];
@@ -93,7 +122,7 @@ const screen: ScreenModule = {
     for (const v of (votes ?? []) as { round_id: string }[]) vn.set(v.round_id, (vn.get(v.round_id) ?? 0) + 1);
     const votesCell = (roundId: string | null | undefined, circleId: string) => (roundId ? `${vn.get(roundId) ?? 0} of ${size.get(circleId) ?? 0}` : '-');
 
-    const rows: RowData[] = [];
+    const rows: RowData[] = [...privateRows];
     for (const r of open) rows.push({ id: `round:${r.id}`, cells: [circleName(circ.get(r.circle_id)), '-', '-', votesCell(r.id, r.circle_id), '-', 'Voting'] });
     for (const s of sessions) {
       const st = statusOf(s);
@@ -107,6 +136,7 @@ const screen: ScreenModule = {
   async act(_ctx, actionId, rowId): Promise<ActionResult> {
     if (actionId !== 'nudge-the-circle' && actionId !== 'cancel-session') return { ok: false, error: 'Unknown action.' };
     if (rowId.startsWith('round:')) return { ok: false, error: 'This Circle is still voting. There is no session to change yet.' };
+    if (rowId.startsWith('private:')) return actOnPrivate(actionId, rowId.slice('private:'.length));
     const { data } = await supabaseAdmin.from('circle_mentor_sessions').select('id, circle_id, circle_mentor_id, mentor_id, starts_at, status').eq('id', rowId).maybeSingle();
     const s = data as Sess | null;
     if (!s) return { ok: false, error: 'That session no longer exists.' };

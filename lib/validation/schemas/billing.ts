@@ -5,11 +5,11 @@ export const billingCardVerify = z.strictObject({ reference: z.string().trim().m
 export const billingCardDefault = z.strictObject({ cardId: z.string().uuid() });
 export const billingCardRemove = z.strictObject({ cardId: z.string().uuid() });
 export const billingTrialStart = z.strictObject({
-  tier: z.enum(['explorer', 'builder']),
+  tier: z.enum(['explorer', 'builder', 'pinnacle']),
   cycle: z.enum(['monthly', 'yearly']),
 });
 export const billingPlanChange = z.strictObject({
-  tier: z.enum(['explorer', 'builder']).optional(),
+  tier: z.enum(['explorer', 'builder', 'pinnacle']).optional(),
   cycle: z.enum(['monthly', 'yearly']).optional(),
 });
 

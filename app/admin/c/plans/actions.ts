@@ -6,7 +6,7 @@ import { auditAdmin } from '@/lib/admin/audit';
 import { setSetting, type SettingKey } from '@/lib/admin/settings';
 
 export interface PlansInput {
-  open: { seeker: boolean; builder: boolean };
+  open: { seeker: boolean; builder: boolean; pinnacle: boolean };
 }
 
 export type SaveResult = { ok: true; message: string } | { ok: false; error: string };
@@ -19,6 +19,7 @@ export async function savePlans(input: PlansInput): Promise<SaveResult> {
     const writes: [SettingKey, string][] = [
       ['plan.seeker.open', String(input.open?.seeker === true)],
       ['plan.builder.open', String(input.open?.builder === true)],
+      ['plan.pinnacle.open', String(input.open?.pinnacle === true)],
     ];
     for (const [k, v] of writes) {
       const err = await setSetting(k, v);

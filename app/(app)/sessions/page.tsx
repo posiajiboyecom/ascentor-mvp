@@ -11,7 +11,7 @@ import { getMentorship, MAX_AGREEMENT_GOALS, READY_MEMBERS } from '@/lib/rx/cmen
 import { myMentorProfile } from '@/lib/rx/mentors';
 import { asBool, asInt, getSettings } from '@/lib/admin/settings';
 import { whenLabel } from '@/lib/rx/dates';
-import { featureBlock } from '@/lib/access';
+import { featureBlock, getMemberAccess } from '@/lib/access';
 import '@/styles/rx-circle.css';
 import { Aside, Avatar, Banner, Bar, GoLink, Page, SageLine, Tick, Title } from '@/components/rx/ui';
 import { AgreementWorkspace, PauseButton, QuestionBox, RsvpButtons, ScheduleGrid, StartVoteButton, SwapButton, VoteCards, type SlotGridItem } from '@/components/rx/sessions/SessionsClient';
@@ -25,6 +25,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
 
   // Billing v2: mentor sessions pause on light access (members without a v2 row are never blocked).
   const paused = await featureBlock(me.userId, 'mentorSessions');
+  const privateOn = (await getMemberAccess(me.userId)).features.privateMentor;
   if (paused) {
     return (
       <Page><Title>Sessions</Title>
@@ -86,6 +87,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
       <p className="rx-p">Your Circle is recommended a few mentors, and the highest vote wins.</p>
       <p className="rx-p">Mentor sessions are 20 minutes, every two weeks, audio by default. Your Circle picks a time that works for 60% of its active members, and at least 3.</p>
       <p className="rx-p">Mentors give their time for free. The agenda is how your Circle respects it.</p>
+      <GoLink href="/sessions/private">Private mentor session{privateOn ? '' : ' · Pinnacle'}</GoLink>
       <GoLink href="/experts">Live expert sessions</GoLink>
       {mine.length > 1 && <GoLink href="/sessions">All my Circles</GoLink>}
       {mentorProfile && <GoLink href="/sessions/mentoring">Mentor view</GoLink>}
@@ -228,7 +230,8 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
           {!isFacilitator && !canSwap && <p className="rx-sm">{state.swapUsed ? 'Your Circle has used its free swap.' : 'You can suggest a different mentor after your first session.'}</p>}
           {(isFacilitator || circle.isFacilitator) && <PauseButton cmId={cmId} paused={state.kind === 'paused'} />}
           <p className="rx-sm">{first} sees your Circle’s agreement, the questions you send and first names. Your Circle chat and weekly reports stay private from mentors.</p>
-          <GoLink href="/experts">Live expert sessions</GoLink>
+          <GoLink href="/sessions/private">Private mentor session{privateOn ? '' : ' · Pinnacle'}</GoLink>
+      <GoLink href="/experts">Live expert sessions</GoLink>
           {mentorProfile && <GoLink href="/sessions/mentoring">Mentor view</GoLink>}
         </Aside>
       </div>

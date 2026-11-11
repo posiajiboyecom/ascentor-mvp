@@ -16,6 +16,7 @@ export const SETTING_DEFAULTS = {
   // Plans: which plans are open for sign-ups (checkout hides and refuses a closed plan)
   'plan.seeker.open': 'true',
   'plan.builder.open': 'true',
+  'plan.pinnacle.open': 'true',
   'plan.leader.open': 'true',
   // Billing
   'billing.extra_days': '7',           // extra days on the first payment (pay now, get 7 extra days)
