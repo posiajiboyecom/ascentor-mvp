@@ -9,7 +9,8 @@ import { inStock, isFree, naira, SHOP_SHIPPING, SHOP_SHIPPING_KEYS, type ShopShi
 import type { ShopCard } from '@/lib/shop-data';
 import { Thumb, type Member } from './parts';
 
-export default function CartClient({ products, member }: { products: ShopCard[]; member: Member }) {
+/** `abroad`: the member is outside Nigeria. The shop ships within Nigeria only, so checkout is closed for them. */
+export default function CartClient({ products, member, abroad = false }: { products: ShopCard[]; member: Member; abroad?: boolean }) {
   const { items, ready, setQty, remove } = useCart();
   const [ship, setShip] = useState<ShopShippingKey>('lagos');
   const [phone, setPhone] = useState('');
@@ -29,7 +30,7 @@ export default function CartClient({ products, member }: { products: ShopCard[];
   const fee = needsShipping ? SHOP_SHIPPING[ship].fee : 0;
   const total = subtotal + fee;
   const addressOk = !needsAddress || (address.trim() && city.trim());
-  const canPay = live.length > 0 && !blocked && !!addressOk && !busy;
+  const canPay = live.length > 0 && !blocked && !!addressOk && !busy && !abroad;
 
   const pay = async () => {
     setBusy(true);
@@ -128,6 +129,7 @@ export default function CartClient({ products, member }: { products: ShopCard[];
               {needsShipping && <div className="rx-between"><span>Delivery</span><span>{fee ? naira(fee) : 'Free'}</span></div>}
               <div className="rx-between rx-strong" style={{ fontSize: 18, borderTop: '1px solid var(--rx-border)', paddingTop: 10 }}><span>Total</span><span>{naira(total)}</span></div>
             </div>
+            {abroad && <p className="rx-sm" role="note">The shop delivers within Nigeria only for now, so orders can only be placed from Nigeria.</p>}
             {error && <p className="rx-sm" role="alert" style={{ color: 'var(--rx-danger)' }}>{error}</p>}
             <button type="button" className="rx-btn primary block" disabled={!canPay} onClick={pay}>{busy ? 'Opening Paystack…' : `Pay ${naira(total)} with Paystack`}</button>
             <p className="rx-sm rx-row rx-nw" style={{ gap: 8 }}><Lock aria-hidden style={{ width: 16, height: 16, flex: 'none' }} />Card, bank transfer or USSD.</p>

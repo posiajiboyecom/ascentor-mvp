@@ -6,7 +6,8 @@ import { SHOP_SHIPPING, SHOP_SHIPPING_KEYS, naira, type ShopShippingKey } from '
 import { useCart } from '@/lib/shop-cart';
 import type { ShopCard } from '@/lib/shop-data';
 
-export default function CartView({ products }: { products: ShopCard[] }) {
+/** `abroad`: the visitor is outside Nigeria. The shop ships within Nigeria only, so checkout is closed for them. */
+export default function CartView({ products, abroad = false }: { products: ShopCard[]; abroad?: boolean }) {
   const { items, ready, setQty, remove } = useCart();
   const [shipping, setShipping] = useState<ShopShippingKey>('lagos');
   const [f, setF] = useState({ fullName: '', email: '', phone: '', address: '', city: '', state: '' });
@@ -104,8 +105,9 @@ export default function CartView({ products }: { products: ShopCard[] }) {
           {physical && <div className="sp-sum"><span>Delivery</span><span>{fee ? naira(fee) : 'Free'}</span></div>}
           <div className="sp-sum total"><span>Total</span><span>{naira(subtotal + fee)}</span></div>
         </div>
+        {abroad && <p className="sp-err" role="note">The shop delivers within Nigeria only for now, so orders can only be placed from Nigeria.</p>}
         {err && <p className="sp-err">{err}</p>}
-        <button className="sp-btn rust" style={{ width: '100%', marginTop: '.75rem' }} disabled={busy}>{busy ? 'Redirecting to Paystack...' : 'Pay with Paystack'}</button>
+        <button className="sp-btn rust" style={{ width: '100%', marginTop: '.75rem' }} disabled={busy || abroad}>{busy ? 'Redirecting to Paystack...' : 'Pay with Paystack'}</button>
       </div>
     </form>
   );

@@ -41,9 +41,17 @@ export async function GET(req: NextRequest) {
 
     const donations = data ?? [];
     const paid = donations.filter((d) => d.status === 'paid');
+    // Naira and US dollar donations are totalled separately (donors abroad give in dollars).
+    const isUsd = (d: { currency?: string | null }) => (d.currency || 'NGN').toUpperCase() === 'USD';
+    // Estimate only when Paystack's fee was not recorded: local cards 1.5% + ₦100 (capped ₦2,000); international 3.9%.
     const estFee = (a: number) => (a ? Math.min(a * 0.015 + (a >= 2500 ? 100 : 0), 2000) : 0);
-    const gross = paid.reduce((t, d) => t + (Number(d.amount) || 0), 0);
-    const fees = paid.reduce((t, d) => t + (d.paystack_fee != null ? Number(d.paystack_fee) : estFee(Number(d.amount) || 0)), 0);
+    const estFeeUsd = (a: number) => (a ? Math.round(a * 0.039 * 100) / 100 : 0);
+    const ngn = paid.filter((d) => !isUsd(d));
+    const usd = paid.filter(isUsd);
+    const gross = ngn.reduce((t, d) => t + (Number(d.amount) || 0), 0);
+    const fees = ngn.reduce((t, d) => t + (d.paystack_fee != null ? Number(d.paystack_fee) : estFee(Number(d.amount) || 0)), 0);
+    const grossUsd = usd.reduce((t, d) => t + (Number(d.amount) || 0), 0);
+    const feesUsd = usd.reduce((t, d) => t + (d.paystack_fee != null ? Number(d.paystack_fee) : estFeeUsd(Number(d.amount) || 0)), 0);
 
     return NextResponse.json({
       donations,
@@ -53,6 +61,7 @@ export async function GET(req: NextRequest) {
         pending: donations.filter((d) => d.status === 'pending').length,
         abandoned: donations.filter((d) => d.status === 'abandoned').length,
         gross, fees, net: gross - fees,
+        grossUsd, feesUsd, netUsd: grossUsd - feesUsd,
       },
     });
   } catch (err) {

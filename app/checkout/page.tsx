@@ -11,9 +11,10 @@ import { isCheckoutOn } from '@/lib/checkout-switch';
 import { getShellData } from '@/lib/shell-data';
 import UserShell from '@/components/shell/UserShell';
 import { getSubscription } from '@/lib/billing/subscriptions';
-import { listCards, VERIFY_AMOUNT_KOBO } from '@/lib/billing/cards';
+import { listCards, VERIFY_AMOUNT } from '@/lib/billing/cards';
 import { getGroupStatus } from '@/lib/billing/groups';
-import { formatNaira, type Tier } from '@/lib/billing/catalog';
+import { formatMoney, type Tier } from '@/lib/billing/catalog';
+import { visitorCurrency } from '@/lib/geo';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getMe } from '@/lib/rx/server';
 import { closedPlanIds } from '@/lib/admin/plans-open';
@@ -51,7 +52,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     // Invited facilitators lead for free and skip checkout entirely. Members who already have a v2 plan manage it in Billing.
     if ((prof as { leader_free?: boolean } | null)?.leader_free) redirect('/dashboard');
     if (await getSubscription(me.userId)) redirect('/settings/billing');
-    const [cards, groupStatus, closed] = await Promise.all([listCards(me.userId), getGroupStatus(me.userId), closedPlanIds()]);
+    // Currency is decided here from where the member is: naira in Nigeria, US dollars everywhere else. No switch.
+    const [cards, groupStatus, closed, currency] = await Promise.all([listCards(me.userId), getGroupStatus(me.userId), closedPlanIds(), visitorCurrency()]);
     // Default tier from the onboarding stage: Seeking is Seeker, Building and Leading are Builder. Leaders never pick a Leader plan here.
     const suggested: Tier = me.profile?.stage === 'Building' || me.profile?.stage === 'Leading' ? 'builder' : 'explorer';
     const defaultTier: Tier = closed.includes(suggested) ? (suggested === 'builder' ? 'explorer' : 'builder') : suggested;
@@ -65,7 +67,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
       </div>
     ) : (
       <div className="rx">
-        <CheckoutV2 defaultTier={defaultTier} initialCards={cards} verifyAmountLabel={formatNaira(VERIFY_AMOUNT_KOBO)}
+        <CheckoutV2 defaultTier={defaultTier} initialCards={cards} verifyAmountLabel={formatMoney(VERIFY_AMOUNT[currency], currency)} currency={currency}
           existingGroupCode={groupStatus.group?.code ?? null} presetCode={typeof group === 'string' ? group.slice(0, 24) : null} tz={me.tz}
           closedTiers={closed} />
       </div>

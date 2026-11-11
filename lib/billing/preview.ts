@@ -10,11 +10,13 @@
 //   checkoutSummary(i, fmt) -> the trial summary lines shown before the member starts their trial
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { formatNaira, priceFor, tierLabel, type Cycle, type PriceType, type Tier } from './catalog';
+import { formatMoney, priceFor, tierLabel, groupDiscountApplies, type Cycle, type PriceType, type Tier, type Currency } from './catalog';
 import { addDays, firstChargeAt, GROUP_MIN, TRIAL_DAYS, type SubState } from './rules';
 
 export interface NextChargePreview {
   tier: Tier; cycle: Cycle; priceType: PriceType;
+  /** Every amount below is in minor units of this currency. */
+  currency: Currency;
   grossKobo: number; creditKobo: number; payKobo: number;
   /** Both prices for the same tier and cycle, so the screen can say "₦2,000 once 3 friends join, ₦3,000 until then". */
   groupKobo: number; soloKobo: number;
@@ -30,17 +32,21 @@ export function previewNextCharge(i: {
   groupFlagged?: boolean;
   scheduled?: { tier: Tier; cycle: Cycle } | null;
   creditBalanceKobo: number;
+  /** Defaults to NGN. In USD there is no group price, so the group and solo amounts are the same. */
+  currency?: Currency;
   now: Date;
 }): NextChargePreview {
+  const currency: Currency = i.currency ?? 'NGN';
   const tier = i.scheduled?.tier ?? i.tier;
   const cycle = i.scheduled?.cycle ?? i.cycle;
   const locked = i.currentPriceType === 'group' && !!i.lockedGroupPriceUntil && i.lockedGroupPriceUntil.getTime() > i.now.getTime();
-  const priceType: PriceType = locked || (i.inGroup && i.groupComplete && !i.groupFlagged) ? 'group' : 'solo';
-  const grossKobo = priceFor(tier, priceType, cycle);
+  const groupPrice = groupDiscountApplies(currency) && (locked || (i.inGroup && i.groupComplete && !i.groupFlagged));
+  const priceType: PriceType = groupPrice ? 'group' : 'solo';
+  const grossKobo = priceFor(tier, priceType, cycle, currency);
   const creditKobo = Math.max(0, Math.min(i.creditBalanceKobo, grossKobo));
   return {
-    tier, cycle, priceType, grossKobo, creditKobo, payKobo: grossKobo - creditKobo,
-    groupKobo: priceFor(tier, 'group', cycle), soloKobo: priceFor(tier, 'solo', cycle),
+    tier, cycle, priceType, currency, grossKobo, creditKobo, payKobo: grossKobo - creditKobo,
+    groupKobo: priceFor(tier, 'group', cycle, currency), soloKobo: priceFor(tier, 'solo', cycle, currency),
   };
 }
 
@@ -111,17 +117,20 @@ export interface CheckoutSummary {
 
 /** The three plain lines of the checkout summary: free for 7 days, first charge on day 8 (exact date and amount), cancel before to pay nothing. */
 export function checkoutSummary(i: {
-  tier: Tier; cycle: Cycle; withGroup: boolean; start: Date;
+  tier: Tier; cycle: Cycle; withGroup: boolean; start: Date; currency?: Currency;
 }, fmt: (d: Date) => string): CheckoutSummary {
+  const currency: Currency = i.currency ?? 'NGN';
+  const formatNaira = (minor: number) => formatMoney(minor, currency);
+  const withGroup = i.withGroup && groupDiscountApplies(currency);
   const day8 = firstChargeAt(i.start);
-  const solo = priceFor(i.tier, 'solo', i.cycle);
-  const group = priceFor(i.tier, 'group', i.cycle);
+  const solo = priceFor(i.tier, 'solo', i.cycle, currency);
+  const group = priceFor(i.tier, 'group', i.cycle, currency);
   const per = i.cycle === 'yearly' ? 'a year' : 'a month';
   return {
     trialLine: `Free for ${TRIAL_DAYS} days, from today until ${fmt(addDays(i.start, TRIAL_DAYS))}.`,
-    chargeLine: `Your first charge is on day 8, ${fmt(day8)}: ${formatNaira(solo)} ${per}${i.withGroup ? ' (or the group price below)' : ''} for ${tierLabel(i.tier)}.`,
+    chargeLine: `Your first charge is on day 8, ${fmt(day8)}: ${formatNaira(solo)} ${per}${withGroup ? ' (or the group price below)' : ''} for ${tierLabel(i.tier)}.`,
     cancelLine: 'Cancel any time before then and you will not be charged.',
-    groupLine: i.withGroup
+    groupLine: withGroup
       ? `With ${GROUP_MIN} active members in your group the price is ${formatNaira(group)} ${per}. If your group is not complete on day 8, we wait until day 14 once, then charge ${formatNaira(solo)}.`
       : null,
   };

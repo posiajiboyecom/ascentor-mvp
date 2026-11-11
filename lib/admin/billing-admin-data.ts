@@ -4,8 +4,9 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { availableCreditKobo, countActiveMembers, type LedgerRow } from '@/lib/billing/rules';
+import { isCurrency, type Currency } from '@/lib/billing/catalog';
 import {
-  stateLabel, mrrKobo, planLabel, priceTypeLabel, cycleLabel, koboToNaira, dayLabel, dayTimeLabel, groupStatusLabel, groupNotice,
+  stateLabel, mrrByCurrency, moneyTotals, planLabel, priceTypeLabel, cycleLabel, koboToNaira, dayLabel, dayTimeLabel, groupStatusLabel, groupNotice,
   creditKindLabel, eventLabel,
 } from '@/lib/admin/billing-admin';
 
@@ -25,13 +26,14 @@ async function namesFor(ids: string[]): Promise<Record<string, string>> {
   return out;
 }
 
+/** Ledger rows per member, keyed `${userId}|${currency}`: credit is earned and spent in one currency. */
 async function ledgerFor(ids: string[]): Promise<Record<string, LedgerRow[]>> {
   const out: Record<string, LedgerRow[]> = {};
   const uniq = Array.from(new Set(ids));
   for (let i = 0; i < uniq.length; i += 200) {
-    const { data } = await supabaseAdmin.from('credit_ledger').select('id, user_id, amount_kobo, reason, created_at, expires_at').in('user_id', uniq.slice(i, i + 200));
-    for (const r of (data ?? []) as { id: string; user_id: string; amount_kobo: number; reason: LedgerRow['reason']; created_at: string; expires_at: string | null }[]) {
-      (out[r.user_id] ??= []).push({ id: r.id, amountKobo: r.amount_kobo, reason: r.reason, createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null });
+    const { data } = await supabaseAdmin.from('credit_ledger').select('id, user_id, amount_kobo, reason, created_at, expires_at, currency').in('user_id', uniq.slice(i, i + 200));
+    for (const r of (data ?? []) as { id: string; user_id: string; amount_kobo: number; reason: LedgerRow['reason']; created_at: string; expires_at: string | null; currency: string | null }[]) {
+      (out[`${r.user_id}|${r.currency ?? 'NGN'}`] ??= []).push({ id: r.id, amountKobo: r.amount_kobo, reason: r.reason, createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null });
     }
   }
   return out;
@@ -60,7 +62,7 @@ export async function loadSubscriptions(): Promise<{ rows: SubRow[]; kpis: SubKp
     ids.length ? supabaseAdmin.from('billing_group_members').select('user_id, billing_groups(code)').in('user_id', ids).is('left_at', null) : Promise.resolve({ data: [] as any[] }),
     ledgerFor(ids),
     supabaseAdmin.from('billing_events').select('*', { count: 'exact', head: true }).eq('type', 'renewal_failed').gte('created_at', weekAgo),
-    supabaseAdmin.from('member_subscriptions').select('plan_code, state, cancel_at_period_end').limit(5000),
+    supabaseAdmin.from('member_subscriptions').select('plan_code, state, cancel_at_period_end, currency').limit(5000),
   ]);
 
   const cards: Record<string, string> = {};
@@ -74,10 +76,12 @@ export async function loadSubscriptions(): Promise<{ rows: SubRow[]; kpis: SubKp
   }
 
   const now = new Date();
-  const rows: SubRow[] = subs.map((s) => ({
+  const rows: SubRow[] = subs.map((s) => {
+    const currency: Currency = isCurrency(s.currency) ? s.currency : 'NGN';
+    return {
     userId: s.user_id,
     name: names[s.user_id] || '-',
-    plan: planLabel(s.tier),
+    plan: currency === 'USD' ? `${planLabel(s.tier)} (USD)` : planLabel(s.tier),
     planCode: String(s.plan_code ?? ''),
     priceType: priceTypeLabel(s.price_type),
     cycle: cycleLabel(s.cycle),
@@ -89,14 +93,14 @@ export async function loadSubscriptions(): Promise<{ rows: SubRow[]; kpis: SubKp
     failed: Number(s.failed_count ?? 0),
     card: (s.payment_method_id && cards[s.payment_method_id]) || '-',
     group: groups[s.user_id] || '-',
-    credit: koboToNaira(availableCreditKobo(ledgers[s.user_id] ?? [], now)),
-  }));
+    credit: koboToNaira(availableCreditKobo(ledgers[`${s.user_id}|${currency}`] ?? [], now), currency),
+  }; });
 
-  const all = (allStates.data ?? []) as { plan_code: string; state: string; cancel_at_period_end: boolean }[];
+  const all = (allStates.data ?? []) as { plan_code: string; state: string; cancel_at_period_end: boolean; currency: string | null }[];
   const countOf = (st: string) => all.filter((s) => s.state === st).length;
   const kpis: SubKpis = {
     trial: countOf('trial'), active: countOf('active'), grace: countOf('grace'), lapsed: countOf('lapsed'),
-    mrr: koboToNaira(mrrKobo(all.map((s) => ({ planCode: s.plan_code, state: s.state, cancelAtPeriodEnd: s.cancel_at_period_end })))),
+    mrr: moneyTotals(mrrByCurrency(all.map((s) => ({ planCode: s.plan_code, state: s.state, cancelAtPeriodEnd: s.cancel_at_period_end, currency: s.currency })))),
     failedWeek: failedRes.count ?? 0,
   };
   return { rows, kpis, note: subs.length >= LIMIT ? `Showing the ${LIMIT} most recently changed subscriptions. The tiles count all of them.` : '' };
@@ -111,7 +115,7 @@ export async function loadSubscriptionEvents(userId: string): Promise<EventLine[
     const d = e.data ?? {};
     const bits: string[] = [];
     const kobo = typeof d.amount_kobo === 'number' ? d.amount_kobo : typeof d.gross_kobo === 'number' ? d.gross_kobo : null;
-    if (kobo != null) bits.push(koboToNaira(kobo));
+    if (kobo != null) bits.push(koboToNaira(kobo, isCurrency(d.currency) ? d.currency : 'NGN'));
     if (typeof d.plan_code === 'string') bits.push(d.plan_code.replace(/_/g, ' '));
     if (typeof d.reason === 'string') bits.push(d.reason.replace(/_/g, ' '));
     if (typeof d.during === 'string') bits.push(`during ${d.during}`);
@@ -176,10 +180,11 @@ function subPlanCycle(planCode: string | null | undefined): string {
 export interface CreditBalanceRow { userId: string; name: string; balance: string; balanceKobo: number; earned: string; used: string; lost: string }
 export interface CreditLedgerRow { id: string; member: string; kind: string; amount: string; source: string; flagged: boolean; date: string; expires: string }
 
-export async function loadCredits(): Promise<{ balances: CreditBalanceRow[]; ledger: CreditLedgerRow[]; totalKobo: number; note: string }> {
-  const { data, error } = await supabaseAdmin.from('credit_ledger').select('id, user_id, amount_kobo, reason, source_referral_id, created_at, expires_at').order('created_at', { ascending: false }).limit(2000);
-  if (error) return { balances: [], ledger: [], totalKobo: 0, note: missing(error) ? SETUP_NOTE : 'We could not load credits. Try again in a moment.' };
-  const rows = (data ?? []) as { id: string; user_id: string; amount_kobo: number; reason: string; source_referral_id: string | null; created_at: string; expires_at: string | null }[];
+export async function loadCredits(): Promise<{ balances: CreditBalanceRow[]; ledger: CreditLedgerRow[]; totalKobo: number; totalLabel: string; note: string }> {
+  const { data, error } = await supabaseAdmin.from('credit_ledger').select('id, user_id, amount_kobo, reason, source_referral_id, created_at, expires_at, currency').order('created_at', { ascending: false }).limit(2000);
+  if (error) return { balances: [], ledger: [], totalKobo: 0, totalLabel: '-', note: missing(error) ? SETUP_NOTE : 'We could not load credits. Try again in a moment.' };
+  const rows = (data ?? []) as { id: string; user_id: string; amount_kobo: number; reason: string; source_referral_id: string | null; created_at: string; expires_at: string | null; currency: string | null }[];
+  const curOf = (r: { currency: string | null }): Currency => (isCurrency(r.currency) ? r.currency : 'NGN');
 
   const refIds = Array.from(new Set(rows.map((r) => r.source_referral_id).filter(Boolean) as string[]));
   let refs: { id: string; referrer_id: string; referred_id: string; flagged_at?: string | null }[] = [];
@@ -196,25 +201,31 @@ export async function loadCredits(): Promise<{ balances: CreditBalanceRow[]; led
 
   const byUser: Record<string, LedgerRow[]> = {};
   const sums: Record<string, { earned: number; used: number; lost: number }> = {};
+  // Balances are per member AND currency: naira and dollar credit are separate and never added together.
   for (const r of rows) {
-    (byUser[r.user_id] ??= []).push({ id: r.id, amountKobo: r.amount_kobo, reason: r.reason as LedgerRow['reason'], createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null });
-    const s = (sums[r.user_id] ??= { earned: 0, used: 0, lost: 0 });
+    const key = `${r.user_id}|${curOf(r)}`;
+    (byUser[key] ??= []).push({ id: r.id, amountKobo: r.amount_kobo, reason: r.reason as LedgerRow['reason'], createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null });
+    const s = (sums[key] ??= { earned: 0, used: 0, lost: 0 });
     if (r.reason === 'referral_earned') s.earned += r.amount_kobo;
     else if (r.reason === 'used') s.used += Math.abs(r.amount_kobo);
     else s.lost += Math.abs(r.amount_kobo);
   }
   const now = new Date();
-  const balances: CreditBalanceRow[] = Object.keys(byUser).map((uid) => {
-    const b = availableCreditKobo(byUser[uid], now);
-    return { userId: uid, name: names[uid] || '-', balance: koboToNaira(b), balanceKobo: b, earned: koboToNaira(sums[uid].earned), used: koboToNaira(sums[uid].used), lost: koboToNaira(sums[uid].lost) };
+  const totals: Record<Currency, number> = { NGN: 0, USD: 0 };
+  const balances: CreditBalanceRow[] = Object.keys(byUser).map((key) => {
+    const [uid, cur] = key.split('|') as [string, Currency];
+    const b = availableCreditKobo(byUser[key], now);
+    totals[cur] += b;
+    const f = (n: number) => koboToNaira(n, cur);
+    return { userId: uid, name: (names[uid] || '-') + (cur === 'USD' ? ' (USD)' : ''), balance: f(b), balanceKobo: b, earned: f(sums[key].earned), used: f(sums[key].used), lost: f(sums[key].lost) };
   }).sort((a, b) => b.balanceKobo - a.balanceKobo);
 
   const ledger: CreditLedgerRow[] = rows.slice(0, 300).map((r) => {
     const ref = r.source_referral_id ? refOf.get(r.source_referral_id) : undefined;
     return {
-      id: r.id, member: names[r.user_id] || '-', kind: creditKindLabel(r.reason), amount: koboToNaira(Math.abs(r.amount_kobo)),
+      id: r.id, member: names[r.user_id] || '-', kind: creditKindLabel(r.reason), amount: koboToNaira(Math.abs(r.amount_kobo), curOf(r)),
       source: ref ? `Referral of ${names[ref.referred_id] || '-'}` : '-', flagged: !!ref?.flagged_at, date: dayLabel(r.created_at), expires: dayLabel(r.expires_at),
     };
   });
-  return { balances, ledger, totalKobo: balances.reduce((s, b) => s + b.balanceKobo, 0), note: rows.length >= 2000 ? 'Balances use the 2,000 newest ledger rows.' : '' };
+  return { balances, ledger, totalKobo: totals.NGN, totalLabel: moneyTotals(totals), note: rows.length >= 2000 ? 'Balances use the 2,000 newest ledger rows.' : '' };
 }

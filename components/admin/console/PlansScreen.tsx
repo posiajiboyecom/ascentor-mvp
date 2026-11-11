@@ -68,7 +68,7 @@ export default function PlansScreen({ canEdit, plans, catalog, trialDays, graceD
 
         <div className="card st8">
           <p className="h3">Price catalog</p>
-          <p className="sm p">Every price members can be charged. Read-only here: prices are set in code (lib/billing/catalog.ts) and change with a release.</p>
+          <p className="sm p">Every price members can be charged: naira for members in Nigeria, US dollars for everyone else (decided by location; there is no group discount in US dollars). Read-only here: prices are set in code (lib/billing/catalog.ts) and change with a release.</p>
           <div className="tblwrap">
             <table className="tbl">
               <thead><tr>{['Plan', 'Tier', 'Price type', 'Billing', 'Price', 'Per month'].map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>

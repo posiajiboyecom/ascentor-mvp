@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { donateFormSchema, type DonateFormValues } from './donateFormSchema';
+import { donateFormSchemaFor, DONATION_LIMITS, type DonateFormValues, type DonationCurrency } from './donateFormSchema';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
 import { Check, HeartHandshake } from 'lucide-react';
@@ -17,7 +17,6 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import '@/styles/marketing.css';
 
-const PRESET_AMOUNTS = [5000, 10000, 25000, 50000, 100000];
 
 const INPUT = {
   display: 'block' as const,
@@ -54,7 +53,11 @@ const CARD: React.CSSProperties = {
   padding: 'clamp(1.75rem, 5vw, 2.75rem)', boxShadow: '0 24px 60px rgba(0,0,0,0.06)',
 };
 
-export default function DonateClient() {
+export default function DonateClient({ currency = 'NGN' }: { currency?: DonationCurrency }) {
+  // Set by the server from where the donor is: naira in Nigeria, US dollars elsewhere.
+  const limits = DONATION_LIMITS[currency];
+  const PRESET_AMOUNTS: readonly number[] = limits.presets;
+  const money = (n: number) => `${limits.symbol}${Number(n).toLocaleString(currency === 'USD' ? 'en-US' : 'en-NG')}`;
   const { alert } = useModal();
   const router = useRouter();
 
@@ -67,7 +70,7 @@ export default function DonateClient() {
     formState: { errors, isSubmitting },
     reset,
   } = useForm<DonateFormValues>({
-    resolver: zodResolver(donateFormSchema),
+    resolver: zodResolver(donateFormSchemaFor(currency)),
     defaultValues: {
       full_name: '',
       email: '',
@@ -246,7 +249,7 @@ export default function DonateClient() {
         <div style={CARD}>
           <form onSubmit={handleSubmit(onSubmit)} className="donate-form">
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LABEL}>Choose an amount (NGN) *</label>
+              <label style={LABEL}>Choose an amount ({limits.name}) *</label>
               <div className="donate-preset-grid">
                 {PRESET_AMOUNTS.map((v) => (
                   <button
@@ -268,7 +271,7 @@ export default function DonateClient() {
                       transition: 'border-color 0.15s, background 0.15s',
                     }}
                   >
-                    &#8358;{v.toLocaleString()}
+                    {money(v)}
                   </button>
                 ))}
               </div>
@@ -278,7 +281,7 @@ export default function DonateClient() {
                 style={INPUT}
                 type="text"
                 inputMode="decimal"
-                placeholder="e.g. 15,000"
+                placeholder={currency === 'USD' ? 'e.g. 40' : 'e.g. 15,000'}
                 value={customAmount}
                 onChange={(e) => onCustomAmountChange(e.target.value)}
                 onFocus={() => setSelectedPreset(null)}
@@ -286,7 +289,7 @@ export default function DonateClient() {
               {errors.amount && <p style={ERROR}>{errors.amount.message}</p>}
               {!errors.amount && amount > 0 && (
                 <p style={{ fontSize: '0.8125rem', color: '#9CA3AF', marginTop: '0.375rem' }}>
-                  You are donating &#8358;{Number(amount).toLocaleString()}.
+                  You are donating {money(amount)}.
                 </p>
               )}
             </div>
@@ -422,7 +425,7 @@ export default function DonateClient() {
             </h2>
             <p style={{ fontSize: '1.125rem', margin: '0 0 1.25rem' }}>
               <strong style={{ color: '#0F0F0E' }}>
-                Amount: &#8358;{pendingPayment.amountNaira.toLocaleString()}
+                Amount: {money(pendingPayment.amountNaira)}
               </strong>
             </p>
             <p style={{ color: '#6B7280', lineHeight: 1.8, fontSize: '0.9375rem', margin: '0 0 2rem' }}>
@@ -487,7 +490,7 @@ export default function DonateClient() {
               Thank You
             </h2>
             <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '1rem', margin: '0 0 2rem' }}>
-              Your donation of &#8358;{paymentSuccess.toLocaleString()} was received. A receipt is on its way to your inbox.
+              Your donation of {money(paymentSuccess)} was received. A receipt is on its way to your inbox.
             </p>
             <div style={{ height: '3px', borderRadius: '2px', background: '#F0EDE6', overflow: 'hidden', marginBottom: '1.5rem' }}>
               <div style={{ height: '100%', background: '#C8A96E', width: '0', animation: 'donateBarFill 3s linear forwards' }} />

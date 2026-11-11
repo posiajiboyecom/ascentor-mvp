@@ -7,7 +7,7 @@
 //     a response = handled here. 5xx asks Paystack to retry (only for a transient Paystack/DB problem).
 //
 // Handled, all idempotent and all re-verified with Paystack (a webhook body is never trusted for money or cards):
-//   purpose 'card_verify'          charge.success -> save the card if not saved yet and refund the NGN 50
+//   purpose 'card_verify'          charge.success -> save the card if not saved yet and refund the check (₦50 or $1)
 //   purpose 'subscription_charge'  charge.success -> settle; charge.failed -> the engine's failure path
 //   refund.processed / charge.dispute.create -> cancel the referral credit earned by that payment, then fall through
 //     (the existing handler still sees the event)

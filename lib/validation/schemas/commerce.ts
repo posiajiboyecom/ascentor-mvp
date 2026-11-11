@@ -2,9 +2,10 @@
 // Request schemas for donations and the shop. (Plans are bought through Billing v2: lib/validation/schemas/billing.ts.)
 import { z, uuid, paymentReference, planId, billingCycle, email as emailField, text as textField, optionalText as optionalTextField } from '../common';
 import { SHOP_SHIPPING_KEYS } from '@/lib/shop-shared';
-import { donateFormSchema } from '@/app/(marketing)/donate/donateFormSchema';
+import { donateRequestSchema } from '@/app/(marketing)/donate/donateFormSchema';
 
-export const donateInitiate = donateFormSchema.strict();
+// Amount limits depend on the donor's currency, so the route applies them (DONATION_LIMITS).
+export const donateInitiate = donateRequestSchema.strict();
 
 export const donateVerify = z.strictObject({
   reference: paymentReference,

@@ -7,7 +7,8 @@
 // Exports
 //   Subscription                              camelCase row
 //   getSubscription(userId)                   -> Subscription | null
-//   startTrial(userId, {tier, cycle})         default card required; state 'trial', trial_ends_at = now + 7d, next_charge_at = trial end
+//   startTrial(userId, {tier, cycle, currency})  default card in that currency required; state 'trial', trial_ends_at = now + 7d,
+//                                             next_charge_at = trial end. The currency stays with the subscription for good.
 //   cancel(userId)                            trial: cancelled at once, never charged; paid: cancel_at_period_end
 //   resume(userId)                            undo a pending cancel (or a cancelled-but-still-paid period / trial)
 //   changePlan(userId, {tier?, cycle?, priceType?})   paid: scheduled for the next billing date; trial: applied now
@@ -15,7 +16,8 @@
 //   reactivate(userId)                        lapsed/cancelled member pays again now (charges the default card)
 //   getGroupContext(userId)                   -> { inGroup, groupId, activeCount, belowSince }
 //   resolveChargePlan(sub, now)               -> group price decision via rules.ts (extension, protection, lock)
-//   getCreditLedger(userId) / creditBalanceKobo(userId, now?)   credit from credit_ledger via rules.ts
+//   getCreditLedger(userId, currency?) / creditBalanceKobo(userId, now?, currency?)   credit from credit_ledger via rules.ts
+//                                             (credit is earned and spent in one currency; default NGN)
 //   syncProfile(userId)                       mirror v2 state into profiles (see mapping below)
 //
 // Profile mirror (kept inside the EXISTING vocabulary read by lib/planTier.ts effectivePlan and lib/billing-state.ts):
@@ -30,7 +32,7 @@
 
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { planCodeFor, getPlan, priceFor, type Tier, type Cycle, type PriceType } from './catalog';
+import { planCodeFor, getPlan, priceFor, planAmount, groupDiscountApplies, isCurrency, type Tier, type Cycle, type PriceType, type Currency } from './catalog';
 import {
   addDays, trialEndsAt as trialEnd, firstChargeAt, isActiveState, countActiveMembers, decideFirstChargePrice, resolveRenewalPriceType,
   computeCreditLots, availableCreditKobo, type SubState, type LedgerRow, type FirstChargeDecision,
@@ -45,6 +47,8 @@ export interface Subscription {
   tier: Tier;
   priceType: PriceType;
   cycle: Cycle;
+  /** NGN or USD. Set when the trial starts and never changed. */
+  currency: Currency;
   state: SubState;
   trialEndsAt: Date | null;
   nextChargeAt: Date | null;
@@ -71,6 +75,7 @@ export function toSubscription(r: Row): Subscription {
     tier: r.tier as Tier,
     priceType: r.price_type as PriceType,
     cycle: r.cycle as Cycle,
+    currency: isCurrency(r.currency) ? r.currency : 'NGN',
     state: r.state as SubState,
     trialEndsAt: dt(r.trial_ends_at),
     nextChargeAt: dt(r.next_charge_at),
@@ -144,7 +149,7 @@ async function trackGroupHealth(userId: string, groupId: string, activeCount: nu
 
 export type ChargePlan =
   | { action: 'extend'; nextChargeAt: Date }
-  | { action: 'charge'; priceType: PriceType; tier: Tier; cycle: Cycle; planCode: string; amountKobo: number };
+  | { action: 'charge'; priceType: PriceType; tier: Tier; cycle: Cycle; planCode: string; amountKobo: number; currency: Currency };
 
 /**
  * Decides what a due charge looks like: the scheduled plan change (if any) is applied, then the group rules from rules.ts pick
@@ -170,21 +175,24 @@ export async function resolveChargePlan(sub: Subscription, now: Date, opts: { no
       lockedGroupPriceUntil: sub.lockedGroupPriceUntil, belowSince: ctx.belowSince, now,
     });
   }
+  // USD has no group discount: a USD member in a group is charged (and recorded as) the solo price.
+  if (!groupDiscountApplies(sub.currency)) priceType = 'solo';
   const planCode = planCodeFor(tier, priceType, cycle);
-  return { action: 'charge', priceType, tier, cycle, planCode, amountKobo: priceFor(tier, priceType, cycle) };
+  return { action: 'charge', priceType, tier, cycle, planCode, amountKobo: priceFor(tier, priceType, cycle, sub.currency), currency: sub.currency };
 }
 
-export async function getCreditLedger(userId: string): Promise<LedgerRow[]> {
+export async function getCreditLedger(userId: string, currency: Currency = 'NGN'): Promise<LedgerRow[]> {
   const { data, error } = await supabaseAdmin
-    .from('credit_ledger').select('id, amount_kobo, reason, created_at, expires_at').eq('user_id', userId).order('created_at', { ascending: true });
+    .from('credit_ledger').select('id, amount_kobo, reason, created_at, expires_at').eq('user_id', userId).eq('currency', currency)
+    .order('created_at', { ascending: true });
   if (error) { console.error('[billing/subscriptions] ledger read failed:', error.message); return []; }
   return ((data ?? []) as { id: string; amount_kobo: number; reason: LedgerRow['reason']; created_at: string; expires_at: string | null }[]).map((r) => ({
     id: r.id, amountKobo: r.amount_kobo, reason: r.reason, createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null,
   }));
 }
 
-export async function creditBalanceKobo(userId: string, now = new Date()): Promise<number> {
-  return availableCreditKobo(await getCreditLedger(userId), now);
+export async function creditBalanceKobo(userId: string, now = new Date(), currency: Currency = 'NGN'): Promise<number> {
+  return availableCreditKobo(await getCreditLedger(userId, currency), now);
 }
 
 export { computeCreditLots };
@@ -204,17 +212,28 @@ export async function scheduledChange(userId: string, sub: Subscription): Promis
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
-async function defaultCardId(userId: string): Promise<string | null> {
+/** The default card's id, only when it was saved in `currency` (a card is never charged in another currency). */
+async function defaultCardId(userId: string, currency?: Currency): Promise<string | null> {
   const { data } = await supabaseAdmin
-    .from('payment_methods').select('id').eq('user_id', userId).eq('is_default', true).is('removed_at', null).maybeSingle();
-  return (data as { id: string } | null)?.id ?? null;
+    .from('payment_methods').select('id, currency').eq('user_id', userId).eq('is_default', true).is('removed_at', null).maybeSingle();
+  const row = data as { id: string; currency: string | null } | null;
+  if (!row) return null;
+  if (currency && (row.currency ?? 'NGN') !== currency) return null;
+  return row.id;
 }
 
-export async function startTrial(userId: string, input: { tier: Tier; cycle: Cycle }, now = new Date()): Promise<Result<{ subscription: Subscription }>> {
+const currencyName = (c: Currency) => (c === 'USD' ? 'US dollars' : 'naira');
+
+export async function startTrial(userId: string, input: { tier: Tier; cycle: Cycle; currency?: Currency }, now = new Date()): Promise<Result<{ subscription: Subscription }>> {
   if (input.tier !== 'explorer' && input.tier !== 'builder') return { ok: false, error: 'Choose Seeker or Builder.' };
   if (input.cycle !== 'monthly' && input.cycle !== 'yearly') return { ok: false, error: 'Choose monthly or yearly.' };
-  const card = await defaultCardId(userId);
-  if (!card) return { ok: false, error: 'Add a card to start your trial.' };
+  const currency: Currency = input.currency ?? 'NGN';
+  const card = await defaultCardId(userId, currency);
+  if (!card) {
+    return { ok: false, error: (await defaultCardId(userId))
+      ? `Plans where you are are billed in ${currencyName(currency)}. Add a card in ${currencyName(currency)} to start your trial.`
+      : 'Add a card to start your trial.' };
+  }
 
   const existing = await getSubscription(userId);
   if (existing) {
@@ -225,7 +244,7 @@ export async function startTrial(userId: string, input: { tier: Tier; cycle: Cyc
   const end = trialEnd(now);
   const plan = getPlan(planCodeFor(input.tier, 'solo', input.cycle))!;
   const { data, error } = await supabaseAdmin.from('member_subscriptions').insert({
-    user_id: userId, plan_code: plan.code, tier: input.tier, price_type: 'solo', cycle: input.cycle, state: 'trial',
+    user_id: userId, plan_code: plan.code, tier: input.tier, price_type: 'solo', cycle: input.cycle, currency, state: 'trial',
     trial_ends_at: end.toISOString(), next_charge_at: firstChargeAt(now).toISOString(), period_end: end.toISOString(),
     payment_method_id: card, started_at: now.toISOString(),
   }).select('*').single();
@@ -235,12 +254,12 @@ export async function startTrial(userId: string, input: { tier: Tier; cycle: Cyc
     return { ok: false, error: 'We could not start your trial. Please try again.' };
   }
   const sub = toSubscription(data as Row);
-  await logBillingEvent(userId, 'trial_started', { plan_code: plan.code, trial_ends_at: end.toISOString() });
+  await logBillingEvent(userId, 'trial_started', { plan_code: plan.code, currency, trial_ends_at: end.toISOString() });
   await syncProfile(userId);
   const { data: c } = await supabaseAdmin.from('payment_methods').select('brand, last4').eq('id', card).maybeSingle();
   await notifyTrialStarted(userId, {
     brand: (c as { brand?: string } | null)?.brand, last4: (c as { last4?: string } | null)?.last4,
-    planName: formatPlanName(input.tier, input.cycle), amountKobo: plan.amountKobo, trialEndsAt: end,
+    planName: formatPlanName(input.tier, input.cycle), amountKobo: planAmount(plan, currency), currency, trialEndsAt: end,
   });
   return { ok: true, subscription: sub };
 }
@@ -293,7 +312,7 @@ export async function resume(userId: string, now = new Date()): Promise<Result<{
     return { ok: true, state: 'active' };
   }
   if (sub.state === 'cancelled') {
-    if (!(await defaultCardId(userId))) return { ok: false, error: 'Add a card first.' };
+    if (!(await defaultCardId(userId, sub.currency))) return { ok: false, error: `Add a card in ${currencyName(sub.currency)} first.` };
     if (!sub.lastChargeAt && sub.trialEndsAt && sub.trialEndsAt.getTime() > now.getTime()) {
       await supabaseAdmin.from('member_subscriptions').update({
         state: 'trial', next_charge_at: sub.trialEndsAt.toISOString(), period_end: sub.trialEndsAt.toISOString(), updated_at: stamp,
@@ -340,7 +359,7 @@ export async function reactivate(userId: string): Promise<Result<{ charged: bool
   const sub = await getSubscription(userId);
   if (!sub) return { ok: false, error: 'You do not have a subscription. Start a trial instead.' };
   if (isActiveState(sub.state) && !sub.cancelAtPeriodEnd) return { ok: false, error: 'Your subscription is already active.' };
-  if (!(await defaultCardId(userId))) return { ok: false, error: 'Add a card first.' };
+  if (!(await defaultCardId(userId, sub.currency))) return { ok: false, error: `Add a card in ${currencyName(sub.currency)} first.` };
   const { chargeSubscriptionNow } = await import('./engine');
   const r = await chargeSubscriptionNow(userId, { reactivation: true });
   if (!r.ok) return { ok: false, error: r.error };

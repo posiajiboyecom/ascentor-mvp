@@ -3,7 +3,7 @@
 // Prototype KPI tiles to compute for real: Gross (sample "₦[TOTAL]"); Fees (sample "₦[TOTAL]"); Net (sample "₦[TOTAL]"); Attempts (sample "[COUNT]")
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { naira, count, shortDate } from '@/lib/admin/revenue-util';
+import { naira, money, count, shortDate } from '@/lib/admin/revenue-util';
 import type { ScreenModule, ScreenSpec } from '@/lib/admin/types';
 
 export const spec: ScreenSpec = {
@@ -38,14 +38,22 @@ const screen: ScreenModule = {
   async load() {
     const { data, error } = await supabaseAdmin
       .from('summit_donations')
-      .select('id, full_name, amount, paystack_fee, status, paid_at, created_at')
+      .select('id, full_name, amount, currency, paystack_fee, status, paid_at, created_at')
       .order('created_at', { ascending: false })
       .limit(1000);
     if (error) throw new Error(error.message);
     const all = data ?? [];
     const paid = all.filter((d) => d.status === 'paid');
-    const gross = paid.reduce((t, d) => t + (Number(d.amount) || 0), 0);
-    const fees = paid.reduce((t, d) => t + (d.paystack_fee != null ? Number(d.paystack_fee) : 0), 0);
+    // Donors abroad give in US dollars. Totals are per currency: naira in the tiles, dollars added beside them when there are any.
+    const isUsd = (d: { currency?: string | null }) => (d.currency || 'NGN').toUpperCase() === 'USD';
+    const sumOf = (rows: typeof paid, k: 'amount' | 'paystack_fee') => rows.reduce((t, d) => t + (d[k] != null ? Number(d[k]) || 0 : 0), 0);
+    const ngn = paid.filter((d) => !isUsd(d));
+    const usd = paid.filter(isUsd);
+    const gross = sumOf(ngn, 'amount');
+    const fees = sumOf(ngn, 'paystack_fee');
+    const grossUsd = sumOf(usd, 'amount');
+    const feesUsd = sumOf(usd, 'paystack_fee');
+    const both = (n: number, u: number) => (usd.length ? `${naira(n)} · ${money(u, 'USD')}` : naira(n));
     return {
       rows: all.slice(0, 200).map((d) => {
         const isPaid = d.status === 'paid';
@@ -54,18 +62,18 @@ const screen: ScreenModule = {
           id: d.id,
           cells: [
             d.full_name || '-',
-            naira(d.amount != null ? Number(d.amount) : null),
-            naira(fee),
-            isPaid && fee != null ? naira(Number(d.amount) - fee) : '-',
+            money(d.amount != null ? Number(d.amount) : null, d.currency),
+            money(fee, d.currency),
+            isPaid && fee != null ? money(Number(d.amount) - fee, d.currency) : '-',
             STATUS[d.status] ?? 'Pending',
             shortDate(d.paid_at || d.created_at),
           ],
         };
       }),
       kpis: [
-        { label: 'Gross', value: naira(gross) },
-        { label: 'Fees', value: naira(fees) },
-        { label: 'Net', value: naira(gross - fees) },
+        { label: 'Gross', value: both(gross, grossUsd) },
+        { label: 'Fees', value: both(fees, feesUsd) },
+        { label: 'Net', value: both(gross - fees, grossUsd - feesUsd) },
         { label: 'Attempts', value: count(all.length) },
       ],
       note: all.length > 200

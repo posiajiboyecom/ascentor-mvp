@@ -1,7 +1,9 @@
 // lib/admin/billing-admin.ts
 // Pure helpers for the Billing v2 admin pages (Subscriptions, Groups, Credits). No I/O, safe to import anywhere and to unit test.
 //   stateLabel(state)            -> Trial | Active | Grace | Lapsed | Cancelled
-//   mrrKobo(subs)                -> monthly recurring revenue estimate from the catalog (active and grace, not leaving)
+//   mrrKobo(subs)                -> naira monthly recurring revenue estimate from the catalog (active and grace, not leaving)
+//   mrrByCurrency(subs)          -> { NGN, USD } in minor units;  moneyTotals({NGN, USD}) -> "₦9,000 · $15"
+//   koboToNaira(minor, currency?) -> money label in that currency (default NGN)
 //   groupStatusLabel(status)     -> Forming | Active | Broken
 //   groupNotice(activeCount)     -> the visual notice for a group, or null
 //   creditKindLabel(reason)      -> Earned | Used | Expired | Cancelled
@@ -9,7 +11,7 @@
 //   canRetryCharge(mode, state)  -> whether 'Retry charge now' may be offered
 //   csvText                      -> CSV with a formula-injection guard
 
-import { getPlan, perMonthKobo, tierLabel, formatNaira, type Tier } from '@/lib/billing/catalog';
+import { getPlan, perMonthKobo, tierLabel, formatMoney, isCurrency, type Currency, type Tier } from '@/lib/billing/catalog';
 
 export type ChargingModeKey = 'off' | 'dry' | 'live';
 
@@ -20,18 +22,29 @@ export function stateLabel(state: string): string {
   return STATE_LABEL[state] ?? '-';
 }
 
-export interface MrrInput { planCode: string; state: string; cancelAtPeriodEnd?: boolean }
+export interface MrrInput { planCode: string; state: string; cancelAtPeriodEnd?: boolean; currency?: string | null }
 
-/** Monthly-equivalent kobo of every paying subscription: state active or grace, and not set to end. Trials never count. */
-export function mrrKobo(subs: MrrInput[]): number {
-  let total = 0;
+/** Monthly-equivalent minor units of every paying subscription, per currency: active or grace, not set to end. Trials never count. */
+export function mrrByCurrency(subs: MrrInput[]): Record<Currency, number> {
+  const total: Record<Currency, number> = { NGN: 0, USD: 0 };
   for (const s of subs) {
     if (s.state !== 'active' && s.state !== 'grace') continue;
     if (s.cancelAtPeriodEnd) continue;
     const plan = getPlan(s.planCode);
-    if (plan) total += perMonthKobo(plan);
+    const currency: Currency = isCurrency(s.currency) ? s.currency : 'NGN';
+    if (plan) total[currency] += perMonthKobo(plan, currency);
   }
   return total;
+}
+
+/** Naira-only MRR (kept for older callers and tests). */
+export function mrrKobo(subs: MrrInput[]): number {
+  return mrrByCurrency(subs.filter((s) => !s.currency || s.currency === 'NGN')).NGN;
+}
+
+/** "₦9,000", or "₦9,000 · $15" once there is US dollar money. Naira and dollars are never added together. */
+export function moneyTotals(t: Record<Currency, number>): string {
+  return t.USD > 0 ? `${formatMoney(t.NGN, 'NGN')} · ${formatMoney(t.USD, 'USD')}` : formatMoney(t.NGN, 'NGN');
 }
 
 export function planLabel(tier: string | null | undefined): string {
@@ -41,8 +54,8 @@ export function planLabel(tier: string | null | undefined): string {
 export const priceTypeLabel = (t: string | null | undefined) => (t === 'group' ? 'Group' : t === 'solo' ? 'Solo' : '-');
 export const cycleLabel = (c: string | null | undefined) => (c === 'yearly' ? 'Yearly' : c === 'monthly' ? 'Monthly' : '-');
 
-export function koboToNaira(kobo: number | null | undefined): string {
-  return kobo == null || !Number.isFinite(kobo) ? '-' : formatNaira(kobo);
+export function koboToNaira(kobo: number | null | undefined, currency: Currency = 'NGN'): string {
+  return kobo == null || !Number.isFinite(kobo) ? '-' : formatMoney(kobo, currency);
 }
 
 const GROUP_LABEL: Record<string, string> = { forming: 'Forming', active: 'Active', broken: 'Broken' };

@@ -5,7 +5,7 @@ import { getPlanPricing } from '@/lib/plans-config';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { naira } from '@/lib/admin/revenue-util';
 import PlansScreen from '@/components/admin/console/PlansScreen';
-import { PLANS, tierLabel, formatNaira, perMonthKobo } from '@/lib/billing/catalog';
+import { PLANS, tierLabel, formatNaira, formatMoney, perMonthKobo, priceFor } from '@/lib/billing/catalog';
 import { priceTypeLabel, cycleLabel } from '@/lib/admin/billing-admin';
 
 export const dynamic = 'force-dynamic';
@@ -30,13 +30,14 @@ export default async function PlansPage() {
   const [seeker, builder] = await Promise.all([countFor('explorer'), countFor('builder')]);
 
   const plans = [
-    { key: 'seeker' as const, name: 'Seeker', members: seeker, who: WHO.explorer, price: price('explorer') != null ? naira(price('explorer')) : '\-', open: asBool(s['plan.seeker.open']) },
-    { key: 'builder' as const, name: 'Builder', members: builder, who: WHO.builder, price: price('builder') != null ? naira(price('builder')) : '\-', open: asBool(s['plan.builder.open']) },
+    { key: 'seeker' as const, name: 'Seeker', members: seeker, who: WHO.explorer, price: price('explorer') != null ? `${naira(price('explorer'))} in Nigeria · ${formatMoney(priceFor('explorer', 'solo', 'monthly', 'USD'), 'USD')} elsewhere` : '\-', open: asBool(s['plan.seeker.open']) },
+    { key: 'builder' as const, name: 'Builder', members: builder, who: WHO.builder, price: price('builder') != null ? `${naira(price('builder'))} in Nigeria · ${formatMoney(priceFor('builder', 'solo', 'monthly', 'USD'), 'USD')} elsewhere` : '\-', open: asBool(s['plan.builder.open']) },
   ];
 
   const catalog = PLANS.map((p) => ({
     code: p.code, tier: tierLabel(p.tier), priceType: priceTypeLabel(p.priceType), cycle: cycleLabel(p.cycle),
-    price: formatNaira(p.amountKobo), perMonth: p.cycle === 'yearly' ? formatNaira(perMonthKobo(p)) : '-',
+    price: `${formatNaira(p.amountKobo)} · ${formatMoney(p.amountUsdCents, 'USD')}`,
+    perMonth: p.cycle === 'yearly' ? `${formatNaira(perMonthKobo(p))} · ${formatMoney(perMonthKobo(p, 'USD'), 'USD')}` : '-',
   }));
 
   return (

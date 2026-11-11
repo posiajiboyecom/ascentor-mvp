@@ -6,6 +6,8 @@ import { redirect } from 'next/navigation';
 import ReferralClient, { type Invite } from './ReferralClient';
 import { getCreditLedger } from '@/lib/billing/subscriptions';
 import { computeCreditLots, CREDIT_RATE_PERCENT } from '@/lib/billing/rules';
+import { visitorCurrency } from '@/lib/geo';
+import { billingCurrencyFor } from '@/lib/billing/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,8 +41,10 @@ export default async function ReferralPage() {
     }));
   }
 
-  // Credit from friends (Billing v2): earned 14 days after a friend's first real payment, valid 12 months.
-  const ledger = await getCreditLedger(user.id).catch(() => []);
+  // Credit from friends (Billing v2): earned 14 days after a friend's first real payment, valid 12 months. Credit is earned and
+  // spent in the member's billing currency (naira in Nigeria, US dollars elsewhere).
+  const currency = await billingCurrencyFor(user.id, await visitorCurrency());
+  const ledger = await getCreditLedger(user.id, currency).catch(() => []);
   const now = new Date();
   const earnedKobo = ledger.filter((l) => l.reason === 'referral_earned').reduce((sum, l) => sum + Math.max(0, l.amountKobo), 0);
   const balanceKobo = computeCreditLots(ledger, now).reduce((sum, l) => sum + l.remainingKobo, 0);
@@ -51,6 +55,7 @@ export default async function ReferralPage() {
       earnedKobo={earnedKobo}
       balanceKobo={balanceKobo}
       ratePercent={CREDIT_RATE_PERCENT}
+      currency={currency}
       invites={invites}
     />
   );

@@ -1,6 +1,7 @@
 // Settings > Billing: plans (Seeker and Builder), cards, groups, credit and billing history.
 import { SUPPORT_EMAIL } from '@/lib/contact';
 import { redirect } from 'next/navigation';
+import { visitorCurrency } from '@/lib/geo';
 import { getMe } from '@/lib/rx/server';
 import { Aside, Page, Title } from '@/components/rx/ui';
 import { isCheckoutOn } from '@/lib/checkout-switch';
@@ -16,7 +17,7 @@ export const metadata = { title: 'Billing' };
 export default async function BillingPage() {
   const me = await getMe();
   if (!me) redirect('/login?redirect=/settings/billing');
-  const [data, checkoutOn] = await Promise.all([loadBillingView(me.userId), isCheckoutOn()]);
+  const [data, checkoutOn] = await Promise.all([loadBillingView(me.userId, await visitorCurrency()), isCheckoutOn()]);
 
   return (
     <Page>

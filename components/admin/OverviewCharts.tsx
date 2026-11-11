@@ -17,7 +17,7 @@ interface Analytics {
   kpis: {
     totalUsers: number; newUsers7d: number; newUsers30d: number;
     sessions7d: number; sessions30d: number; activeSubs: number;
-    mrr: number | null; revenue30d: number | null; revenueSummit30d?: number | null; revenueSubscription30d?: number | null; summitPaidCount?: number | null; completionRate: number | null;
+    mrr: number | null; mrrUsd?: number | null; revenueUsd30d?: number | null; revenue30d: number | null; revenueSummit30d?: number | null; revenueSubscription30d?: number | null; summitPaidCount?: number | null; completionRate: number | null;
   };
   series: { date: string; signups: number; sessions: number; subscriptions: number; summit: number }[];
   plans: { plan: string; count: number }[];
@@ -192,8 +192,9 @@ export default function OverviewCharts() {
         <Kpi label="Active subscribers" value={kpis.activeSubs.toLocaleString()} sub="paid + trialing" color={C.gold} />
         {canRevenue && (
           <>
-            <Kpi label="MRR (est.)" value={nairaCompact(kpis.mrr ?? 0)} sub="excludes promo / manual" color={C.good} />
-            <Kpi label="Subscription revenue, 30d" value={nairaCompact(kpis.revenueSubscription30d ?? 0)} sub="plans only (no Summit)"
+            <Kpi label="MRR (est.)" value={nairaCompact(kpis.mrr ?? 0)}
+                 sub={kpis.mrrUsd ? `+ $${kpis.mrrUsd.toLocaleString('en-US')} from members abroad · excludes promo / manual` : 'excludes promo / manual'} color={C.good} />
+            <Kpi label="Subscription revenue, 30d" value={nairaCompact(kpis.revenueSubscription30d ?? 0)} sub={kpis.revenueUsd30d ? `plans only (no Summit) · + $${kpis.revenueUsd30d.toLocaleString('en-US')} abroad` : 'plans only (no Summit)'}
                  color={C.good} spark={series} sparkKey="revenue" />
             <a href="/admin/elevation-summit/registrations" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Kpi label="Summit tickets, 30d" value={naira(kpis.revenueSummit30d ?? 0)} sub={`${kpis.summitPaidCount ?? 0} paid · click to manage`} color={C.gold} />

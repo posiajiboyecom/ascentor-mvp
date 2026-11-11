@@ -5,7 +5,7 @@
 // Used by Settings > Billing and by checkout v2. Talks only to /api/billing/cards/*. Authorization codes never reach the browser;
 // the list only has safe fields. Shows the server's own refusal text (for example "this is your only card").
 //
-// Adding a card: POST /cards/start -> Paystack's hosted page (card channel, NGN 50 check) -> Paystack returns the member to
+// Adding a card: POST /cards/start -> Paystack's hosted page (card channel, ₦50 or $1 check) -> Paystack returns the member to
 // `<returnTo>?card=verify&reference=...` -> this panel calls POST /cards/verify on mount and shows the result.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,6 +16,8 @@ import { brandName, expiry } from './format';
 
 export interface CardView {
   id: string; brand: string | null; last4: string | null; expMonth: string | null; expYear: string | null; bank: string | null; isDefault: boolean;
+  /** The currency the card was checked in. A card is only charged in that currency. */
+  currency?: 'NGN' | 'USD';
 }
 
 type Msg = { kind: 'ok' | 'bad' | 'info'; text: string } | null;
@@ -23,7 +25,7 @@ type Msg = { kind: 'ok' | 'bad' | 'info'; text: string } | null;
 export default function CardsPanel({ initialCards, returnTo, verifyAmountLabel, onCardsChange, beforeRedirect, heading = 'Payment methods', intro }: {
   initialCards: CardView[];
   returnTo: 'settings' | 'checkout';
-  /** "₦50", from the server so the amount lives in one place. */
+  /** "₦50" or "$1", from the server so the amount lives in one place. */
   verifyAmountLabel: string;
   onCardsChange?: (cards: CardView[]) => void;
   /** Runs just before the browser leaves for Paystack (checkout saves the member's choices here). */
@@ -129,6 +131,9 @@ export default function CardsPanel({ initialCards, returnTo, verifyAmountLabel, 
       ) : (
         <ul className="bl-cards" aria-label="Saved cards">
           {cards.map((c) => {
+            // Only worth saying when the member has cards in both currencies (they moved, or added one abroad).
+            const mixed = new Set(cards.map((x) => x.currency ?? 'NGN')).size > 1;
+            const cur = mixed ? ((c.currency ?? 'NGN') === 'USD' ? 'US dollar card' : 'Naira card') : null;
             const exp = expiry(c.expMonth, c.expYear);
             const name = `${brandName(c.brand)} ending ${c.last4 ?? ''}`;
             return (
@@ -136,7 +141,7 @@ export default function CardsPanel({ initialCards, returnTo, verifyAmountLabel, 
                 <span className="ic" aria-hidden><CreditCard /></span>
                 <div className="meta">
                   <b>{name}</b>
-                  <span>{[exp && `Expires ${exp}`, c.bank].filter(Boolean).join(' · ') || 'Card'}</span>
+                  <span>{[exp && `Expires ${exp}`, c.bank, cur].filter(Boolean).join(' · ') || 'Card'}</span>
                 </div>
                 {c.isDefault && <span className="rx-tag rust">Default</span>}
                 <div className="acts">

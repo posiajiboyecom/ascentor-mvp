@@ -24,11 +24,13 @@ const STATE_META: Record<string, { label: string; color: string; bg: string }> =
 };
 
 const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
+const dollars = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+const money = (n: number, currency?: string | null) => ((currency || 'NGN').toUpperCase() === 'USD' ? dollars(n) : naira(n));
 
 export default function SummitDonationsClient() {
   const supabase = createClient();
   const [donations, setDonations] = useState<SummitDonation[]>([]);
-  const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, abandoned: 0, gross: 0, fees: 0, net: 0 });
+  const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, abandoned: 0, gross: 0, fees: 0, net: 0, grossUsd: 0, feesUsd: 0, netUsd: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -117,9 +119,9 @@ export default function SummitDonationsClient() {
           { label: 'Paid', value: stats.paid },
           { label: 'Pending', value: stats.pending },
           { label: 'Abandoned', value: stats.abandoned },
-          { label: 'Gross', value: naira(stats.gross) },
-          { label: 'Fees', value: naira(stats.fees) },
-          { label: 'Net', value: naira(stats.net) },
+          { label: 'Gross', value: stats.grossUsd ? `${naira(stats.gross)} · ${dollars(stats.grossUsd)}` : naira(stats.gross) },
+          { label: 'Fees', value: stats.grossUsd ? `${naira(stats.fees)} · ${dollars(stats.feesUsd)}` : naira(stats.fees) },
+          { label: 'Net', value: stats.grossUsd ? `${naira(stats.net)} · ${dollars(stats.netUsd)}` : naira(stats.net) },
         ].map((s) => (
           <div key={s.label} style={{ background: B.card, border: `1px solid ${B.border}`, borderRadius: '10px', padding: '16px 20px' }}>
             <p style={{ margin: '0 0 4px', fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.muted }}>{s.label}</p>
@@ -185,7 +187,7 @@ export default function SummitDonationsClient() {
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '6px', background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>{sc.label}</span>
                     </td>
-                    <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{d.amount ? naira(Number(d.amount)) : '-'}</td>
+                    <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{d.amount ? money(Number(d.amount), d.currency) : '-'}</td>
                     <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '220px' }}>{d.message || '-'}</td>
                     <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
                       {new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

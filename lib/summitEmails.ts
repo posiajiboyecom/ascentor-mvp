@@ -505,6 +505,13 @@ export interface DonationReceiptInfo {
   reference: string;
 }
 
+/** "₦5,000" or "$20": a donation amount in its own currency (major units). */
+function donationMoney(amount: number, currency: string | null | undefined): string {
+  return (currency || 'NGN').toUpperCase() === 'USD'
+    ? '$' + amount.toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(amount) ? 0 : 2, maximumFractionDigits: 2 })
+    : naira(amount);
+}
+
 export async function sendDonationReceiptEmail(d: DonationReceiptInfo) {
   await sendSummitMail({
     to: d.email,
@@ -518,7 +525,7 @@ export async function sendDonationReceiptEmail(d: DonationReceiptInfo) {
         p(`Hi ${esc(d.full_name)},`) +
         p('We have received your donation in support of Ascentor and The Elevation Summit. Every contribution helps us build the room and the community for the next generation of purposeful leaders.') +
         summaryBox(
-          summaryRow('Amount', naira(d.amount)) +
+          summaryRow('Amount', donationMoney(d.amount, d.currency)) +
           summaryRow('Reference', esc(d.reference)) +
           summaryRow('Status', '<span style="color:#C8A96E;">Received</span>')
         ) +
@@ -533,6 +540,7 @@ export interface AdminDonationInfo {
   email:    string;
   phone:    string;
   amount:   number;
+  currency?: string | null;
   reference: string;
   message?: string | null;
 }
@@ -541,9 +549,9 @@ export async function sendAdminDonationNotification(i: AdminDonationInfo) {
   await sendSummitMail({
     to: SUMMIT_ADMIN_EMAIL,
     internal: true,
-    subject: `New donation received: ${naira(i.amount)} from ${i.fullName}`,
+    subject: `New donation received: ${donationMoney(i.amount, i.currency)} from ${i.fullName}`,
     html: brandedEmailLayout({
-      preheader: `${i.fullName} donated ${naira(i.amount)}.`,
+      preheader: `${i.fullName} donated ${donationMoney(i.amount, i.currency)}.`,
       eyebrow: 'Admin Notification',
       heading: 'New donation received.',
       recipient: SUMMIT_ADMIN_EMAIL,
@@ -553,7 +561,7 @@ export async function sendAdminDonationNotification(i: AdminDonationInfo) {
           summaryRow('Name', esc(i.fullName)) +
           summaryRow('Email', esc(i.email)) +
           summaryRow('Phone', esc(i.phone) || '<span style="color:#EF4444;">not captured</span>') +
-          summaryRow('Amount', naira(i.amount)) +
+          summaryRow('Amount', donationMoney(i.amount, i.currency)) +
           summaryRow('Reference', esc(i.reference)) +
           (i.message ? summaryRow('Message', esc(i.message)) : '')
         ) +
@@ -600,6 +608,7 @@ export async function deliverDonationEmails(
       email:    donation.email,
       phone:    donation.phone,
       amount:   Number(donation.amount) || 0,
+      currency: donation.currency || 'NGN',
       reference: donation.payment_reference || '',
       message:  donation.message,
     });

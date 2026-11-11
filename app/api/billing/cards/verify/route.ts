@@ -1,5 +1,5 @@
 // POST /api/billing/cards/verify   body: { reference }
-// Verifies the NGN 50 card check with Paystack, saves the card, and refunds the NGN 50.
+// Verifies the card check with Paystack, saves the card in that check's currency, and refunds the check.
 // Returns { card, added, refund }. Safe to call twice (the webhook may have saved the card already).
 import { NextRequest, NextResponse } from 'next/server';
 import { requireBillingMember } from '@/lib/billing/api';

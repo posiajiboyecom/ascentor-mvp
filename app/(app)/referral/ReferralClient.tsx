@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { ArrowRight, Check, Copy, Linkedin, MoreHorizontal, Share2 } from 'lucide-react';
 import { Aside, Avatar, Empty, Page, Tag, Title } from '@/components/rx/ui';
 import { useToast } from '@/components/rx/Toast';
-import { formatNaira } from '@/lib/billing/catalog';
+import { formatMoney, type Currency } from '@/lib/billing/catalog';
 
 export type Invite = { id: string; name: string; joined: string; rewarded: boolean };
 
@@ -18,7 +18,8 @@ const when = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '
 const stat: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2, padding: '14px 16px', background: 'var(--rx-card)', border: '1px solid var(--rx-border)', borderRadius: 12 };
 const statN: React.CSSProperties = { fontSize: 28, fontWeight: 800, lineHeight: 1.1 };
 
-export default function ReferralClient({ code, earnedKobo, balanceKobo, ratePercent, invites }: { code: string; earnedKobo: number; balanceKobo: number; ratePercent: number; invites: Invite[] }) {
+export default function ReferralClient({ code, earnedKobo, balanceKobo, ratePercent, invites, currency = 'NGN' }: { code: string; earnedKobo: number; balanceKobo: number; ratePercent: number; invites: Invite[]; currency?: Currency }) {
+  const formatNaira = (minor: number) => formatMoney(minor, currency);
   const toast = useToast();
   const [copied, setCopied] = useState(false);
 

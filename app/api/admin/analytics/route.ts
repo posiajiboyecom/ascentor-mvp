@@ -8,6 +8,7 @@ import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 import { getPlanPricingMap } from '@/lib/plans-config';
+import { mrrByCurrency } from '@/lib/admin/billing-admin';
 import { guardApi } from '@/lib/admin/api-guard';
 
 export const dynamic = 'force-dynamic';
@@ -40,13 +41,13 @@ export async function GET() {
   const d7 = now - 7 * DAY;
 
   const [
-    totalUsers, signups, sessions, activeProfiles, subPayments, summitPaid, attempts,
+    totalUsers, signups, sessions, activeProfiles, subPayments, summitPaid, attempts, v2Subs,
   ] = await Promise.all([
     supabaseAdmin.from('profiles').select('id', { count: 'exact', head: true }),
     supabaseAdmin.from('profiles').select('created_at').gte('created_at', since).limit(10000),
     supabaseAdmin.from('coaching_sessions').select('created_at').gte('created_at', since).limit(20000),
     supabaseAdmin.from('profiles')
-      .select('subscription_plan, billing_cycle, payment_method, subscription_end')
+      .select('id, subscription_plan, billing_cycle, payment_method, subscription_end')
       .in('subscription_status', ['active', 'trialing']).limit(20000),
     canRevenue
       ? supabaseAdmin.from('payments').select('*').eq('status', 'success').limit(10000)
@@ -57,7 +58,11 @@ export async function GET() {
     canRevenue
       ? supabaseAdmin.from('payment_attempts').select('status, kind, amount_kobo').gte('created_at', since).limit(20000)
       : Promise.resolve({ data: [] as any[] }),
+    // Billing v2 subscriptions carry their currency; US dollar ones are reported separately, never added to naira.
+    supabaseAdmin.from('member_subscriptions').select('user_id, plan_code, state, cancel_at_period_end, currency').limit(20000),
   ]);
+  const usdSubs = ((v2Subs.data ?? []) as { currency: string | null }[]).filter((x) => x.currency === 'USD');
+  const mrrUsd = mrrByCurrency(usdSubs.map((x: any) => ({ planCode: x.plan_code, state: x.state, cancelAtPeriodEnd: x.cancel_at_period_end, currency: 'USD' }))).USD / 100;
 
   // ── 30-day series ─────────────────────────────────────────────────────────
   const series: Record<string, { date: string; signups: number; sessions: number; subscriptions: number; summit: number }> = {};
@@ -69,8 +74,13 @@ export async function GET() {
   for (const r of sessions.data ?? []) { const s = series[dayKey(r.created_at)]; if (s) s.sessions++; }
   // The live payments table's amount column has varied; accept any known name.
   const payAmount = (r: any) => Number(r.amount ?? r.amount_paid ?? r.amount_naira ?? (r.amount_kobo != null ? r.amount_kobo / 100 : 0)) || 0;
+  let revenueUsd30d = 0;
   for (const r of subPayments.data ?? []) {
     const when = r.paid_at ?? r.created_at;
+    if (r.currency === 'USD') {
+      if (when && new Date(when).toISOString() >= since) revenueUsd30d += payAmount(r);
+      continue; // the naira series never mixes in dollars
+    }
     if (!when || new Date(when).toISOString() < since) continue;
     const s = series[dayKey(when)]; if (s) s.subscriptions += payAmount(r);
   }
@@ -80,6 +90,7 @@ export async function GET() {
   const planCounts: Record<string, number> = {};
   let mrr = 0;
   let activeSubs = 0;
+  const usdIds = new Set(((v2Subs.data ?? []) as { user_id: string; currency: string | null }[]).filter((x) => x.currency === 'USD').map((x) => x.user_id));
   for (const p of activeProfiles.data ?? []) {
     if (p.subscription_end && new Date(p.subscription_end).getTime() < now) continue; // lapsed
     activeSubs++;
@@ -88,6 +99,7 @@ export async function GET() {
 
     // Admin-granted and promo access is not recurring revenue.
     if (p.billing_cycle === 'manual' || p.payment_method === 'promo') continue;
+    if (usdIds.has(p.id)) continue; // counted in mrrUsd
     const pricing = getPlanPricingMap()[plan];
     if (!pricing) continue;
     mrr += p.billing_cycle === 'annual' ? pricing.yearlyPrice / 12 : pricing.monthlyPrice;
@@ -119,6 +131,8 @@ export async function GET() {
       sessions30d:    (sessions.data ?? []).length,
       activeSubs,
       mrr:            canRevenue ? Math.round(mrr) : null,
+      mrrUsd:         canRevenue ? Math.round(mrrUsd * 100) / 100 : null,
+      revenueUsd30d:  canRevenue ? Math.round(revenueUsd30d * 100) / 100 : null,
       revenue30d:     canRevenue ? Math.round(sum('subscriptions') + sum('summit')) : null,
       revenueSummit30d:       canRevenue ? Math.round(sum('summit')) : null,
       revenueSubscription30d: canRevenue ? Math.round(sum('subscriptions')) : null,

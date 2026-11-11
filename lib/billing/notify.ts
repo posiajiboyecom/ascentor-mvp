@@ -18,7 +18,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { brandedEmailLayout, esc, goldButton, p } from '@/lib/emailTemplate';
-import { formatNaira } from './catalog';
+import { formatMoney, type Currency } from './catalog';
 
 const SITE = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
 export const BILLING_LINK = '/settings/billing';
@@ -31,6 +31,8 @@ export type BillingNotifyEvent =
 export interface NotifyData {
   brand?: string | null;
   last4?: string | null;
+  /** Currency of every amount below (minor units). Defaults to NGN. */
+  currency?: Currency;
   amountKobo?: number;
   /** Human plan name, for example "Seeker, monthly". */
   planName?: string;
@@ -98,6 +100,7 @@ interface Copy {
 }
 
 function copyFor(event: BillingNotifyEvent, d: NotifyData): Copy {
+  const formatNaira = (minor: number) => formatMoney(minor, d.currency ?? 'NGN');
   const amount = d.amountKobo != null ? formatNaira(d.amountKobo) : '';
   const plan = d.planName ?? 'your plan';
   switch (event) {

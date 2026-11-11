@@ -1,5 +1,6 @@
 // POST /api/billing/subscription/start   body: { tier: 'explorer'|'builder', cycle: 'monthly'|'yearly' }
 // Starts the 7 day trial. Needs a default card (see /api/billing/cards/*). First charge is on day 8.
+// Currency comes from where the member is (lib/geo.ts) and stays with the subscription for good.
 import { NextRequest, NextResponse } from 'next/server';
 import { requireBillingMember } from '@/lib/billing/api';
 import { startTrial } from '@/lib/billing/subscriptions';
@@ -8,6 +9,7 @@ import { billingTrialStart } from '@/lib/validation/schemas/billing';
 
 import { closedPlanIds, CLOSED_PLAN_MESSAGE } from '@/lib/admin/plans-open';
 import type { Tier } from '@/lib/billing/catalog';
+import { requestCurrency } from '@/lib/geo';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (tier && (await closedPlanIds()).includes(tier as Tier)) {
     return NextResponse.json({ error: CLOSED_PLAN_MESSAGE }, { status: 400 });
   }
-  const r = await startTrial(g.userId, parsed.data);
+  const r = await startTrial(g.userId, { ...parsed.data, currency: requestCurrency(req) });
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 });
   return NextResponse.json({
     state: r.subscription.state, planCode: r.subscription.planCode,

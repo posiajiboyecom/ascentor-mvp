@@ -4,6 +4,7 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import DonateClient from './DonateClient';
+import { visitorCurrency } from '@/lib/geo';
 import PublicShell from '@/components/layout/PublicShell';
 
 export const metadata: Metadata = {
@@ -25,10 +26,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DonatePage() {
+export default async function DonatePage() {
+  // Donors in Nigeria give in naira; everyone else gives in US dollars.
+  const currency = await visitorCurrency();
   return (
     <PublicShell>
-      <DonateClient />
+      <DonateClient currency={currency} />
     </PublicShell>
   );
 }

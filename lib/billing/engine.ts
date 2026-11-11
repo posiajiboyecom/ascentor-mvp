@@ -42,7 +42,7 @@ import {
   leaderCycleEnded, LEADER_CYCLE_DAYS, groupAlertDue, GROUP_MIN, GROUP_REPLACE_DAYS, countActiveMembers, type SubState,
 } from './rules';
 import { releaseSeats, restoreSeats, seatsToRelease } from './seats';
-import { priceFor, getPlan, type Tier, type Cycle, type PriceType } from './catalog';
+import { priceFor, getPlan, planAmount, isCurrency, groupDiscountApplies, type Tier, type Cycle, type PriceType, type Currency } from './catalog';
 import { formatPlanName } from './labels';
 import {
   notifyPaymentSucceeded, notifyPaymentFailed, notifyLapsed, notifyReactivated, notifyTrialEnding, notifyGroupWarning, notifyCreditEarned,
@@ -100,6 +100,8 @@ interface Intent {
   cycle: Cycle;
   priceType: PriceType;
   planCode: string;
+  /** Currency of every amount in this intent (the subscription's). Amounts are minor units. */
+  currency: Currency;
   grossKobo: number;
   creditKobo: number;
   chargeKobo: number;
@@ -110,10 +112,11 @@ interface Intent {
 async function buildIntent(sub: Subscription, now: Date, reactivation = false): Promise<Intent | { extend: Date }> {
   const plan = await resolveChargePlan(sub, now, { noExtension: reactivation });
   if (plan.action === 'extend') return { extend: plan.nextChargeAt };
-  const lots = computeCreditLots(await getCreditLedger(sub.userId), now);
+  // Only credit in the subscription's own currency can pay towards it.
+  const lots = computeCreditLots(await getCreditLedger(sub.userId, plan.currency), now);
   const app = applyCredit(plan.amountKobo, lots);
   return {
-    sub, tier: plan.tier, cycle: plan.cycle, priceType: plan.priceType, planCode: plan.planCode,
+    sub, tier: plan.tier, cycle: plan.cycle, priceType: plan.priceType, planCode: plan.planCode, currency: plan.currency,
     grossKobo: plan.amountKobo, creditKobo: app.appliedKobo, chargeKobo: app.chargeKobo, skipCharge: app.skipCharge,
     kind: reactivation ? 'reactivation' : !sub.lastChargeAt ? 'first_charge' : 'renewal',
   };
@@ -145,7 +148,7 @@ async function settleSuccess(i: Intent, reference: string, tx: PaystackTx | null
   if (tx) {
     const { error: payErr } = await supabaseAdmin.from('payments').insert({
       user_id: sub.userId, reference, provider_reference: reference, amount_cents: tx.amount, amount: tx.amount / 100,
-      currency: tx.currency || 'NGN', plan_id: i.tier, billing: i.cycle === 'yearly' ? 'annual' : 'monthly',
+      currency: tx.currency || i.currency, plan_id: i.tier, billing: i.cycle === 'yearly' ? 'annual' : 'monthly',
       provider: 'paystack', status: 'success', paid_at: tx.paid_at || now.toISOString(),
       metadata: { purpose: 'subscription_charge', plan_code: i.planCode, price_type: i.priceType, credit_applied_kobo: i.creditKobo, gross_kobo: i.grossKobo, kind: i.kind },
     });
@@ -153,19 +156,19 @@ async function settleSuccess(i: Intent, reference: string, tx: PaystackTx | null
   }
 
   if (i.creditKobo > 0) {
-    const lots = computeCreditLots(await getCreditLedger(sub.userId), now);
+    const lots = computeCreditLots(await getCreditLedger(sub.userId, i.currency), now);
     const app = applyCredit(i.creditKobo, lots);
     if (app.draws.length) {
       await supabaseAdmin.from('credit_ledger').insert(app.draws.map((d) => ({
-        user_id: sub.userId, amount_kobo: -d.kobo, reason: 'used', source_payment_ref: reference,
+        user_id: sub.userId, amount_kobo: -d.kobo, reason: 'used', source_payment_ref: reference, currency: i.currency,
       })));
     }
-    await logBillingEvent(sub.userId, 'credit_used', { reference, credit_kobo: app.appliedKobo });
+    await logBillingEvent(sub.userId, 'credit_used', { reference, credit_kobo: app.appliedKobo, currency: i.currency });
   }
 
   const eventType = wasLapsedOrEnded ? 'reactivated' : i.kind === 'first_charge' ? 'first_charge' : 'renewal_succeeded';
   await logBillingEvent(sub.userId, eventType, {
-    reference, plan_code: i.planCode, price_type: i.priceType, gross_kobo: i.grossKobo, credit_kobo: i.creditKobo, charged_kobo: i.chargeKobo,
+    reference, plan_code: i.planCode, price_type: i.priceType, currency: i.currency, gross_kobo: i.grossKobo, credit_kobo: i.creditKobo, charged_kobo: i.chargeKobo,
   });
   if (i.priceType !== sub.priceType) await logBillingEvent(sub.userId, i.priceType === 'group' ? 'group_price_applied' : 'group_price_removed', { plan_code: i.planCode });
   if (i.skipCharge) await logBillingEvent(sub.userId, 'charge_skipped_credit', { reference, credit_kobo: i.creditKobo, plan_code: i.planCode });
@@ -175,7 +178,7 @@ async function settleSuccess(i: Intent, reference: string, tx: PaystackTx | null
   const card = tx?.authorization ?? null;
   const common = {
     brand: card?.brand ?? card?.card_type ?? null, last4: card?.last4 ?? null,
-    planName: formatPlanName(i.tier, i.cycle), amountKobo: i.chargeKobo, nextChargeAt: periodEnd,
+    planName: formatPlanName(i.tier, i.cycle), amountKobo: i.chargeKobo, currency: i.currency, nextChargeAt: periodEnd,
   };
   if (wasLapsedOrEnded) await notifyReactivated(sub.userId, common);
   else await notifyPaymentSucceeded(sub.userId, common);
@@ -211,7 +214,7 @@ export async function recordChargeFailure(userId: string, reference: string, rea
   if (!next.final) await logBillingEvent(userId, 'charge_retry', { scheduled_for: next.at.toISOString(), attempt: failedCount + 1 });
   await syncProfile(userId, now);
 
-  const card = await getChargeableCard(userId);
+  const card = await getChargeableCard(userId, sub.currency);
   // One message per failure. The first one already names the grace end, so grace_started does not send a second email.
   await notifyPaymentFailed(userId, {
     brand: card?.brand, last4: card?.last4, reason, graceEndsAt: graceEnd, amountKobo: undefined,
@@ -285,7 +288,7 @@ async function processSubscription(sub: Subscription, mode: 'dry' | 'live', now:
   if (mode === 'dry') {
     if (!(await eventExists(sub.userId, 'would_charge', { due_at: dueAt }))) {
       await logBillingEvent(sub.userId, 'would_charge', {
-        due_at: dueAt, plan_code: intent.planCode, price_type: intent.priceType, gross_kobo: intent.grossKobo,
+        due_at: dueAt, plan_code: intent.planCode, price_type: intent.priceType, currency: intent.currency, gross_kobo: intent.grossKobo,
         credit_kobo: intent.creditKobo, amount_kobo: intent.chargeKobo, skip_for_credit: intent.skipCharge, kind: intent.kind,
       });
     }
@@ -310,17 +313,17 @@ async function processSubscription(sub: Subscription, mode: 'dry' | 'live', now:
     return 'skipped_credit';
   }
 
-  const card = await getChargeableCard(sub.userId);
+  const card = await getChargeableCard(sub.userId, intent.currency);
   const email = await emailOf(sub.userId);
   if (!card || !email) {
-    await recordChargeFailure(sub.userId, reference, 'No usable card on file', now);
+    await recordChargeFailure(sub.userId, reference, card ? 'No usable card on file' : `No usable ${intent.currency === 'USD' ? 'US dollar' : 'naira'} card on file`, now);
     return 'failed';
   }
 
   const r = await chargeAuthorization({
-    email, amountKobo: intent.chargeKobo, authorizationCode: card.authorizationCode, reference,
+    email, amountKobo: intent.chargeKobo, currency: intent.currency, authorizationCode: card.authorizationCode, reference,
     metadata: {
-      user_id: sub.userId, plan_code: intent.planCode, tier: intent.tier, cycle: intent.cycle, price_type: intent.priceType,
+      user_id: sub.userId, plan_code: intent.planCode, tier: intent.tier, cycle: intent.cycle, price_type: intent.priceType, currency: intent.currency,
       credit_kobo: intent.creditKobo, gross_kobo: intent.grossKobo, kind: intent.kind,
     },
   });
@@ -377,15 +380,17 @@ export async function settleSubscriptionChargeReference(reference: string, now =
     const planCode = String(meta.plan_code ?? '');
     const plan = getPlan(planCode);
     if (!plan) return 'ignored';
+    // The currency is the subscription's (it never changes); the charge must have been taken in it.
+    const currency = sub.currency;
     const credit = Number(meta.credit_kobo ?? 0);
-    const gross = Number(meta.gross_kobo ?? plan.amountKobo);
-    // The amount Paystack actually took must equal what we asked for, else do not grant anything.
-    if (tx.amount !== gross - credit || tx.currency !== 'NGN') {
-      console.error('[billing/engine] amount mismatch on', reference, 'expected', gross - credit, 'got', tx.amount);
+    const gross = Number(meta.gross_kobo ?? planAmount(plan, currency));
+    // The amount and currency Paystack actually took must equal what we asked for, else do not grant anything.
+    if (tx.amount !== gross - credit || tx.currency !== currency || (isCurrency(meta.currency) && meta.currency !== currency)) {
+      console.error('[billing/engine] amount mismatch on', reference, 'expected', gross - credit, currency, 'got', tx.amount, tx.currency);
       return 'ignored';
     }
     const intent: Intent = {
-      sub, tier: plan.tier, cycle: plan.cycle, priceType: plan.priceType, planCode: plan.code,
+      sub, tier: plan.tier, cycle: plan.cycle, priceType: plan.priceType, planCode: plan.code, currency,
       grossKobo: gross, creditKobo: credit, chargeKobo: tx.amount, skipCharge: false,
       kind: meta.kind === 'reactivation' ? 'reactivation' : meta.kind === 'first_charge' ? 'first_charge' : 'renewal',
     };
@@ -427,12 +432,19 @@ async function cardSignatures(userId: string): Promise<Set<string>> {
   return new Set(((data ?? []) as { signature: string }[]).map((r) => r.signature));
 }
 
-/** Monthly price of the inviter's own plan (a yearly member uses the monthly price of the same price type). Leaders earn at Builder solo. */
-async function inviterMonthlyKobo(inviterId: string): Promise<number | null> {
+/**
+ * Monthly price of the inviter's own plan, in the inviter's currency (a yearly member uses the monthly price of the same price
+ * type). Credit is earned in that currency, so it can pay towards the inviter's own charges. Leaders (no subscription) earn at
+ * the naira Builder solo price.
+ */
+async function inviterMonthly(inviterId: string): Promise<{ amount: number; currency: Currency } | null> {
   const sub = await getSubscription(inviterId);
-  if (sub) return priceFor(sub.tier, sub.priceType, 'monthly');
+  if (sub) {
+    const priceType: PriceType = groupDiscountApplies(sub.currency) ? sub.priceType : 'solo';
+    return { amount: priceFor(sub.tier, priceType, 'monthly', sub.currency), currency: sub.currency };
+  }
   const { data } = await supabaseAdmin.from('profiles').select('leader_free').eq('id', inviterId).maybeSingle();
-  if ((data as { leader_free?: boolean } | null)?.leader_free) return priceFor('builder', 'solo', 'monthly');
+  if ((data as { leader_free?: boolean } | null)?.leader_free) return { amount: priceFor('builder', 'solo', 'monthly'), currency: 'NGN' };
   return null;
 }
 
@@ -458,19 +470,19 @@ async function earnReferralCredit(now: Date): Promise<number> {
         await supabaseAdmin.from('referrals').update({ flagged_at: now.toISOString() }).eq('id', ref.id).is('flagged_at', null);
         continue;
       }
-      const monthly = await inviterMonthlyKobo(ref.referrer_id);
+      const monthly = await inviterMonthly(ref.referrer_id);
       if (monthly == null) continue; // inviter has no plan yet: leave it, it is earned once they do
 
       const { data: claimed } = await supabaseAdmin.from('referrals').update({ credit_earned_at: now.toISOString() }).eq('id', ref.id).is('credit_earned_at', null).select('id');
       if (!claimed || !claimed.length) continue;
-      const amount = creditPerReferralKobo(monthly);
+      const amount = creditPerReferralKobo(monthly.amount);
       await supabaseAdmin.from('credit_ledger').insert({
         user_id: ref.referrer_id, amount_kobo: amount, reason: 'referral_earned', source_referral_id: ref.id, source_payment_ref: reference,
-        expires_at: addMonths(now, CREDIT_VALID_MONTHS).toISOString(),
+        expires_at: addMonths(now, CREDIT_VALID_MONTHS).toISOString(), currency: monthly.currency,
       });
-      await logBillingEvent(ref.referrer_id, 'credit_earned', { referral_id: ref.id, amount_kobo: amount, source_payment_ref: reference });
-      const balance = computeCreditLots(await getCreditLedger(ref.referrer_id), now).reduce((s, l) => s + l.remainingKobo, 0);
-      await notifyCreditEarned(ref.referrer_id, { creditKobo: amount, balanceKobo: balance });
+      await logBillingEvent(ref.referrer_id, 'credit_earned', { referral_id: ref.id, amount_kobo: amount, currency: monthly.currency, source_payment_ref: reference });
+      const balance = computeCreditLots(await getCreditLedger(ref.referrer_id, monthly.currency), now).reduce((s, l) => s + l.remainingKobo, 0);
+      await notifyCreditEarned(ref.referrer_id, { creditKobo: amount, balanceKobo: balance, currency: monthly.currency });
       earned++;
     } catch (e) {
       console.error('[billing/engine] credit earn failed:', e instanceof Error ? e.message : 'unknown');
@@ -485,14 +497,16 @@ async function expireCredit(now: Date): Promise<number> {
   const users = [...new Set(((data ?? []) as { user_id: string }[]).map((r) => r.user_id))];
   let n = 0;
   for (const userId of users) {
-    const rows = await getCreditLedger(userId);
-    for (const lot of expiredLots(rows, now)) {
-      const tag = `lot:${lot.id}`;
-      const { data: dup } = await supabaseAdmin.from('credit_ledger').select('id').eq('user_id', userId).eq('reason', 'expired').eq('source_payment_ref', tag).limit(1);
-      if (dup && dup.length) continue;
-      await supabaseAdmin.from('credit_ledger').insert({ user_id: userId, amount_kobo: -lot.remainingKobo, reason: 'expired', source_payment_ref: tag });
-      await logBillingEvent(userId, 'credit_expired', { lot_id: lot.id, amount_kobo: lot.remainingKobo });
-      n++;
+    for (const currency of ['NGN', 'USD'] as const) {
+      const rows = await getCreditLedger(userId, currency);
+      for (const lot of expiredLots(rows, now)) {
+        const tag = `lot:${lot.id}`;
+        const { data: dup } = await supabaseAdmin.from('credit_ledger').select('id').eq('user_id', userId).eq('reason', 'expired').eq('source_payment_ref', tag).limit(1);
+        if (dup && dup.length) continue;
+        await supabaseAdmin.from('credit_ledger').insert({ user_id: userId, amount_kobo: -lot.remainingKobo, reason: 'expired', source_payment_ref: tag, currency });
+        await logBillingEvent(userId, 'credit_expired', { lot_id: lot.id, amount_kobo: lot.remainingKobo, currency });
+        n++;
+      }
     }
   }
   return n;
@@ -505,16 +519,17 @@ async function expireCredit(now: Date): Promise<number> {
 export async function cancelCreditForPayment(reference: string, now = new Date()): Promise<{ cancelledKobo: number }> {
   if (!reference) return { cancelledKobo: 0 };
   let total = 0;
-  const { data: earned } = await supabaseAdmin.from('credit_ledger').select('id, user_id, amount_kobo, source_referral_id')
+  const { data: earned } = await supabaseAdmin.from('credit_ledger').select('id, user_id, amount_kobo, source_referral_id, currency')
     .eq('reason', 'referral_earned').eq('source_payment_ref', reference);
-  for (const row of (earned ?? []) as { id: string; user_id: string; amount_kobo: number; source_referral_id: string | null }[]) {
+  for (const row of (earned ?? []) as { id: string; user_id: string; amount_kobo: number; source_referral_id: string | null; currency: string | null }[]) {
     const tag = `cancel:${row.id}`;
     const { data: dup } = await supabaseAdmin.from('credit_ledger').select('id').eq('user_id', row.user_id).eq('reason', 'cancelled').eq('source_payment_ref', tag).limit(1);
     if (dup && dup.length) continue;
     await supabaseAdmin.from('credit_ledger').insert({
       user_id: row.user_id, amount_kobo: -row.amount_kobo, reason: 'cancelled', source_referral_id: row.source_referral_id, source_payment_ref: tag,
+      currency: isCurrency(row.currency) ? row.currency : 'NGN',
     });
-    await logBillingEvent(row.user_id, 'credit_cancelled', { source_payment_ref: reference, amount_kobo: row.amount_kobo });
+    await logBillingEvent(row.user_id, 'credit_cancelled', { source_payment_ref: reference, amount_kobo: row.amount_kobo, currency: row.currency ?? 'NGN' });
     total += row.amount_kobo;
   }
   const { data: pay } = await supabaseAdmin.from('payments').select('user_id').eq('reference', reference).maybeSingle();
@@ -537,17 +552,18 @@ async function sendReminders(now: Date, mode: 'dry' | 'live'): Promise<{ reminde
       if (await eventExists(sub.userId, 'trial_ending_sent', { trial_ends_at: sub.trialEndsAt?.toISOString() })) continue;
       await logBillingEvent(sub.userId, 'trial_ending_sent', { trial_ends_at: sub.trialEndsAt?.toISOString() });
       const plan = await resolveChargePlan(sub, now).catch(() => null);
-      const amount = plan && plan.action === 'charge' ? plan.amountKobo : priceFor(sub.tier, 'solo', sub.cycle);
-      const card = await getChargeableCard(sub.userId);
+      const amount = plan && plan.action === 'charge' ? plan.amountKobo : priceFor(sub.tier, 'solo', sub.cycle, sub.currency);
+      const card = await getChargeableCard(sub.userId, sub.currency);
       await notifyTrialEnding(sub.userId, {
-        brand: card?.brand, last4: card?.last4, planName: formatPlanName(sub.tier, sub.cycle), amountKobo: amount, trialEndsAt: sub.trialEndsAt,
+        brand: card?.brand, last4: card?.last4, planName: formatPlanName(sub.tier, sub.cycle), amountKobo: amount, currency: sub.currency, trialEndsAt: sub.trialEndsAt,
       });
       reminders++;
     } catch (e) { console.error('[billing/engine] reminder failed:', e instanceof Error ? e.message : 'unknown'); }
   }
 
   const week = addDays(now, 7).toISOString();
-  const { data: groups } = await supabaseAdmin.from('member_subscriptions').select('*').eq('state', 'active').eq('price_type', 'group').gt('next_charge_at', now.toISOString()).lte('next_charge_at', week).limit(BATCH);
+  // Group pricing exists in naira only, so only naira subscriptions can lose it.
+  const { data: groups } = await supabaseAdmin.from('member_subscriptions').select('*').eq('state', 'active').eq('price_type', 'group').eq('currency', 'NGN').gt('next_charge_at', now.toISOString()).lte('next_charge_at', week).limit(BATCH);
   for (const row of (groups ?? []) as Record<string, unknown>[]) {
     const sub = toSubscription(row);
     try {

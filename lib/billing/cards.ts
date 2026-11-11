@@ -6,15 +6,17 @@
 // billing_events row and calls notify (which never throws).
 //
 // Exports
-//   SafeCard                                  { id, brand, last4, expMonth, expYear, bank, isDefault }
-//   VERIFY_AMOUNT_KOBO                        5000 (NGN 50, refunded straight after it verifies)
+//   SafeCard                                  { id, brand, last4, expMonth, expYear, bank, isDefault, currency }
+//   VERIFY_AMOUNT                             { NGN: 5000 (₦50), USD: 100 ($1) }, refunded straight after it verifies
+//   A card belongs to the currency it was checked in, and is only ever charged in that currency.
 //   addFromVerifiedTransaction(userId, tx)    -> { ok, card, added } | { ok:false, error }   (reusable card-channel only, dedupe by signature)
 //   listCards(userId)                         -> SafeCard[] (default first)
 //   setDefaultCard(userId, cardId)            -> { ok } | { ok:false, error }
 //   removeCard(userId, cardId)                -> { ok } | { ok:false, error }   (soft delete; last card protected while trial/active/grace)
-//   startCardVerification(userId, email)      -> { ok, authorizationUrl, reference } | { ok:false, error }
-//   completeCardVerification(userId, ref)     -> { ok, card, added, refund } | { ok:false, error }   (verify, save, refund the NGN 50; idempotent)
-//   getChargeableCard(userId)                 -> { id, authorizationCode, brand, last4 } | null   (SERVER ONLY, for the engine)
+//   startCardVerification(userId, email, returnTo, currency) -> { ok, authorizationUrl, reference } | { ok:false, error }
+//   completeCardVerification(userId, ref)     -> { ok, card, added, refund } | { ok:false, error }   (verify, save, refund the check; idempotent)
+//   getChargeableCard(userId, currency)       -> { id, authorizationCode, brand, last4 } | null   (SERVER ONLY, for the engine;
+//                                                null when the default card is in another currency)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'server-only';
@@ -23,8 +25,12 @@ import { encryptSecret, decryptSecret } from '@/lib/crypto';
 import { initializeTransaction, verifyTransaction, refund, type PaystackTx } from './paystack';
 import { logBillingEvent } from './events';
 import { notifyCardAdded, notifyCardRemoved, notifyCardDefaultChanged } from './notify';
+import { isCurrency, type Currency } from './catalog';
 
-export const VERIFY_AMOUNT_KOBO = 5_000;
+/** The refunded card-check charge, in minor units of each currency. */
+export const VERIFY_AMOUNT: Record<Currency, number> = { NGN: 5_000, USD: 100 };
+/** Kept for older imports: the naira card check. */
+export const VERIFY_AMOUNT_KOBO = VERIFY_AMOUNT.NGN;
 
 export interface SafeCard {
   id: string;
@@ -34,16 +40,18 @@ export interface SafeCard {
   expYear: string | null;
   bank: string | null;
   isDefault: boolean;
+  currency: Currency;
 }
 
 type Row = {
   id: string; brand: string | null; last4: string | null; exp_month: string | null; exp_year: string | null;
-  bank: string | null; is_default: boolean; created_at?: string;
+  bank: string | null; is_default: boolean; created_at?: string; currency?: string | null;
 };
-const SAFE_COLUMNS = 'id, brand, last4, exp_month, exp_year, bank, is_default, created_at';
+const SAFE_COLUMNS = 'id, brand, last4, exp_month, exp_year, bank, is_default, created_at, currency';
 
 const toSafe = (r: Row): SafeCard => ({
   id: r.id, brand: r.brand, last4: r.last4, expMonth: r.exp_month, expYear: r.exp_year, bank: r.bank, isDefault: !!r.is_default,
+  currency: isCurrency(r.currency) ? r.currency : 'NGN',
 });
 
 const siteUrl = () => process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
@@ -75,6 +83,8 @@ export async function addFromVerifiedTransaction(
   if ((a.channel ?? tx.channel) !== 'card') return { ok: false, error: 'Only debit or credit cards can be saved.' };
   if (a.reusable !== true) return { ok: false, error: 'This card cannot be saved for repeat payments. Please try another card.' };
 
+  if (!isCurrency(tx.currency)) return { ok: false, error: 'We could not save this card.' };
+  const currency: Currency = tx.currency;
   const existing = await listCards(userId);
   if (a.signature) {
     const { data: dup } = await supabaseAdmin
@@ -95,9 +105,20 @@ export async function addFromVerifiedTransaction(
     card_type: a.card_type ?? null,
     country_code: a.country_code ?? null,
     reusable: true,
-    is_default: existing.length === 0,
+    currency,
+    is_default: false,
   };
+  const takeOver = await shouldBecomeDefault(userId, existing, currency);
+  if (takeOver.unsetId) {
+    // One default per member is enforced by a partial unique index, so the old default is unset before the insert.
+    const off = await supabaseAdmin.from('payment_methods').update({ is_default: false }).eq('id', takeOver.unsetId).eq('user_id', userId);
+    if (off.error) takeOver.makeDefault = false;
+  }
+  insert.is_default = takeOver.makeDefault;
   const { data, error } = await supabaseAdmin.from('payment_methods').insert(insert).select(SAFE_COLUMNS).single();
+  if ((error || !data) && takeOver.unsetId && takeOver.makeDefault) {
+    await supabaseAdmin.from('payment_methods').update({ is_default: true }).eq('id', takeOver.unsetId).eq('user_id', userId);
+  }
   if (error || !data) {
     if (error?.code === '23505' && a.signature) {
       // Two requests (callback and webhook) raced: the other one saved it.
@@ -115,6 +136,21 @@ export async function addFromVerifiedTransaction(
   return { ok: true, card, added: true };
 }
 
+/**
+ * A new card becomes the default when there is none, or when the current default is in another currency and the member
+ * is not paying a subscription in that other currency (a member now billed in USD can always make their new USD card the
+ * one that is charged). `unsetId` is the old default to switch off first.
+ */
+async function shouldBecomeDefault(userId: string, existing: SafeCard[], currency: Currency): Promise<{ makeDefault: boolean; unsetId: string | null }> {
+  const def = existing.find((c) => c.isDefault);
+  if (!def) return { makeDefault: true, unsetId: null };
+  if (def.currency === currency) return { makeDefault: false, unsetId: null };
+  const { data } = await supabaseAdmin.from('member_subscriptions').select('currency').eq('user_id', userId).maybeSingle();
+  const subCurrency = (data as { currency?: string } | null)?.currency;
+  if (subCurrency && subCurrency !== currency) return { makeDefault: false, unsetId: null };
+  return { makeDefault: true, unsetId: def.id };
+}
+
 /** Keeps member_subscriptions.payment_method_id pointing at the current default card. */
 async function syncSubscriptionCard(userId: string): Promise<void> {
   const { data: def } = await supabaseAdmin
@@ -129,6 +165,12 @@ export async function setDefaultCard(userId: string, cardId: string): Promise<{ 
     .from('payment_methods').select(SAFE_COLUMNS).eq('id', cardId).eq('user_id', userId).is('removed_at', null).maybeSingle();
   if (!card) return { ok: false, error: 'Card not found.' };
   if ((card as Row).is_default) return { ok: true };
+  const { data: subRow } = await supabaseAdmin.from('member_subscriptions').select('currency, state').eq('user_id', userId).maybeSingle();
+  const sub = subRow as { currency?: string; state?: string } | null;
+  const cardCurrency = isCurrency((card as Row).currency) ? (card as Row).currency : 'NGN';
+  if (sub?.currency && sub.currency !== cardCurrency && ['trial', 'active', 'grace'].includes(sub.state ?? '')) {
+    return { ok: false, error: `Your plan is billed in ${sub.currency === 'USD' ? 'US dollars' : 'naira'}, so the card it charges must be one you added in ${sub.currency === 'USD' ? 'US dollars' : 'naira'}.` };
+  }
   // Unset first: at most one default per member is enforced by a partial unique index.
   const off = await supabaseAdmin.from('payment_methods').update({ is_default: false }).eq('user_id', userId).eq('is_default', true).is('removed_at', null);
   if (off.error) return { ok: false, error: 'We could not change your default card.' };
@@ -174,11 +216,13 @@ export async function startCardVerification(
   userId: string,
   email: string,
   returnTo: 'settings' | 'checkout' = 'settings',
+  currency: Currency = 'NGN',
 ): Promise<{ ok: true; authorizationUrl: string; reference: string } | { ok: false; error: string }> {
   const reference = `cv_${userId.replace(/-/g, '').slice(0, 12)}_${Date.now().toString(36)}`;
   const r = await initializeTransaction({
     email,
-    amountKobo: VERIFY_AMOUNT_KOBO,
+    amountKobo: VERIFY_AMOUNT[currency],
+    currency,
     reference,
     callbackUrl: `${siteUrl()}${returnTo === 'checkout' ? '/checkout' : '/settings/billing'}?card=verify`,
     purpose: 'card_verify',
@@ -189,8 +233,9 @@ export async function startCardVerification(
 }
 
 /**
- * Verifies the NGN 50 transaction with Paystack (never trusts the client or a webhook body), saves the card, and refunds the
- * NGN 50. Safe to call twice (callback + webhook): the card is deduped by signature and the refund is recorded once.
+ * Verifies the card check (₦50 or $1) with Paystack (never trusts the client or a webhook body), saves the card in that
+ * currency, and refunds the check. Safe to call twice (callback + webhook): the card is deduped by signature and the refund
+ * is recorded once.
  */
 export async function completeCardVerification(
   userId: string,
@@ -205,7 +250,7 @@ export async function completeCardVerification(
   const tx = v.data;
   const meta = txMetadata(tx);
   if (meta.purpose !== 'card_verify' || meta.user_id !== userId) return { ok: false, error: 'This is not a card check for your account.' };
-  if (tx.amount !== VERIFY_AMOUNT_KOBO || tx.currency !== 'NGN') return { ok: false, error: 'Unexpected card check amount.' };
+  if (!isCurrency(tx.currency) || tx.amount !== VERIFY_AMOUNT[tx.currency]) return { ok: false, error: 'Unexpected card check amount.' };
 
   // Once refunded, Paystack may report the transaction as 'reversed'. The webhook and the browser callback can arrive in either
   // order, so if this reference was already processed, answer with the saved card instead of an error.
@@ -218,7 +263,7 @@ export async function completeCardVerification(
   if (tx.status !== 'success') return { ok: false, error: 'The card check did not go through.' };
 
   const added = await addFromVerifiedTransaction(userId, tx);
-  // Whether or not the card could be saved, the NGN 50 goes back.
+  // Whether or not the card could be saved, the check amount goes back.
   const refundState = await refundVerification(userId, tx);
   if (!added.ok) return added;
   return { ok: true, card: added.card, added: added.added, refund: refundState };
@@ -242,12 +287,19 @@ async function refundVerification(userId: string, tx: PaystackTx): Promise<'refu
   return 'refunded';
 }
 
-/** SERVER ONLY. The default card's decrypted authorization code, for the renewal engine. Never return this to a client or log it. */
-export async function getChargeableCard(userId: string): Promise<{ id: string; authorizationCode: string; brand: string | null; last4: string | null } | null> {
+/**
+ * SERVER ONLY. The default card's decrypted authorization code, for the renewal engine. Never return this to a client or log it.
+ * Returns null when the default card was checked in another currency: a card is never charged in a currency it was not saved in.
+ */
+export async function getChargeableCard(userId: string, currency: Currency = 'NGN'): Promise<{ id: string; authorizationCode: string; brand: string | null; last4: string | null } | null> {
   const { data } = await supabaseAdmin
-    .from('payment_methods').select('id, auth_enc, brand, last4').eq('user_id', userId).eq('is_default', true).is('removed_at', null).maybeSingle();
-  const row = data as { id: string; auth_enc: string; brand: string | null; last4: string | null } | null;
+    .from('payment_methods').select('id, auth_enc, brand, last4, currency').eq('user_id', userId).eq('is_default', true).is('removed_at', null).maybeSingle();
+  const row = data as { id: string; auth_enc: string; brand: string | null; last4: string | null; currency: string | null } | null;
   if (!row) return null;
+  if ((row.currency ?? 'NGN') !== currency) {
+    console.error('[billing/cards] default card currency does not match the subscription (card', row.id, ')');
+    return null;
+  }
   try {
     return { id: row.id, authorizationCode: decryptSecret(row.auth_enc), brand: row.brand, last4: row.last4 };
   } catch {

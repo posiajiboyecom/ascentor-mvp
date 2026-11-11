@@ -9,16 +9,18 @@
 //   PaystackResult<T>                       { ok:true; data:T } | { ok:false; error:string; status?:number; transient:boolean }
 //   PaystackAuthorization, PaystackTx       payload shapes we read
 //   isTestMode()                            true when the secret key starts with sk_test_
-//   initializeTransaction({email, amountKobo, reference?, callbackUrl, purpose, metadata?})
+//   initializeTransaction({email, amountKobo, currency, reference?, callbackUrl, purpose, metadata?})
 //        card channel only; metadata.purpose = 'card_verify' | 'subscription_charge'
 //   verifyTransaction(reference)
-//   chargeAuthorization({email, amountKobo, authorizationCode, reference, metadata?})
+//   chargeAuthorization({email, amountKobo, currency, authorizationCode, reference, metadata?})
+//   amountKobo is in MINOR units of `currency` (kobo for NGN, cents for USD).
 //        idempotent: reusing a reference never charges twice (Paystack rejects duplicates);
 //        a duplicate-reference reply is resolved by verifying that reference.
 //   refund({transaction, amountKobo?})      transaction = reference or numeric id
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'server-only';
+import type { Currency } from './catalog';
 
 const BASE = 'https://api.paystack.co';
 
@@ -99,6 +101,7 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
 export function initializeTransaction(i: {
   email: string;
   amountKobo: number;
+  currency: Currency;
   reference?: string;
   callbackUrl: string;
   purpose: BillingPurpose;
@@ -107,7 +110,7 @@ export function initializeTransaction(i: {
   return call('POST', '/transaction/initialize', {
     email: i.email,
     amount: i.amountKobo,
-    currency: 'NGN',
+    currency: i.currency,
     ...(i.reference ? { reference: i.reference } : {}),
     callback_url: i.callbackUrl,
     channels: ['card'],
@@ -126,6 +129,7 @@ export function verifyTransaction(reference: string): Promise<PaystackResult<Pay
 export async function chargeAuthorization(i: {
   email: string;
   amountKobo: number;
+  currency: Currency;
   authorizationCode: string;
   reference: string;
   metadata?: Record<string, unknown>;
@@ -133,7 +137,7 @@ export async function chargeAuthorization(i: {
   const r = await call<PaystackTx>('POST', '/transaction/charge_authorization', {
     email: i.email,
     amount: i.amountKobo,
-    currency: 'NGN',
+    currency: i.currency,
     authorization_code: i.authorizationCode,
     reference: i.reference,
     metadata: { ...(i.metadata ?? {}), purpose: 'subscription_charge' },

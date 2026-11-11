@@ -3,6 +3,11 @@
 import 'server-only';
 
 export const naira = (n: number | null | undefined) => (n == null || !Number.isFinite(Number(n)) ? '\-' : '₦' + Math.round(Number(n)).toLocaleString('en-NG'));
+/** Major units in their currency: "₦5,000" or "$20". Naira and dollars are never added together. */
+export const money = (n: number | null | undefined, currency: string | null | undefined) =>
+  (currency || 'NGN').toUpperCase() === 'USD'
+    ? (n == null || !Number.isFinite(Number(n)) ? '\-' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 }))
+    : naira(n);
 export const count = (n: number) => n.toLocaleString('en-NG');
 
 const TZ = 'Africa/Lagos';

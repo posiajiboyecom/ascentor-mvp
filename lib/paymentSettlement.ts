@@ -143,6 +143,8 @@ export async function createAttempt(input: {
   registrationId?: string | null;
   donationId?:     string | null;
   orderId?:        string | null;
+  /** NGN (default) or USD. Settlement rejects a payment Paystack took in any other currency. */
+  currency?:       'NGN' | 'USD';
 }): Promise<void> {
   const { error } = await supabaseAdmin.from('payment_attempts').insert({
     reference:       input.reference,
@@ -156,7 +158,7 @@ export async function createAttempt(input: {
     order_id:        input.orderId ?? null,
     email:           input.email,
     amount_kobo:     input.amountKobo,
-    currency:        'NGN',
+    currency:        input.currency ?? 'NGN',
   });
   if (error) throw new Error(`Could not record payment attempt: ${error.message}`);
 }

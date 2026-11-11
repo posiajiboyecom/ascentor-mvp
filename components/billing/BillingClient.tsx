@@ -14,7 +14,7 @@ import { confirmAction } from '@/components/Modal';
 import CardsPanel, { type CardView } from './CardsPanel';
 import { fmtDate, fmtDateShort } from './format';
 import { stateWords } from '@/lib/billing/preview';
-import { formatNaira } from '@/lib/billing/catalog';
+import { formatMoney, groupDiscountApplies } from '@/lib/billing/catalog';
 import { GROUP_MIN } from '@/lib/billing/rules';
 import type { BillingViewData } from '@/lib/billing/member-view';
 
@@ -28,6 +28,9 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
   const [cards, setCards] = useState<CardView[]>(data.cards);
   const { sub, next, group } = data;
   const fmt = (iso: string | null) => fmtDate(iso, tz);
+  // Every amount on this screen is in the member's billing currency (naira in Nigeria, US dollars elsewhere).
+  const formatNaira = (minor: number) => formatMoney(minor, data.currency);
+  const hasGroupPrice = groupDiscountApplies(data.currency);
 
   const words = sub
     ? stateWords({
@@ -95,11 +98,11 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
                 <div>
                   <dt>Price</dt>
                   <dd>
-                    {next.priceType === 'group' ? 'Group price' : 'Solo price'}
-                    {next.priceType === 'solo' && group.inGroup && (
+                    {next.priceType === 'group' ? 'Group price' : hasGroupPrice ? 'Solo price' : 'Standard price'}
+                    {hasGroupPrice && next.priceType === 'solo' && group.inGroup && (
                       <small>{group.underReview ? 'Your group is being checked first.' : `The group price, ${formatNaira(next.groupKobo)}, applies once ${group.needed} more ${group.needed === 1 ? 'friend is' : 'friends are'} active.`}</small>
                     )}
-                    {next.priceType === 'solo' && !group.inGroup && <small>Join a group of 3 to pay {formatNaira(next.groupKobo)}.</small>}
+                    {hasGroupPrice && next.priceType === 'solo' && !group.inGroup && <small>Join a group of 3 to pay {formatNaira(next.groupKobo)}.</small>}
                   </dd>
                 </div>
                 <div><dt>Billing</dt><dd>{sub.cycle === 'yearly' ? 'Once a year' : 'Every month'}</dd></div>
@@ -143,8 +146,8 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
       <CardsPanel initialCards={data.cards} returnTo="settings" verifyAmountLabel={data.verifyAmountLabel} onCardsChange={setCards}
         intro={sub ? 'Your default card is charged when your plan renews.' : 'Add a card to start your free trial.'} />
 
-      {/* ── Group ────────────────────────────────────────────── */}
-      <section className="rx-card st" aria-labelledby="bl-group-h">
+      {/* ── Group (naira only: there is no group price in US dollars) ── */}
+      {hasGroupPrice && <section className="rx-card st" aria-labelledby="bl-group-h">
         <div className="rx-sb">
           <h2 id="bl-group-h" className="rx-h3">Pay less with friends</h2>
           <Users aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-muted)' }} />
@@ -155,7 +158,7 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
           <p className="rx-p">When 3 of you are active members together, each person pays the lower group price. Everyone pays for themselves.</p>
         )}
         <div><Link href="/settings/billing/group" className="rx-link">{group.inGroup ? 'See your group' : 'Start or join a group'}<ArrowRight aria-hidden /></Link></div>
-      </section>
+      </section>}
 
       {/* ── Credit ───────────────────────────────────────────── */}
       <section className="rx-card st" aria-labelledby="bl-credit-h">

@@ -9,7 +9,8 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { billingV2Enabled } from '@/lib/billing/flags';
 import { deviceHintFrom, getGroupStatus, joinByToken, previewGroup } from '@/lib/billing/groups';
-import { formatNaira, priceFor } from '@/lib/billing/catalog';
+import { formatMoney, priceFor, groupDiscountApplies } from '@/lib/billing/catalog';
+import { visitorCurrency } from '@/lib/geo';
 import { GROUP_MIN } from '@/lib/billing/rules';
 import '@/styles/rx.css';
 import '@/styles/rx-entry.css';
@@ -78,20 +79,26 @@ export default async function JoinGroupPage({ params, searchParams }: { params: 
   }
   if (!error && !preview.joinable && preview.message) error = preview.message;
 
-  const seekerSolo = formatNaira(priceFor('explorer', 'solo', 'monthly'));
-  const seekerGroup = formatNaira(priceFor('explorer', 'group', 'monthly'));
-  const builderSolo = formatNaira(priceFor('builder', 'solo', 'monthly'));
-  const builderGroup = formatNaira(priceFor('builder', 'group', 'monthly'));
+  // Prices where the visitor is: naira in Nigeria (with the group price), US dollars elsewhere (no group price).
+  const currency = await visitorCurrency();
+  const hasGroupPrice = groupDiscountApplies(currency);
+  const m = (t: 'explorer' | 'builder', pt: 'solo' | 'group') => formatMoney(priceFor(t, pt, 'monthly', currency), currency);
+  const seekerSolo = m('explorer', 'solo');
+  const seekerGroup = m('explorer', 'group');
+  const builderSolo = m('builder', 'solo');
+  const builderGroup = m('builder', 'group');
 
   return (
     <Shell>
       <span className="rx-tag gold" style={{ alignSelf: 'flex-start' }}>Group invite</span>
       <h1 className="rx-h2" style={{ fontSize: 28 }}>A friend invited you to join their group</h1>
-      <p className="rx-p">When {GROUP_MIN} or more of you are active members together, each person pays less. Everyone pays for themselves, and nobody pays for anyone else.</p>
+      <p className="rx-p">{hasGroupPrice
+        ? `When ${GROUP_MIN} or more of you are active members together, each person pays less. Everyone pays for themselves, and nobody pays for anyone else.`
+        : `Group prices are for members in Nigeria. Where you are, plans are billed in US dollars at one price, and joining still helps your friends reach ${GROUP_MIN}. Everyone pays for themselves.`}</p>
       <div className="rx-card rx-stack-sm">
         <p className="rx-label">What it costs each month</p>
-        <p className="rx-p rx-row rx-nw" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden className="rx-gc" style={{ marginTop: 3, width: 18, height: 18 }} />Seeker: {seekerGroup} once {GROUP_MIN} friends join, {seekerSolo} until then.</p>
-        <p className="rx-p rx-row rx-nw" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden className="rx-gc" style={{ marginTop: 3, width: 18, height: 18 }} />Builder: {builderGroup} once {GROUP_MIN} friends join, {builderSolo} until then.</p>
+        <p className="rx-p rx-row rx-nw" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden className="rx-gc" style={{ marginTop: 3, width: 18, height: 18 }} />Seeker: {hasGroupPrice ? `${seekerGroup} once ${GROUP_MIN} friends join, ${seekerSolo} until then.` : `${seekerSolo} a month.`}</p>
+        <p className="rx-p rx-row rx-nw" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden className="rx-gc" style={{ marginTop: 3, width: 18, height: 18 }} />Builder: {hasGroupPrice ? `${builderGroup} once ${GROUP_MIN} friends join, ${builderSolo} until then.` : `${builderSolo} a month.`}</p>
         <p className="rx-p rx-row rx-nw" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden className="rx-gc" style={{ marginTop: 3, width: 18, height: 18 }} />Every plan starts with 7 days free. You are charged on day 8, and you can cancel before then to pay nothing.</p>
       </div>
       {error && <p className="rx-p" role="alert">{error}</p>}

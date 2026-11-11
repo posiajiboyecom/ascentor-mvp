@@ -3,12 +3,13 @@ import PublicShell from '@/components/layout/PublicShell';
 import ShopStyles from '@/components/shop/ShopStyles';
 import ShopCatalogue from '@/components/shop/ShopCatalogue';
 import { listShopProducts, type ShopCard } from '@/lib/shop-data';
+import { visitorCurrency } from '@/lib/geo';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Shop',
-  description: 'Apparel, journals, digital guides and courses from Ascentor and The Elevation Summit. Pay in naira.',
+  description: 'Apparel, journals, digital guides and courses from Ascentor and The Elevation Summit. Priced in naira, delivered within Nigeria.',
   alternates: { canonical: '/shop' },
 };
 
@@ -17,6 +18,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   let products: ShopCard[] = [];
   let failed = false;
   try { products = await listShopProducts(); } catch { failed = true; }
+  const abroad = (await visitorCurrency()) !== 'NGN';
 
   return (
     <PublicShell>
@@ -27,6 +29,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             <div className="sp-eyebrow">The Ascentor Shop</div>
             <h1>Made for people who build.</h1>
             <p className="sp-sub">Apparel, journals, guides and courses to carry the work forward.</p>
+            {abroad && <p className="sp-sub" role="note">The shop delivers within Nigeria only for now, so orders can only be placed from Nigeria.</p>}
             {error === 'payment_failed' && <p className="sp-err">Your payment did not go through. Nothing was charged. Please try again.</p>}
           </div>
           <ShopCatalogue products={products} failed={failed} />

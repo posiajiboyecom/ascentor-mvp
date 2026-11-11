@@ -3,6 +3,7 @@ import PublicShell from '@/components/layout/PublicShell';
 import ShopStyles from '@/components/shop/ShopStyles';
 import CartView from '@/components/shop/CartView';
 import { listShopProducts, type ShopCard } from '@/lib/shop-data';
+import { visitorCurrency } from '@/lib/geo';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 export default async function CartPage() {
   let products: ShopCard[] = [];
   try { products = await listShopProducts(); } catch { /* empty cart view */ }
+  const abroad = (await visitorCurrency()) !== 'NGN';
   return (
     <PublicShell>
       <ShopStyles />
@@ -24,7 +26,7 @@ export default async function CartPage() {
             <div className="sp-eyebrow">The Ascentor Shop</div>
             <h1>Your cart</h1>
           </div>
-          <CartView products={products} />
+          <CartView products={products} abroad={abroad} />
         </div>
       </div>
     </PublicShell>

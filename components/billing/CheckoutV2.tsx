@@ -4,7 +4,7 @@
 // Checkout v2 (BILLING_V2=on). Three steps:
 //   1 Plan     tier (Seeker or Builder, defaulted from the member's stage), monthly or yearly with the saving explained,
 //              solo or group (start a group, or use a group code or link), BOTH prices shown for a group.
-//   2 Card     saved cards and "Add a card" (a NGN 50 check, refunded). A default card is needed to continue.
+//   2 Card     saved cards and "Add a card" (a ₦50 or $1 check, refunded). A default card is needed to continue.
 //   3 Confirm  free for 7 days, first charge on day 8 with the exact date and amount, cancel before to pay nothing. Starts the trial.
 // Then a clear confirmation and on to the dashboard. Prices come only from lib/billing/catalog.ts. Leaders never see this page.
 
@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import CardsPanel, { type CardView } from './CardsPanel';
 import { fmtDate } from './format';
-import { formatNaira, getPlan, planCodeFor, priceFor, tierLabel, type Cycle, type Tier } from '@/lib/billing/catalog';
+import { formatMoney, getPlan, planAmount, planCodeFor, priceFor as catalogPrice, tierLabel, groupDiscountApplies, type Currency, type Cycle, type PriceType, type Tier } from '@/lib/billing/catalog';
 import { checkoutSummary } from '@/lib/billing/preview';
 import { GROUP_MIN, TRIAL_DAYS } from '@/lib/billing/rules';
 
@@ -42,7 +42,7 @@ function parseGroupInput(raw: string): { code?: string; token?: string } {
   return t ? { code: t } : {};
 }
 
-export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabel, existingGroupCode, presetCode, tz, closedTiers = [] }: {
+export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabel, existingGroupCode, presetCode, tz, closedTiers = [], currency = 'NGN' }: {
   defaultTier: Tier;
   initialCards: CardView[];
   verifyAmountLabel: string;
@@ -53,11 +53,17 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
   tz: string;
   /** Plans an admin has closed for sign-ups (Plans and pricing). */
   closedTiers?: Tier[];
+  /** Set by the server from where the member is (naira in Nigeria, US dollars elsewhere). Members cannot change it. */
+  currency?: Currency;
 }) {
   const router = useRouter();
+  // Prices in the member's currency. There is no group price in US dollars, so the group step is naira only.
+  const hasGroupPrice = groupDiscountApplies(currency);
+  const priceFor = (t: Tier, pt: PriceType, c: Cycle) => catalogPrice(t, pt, c, currency);
+  const formatNaira = (minor: number) => formatMoney(minor, currency);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [choice, setChoice] = useState<Choice>({
-    tier: defaultTier, cycle: 'monthly', groupMode: existingGroupCode ? 'join' : presetCode ? 'join' : 'solo', code: existingGroupCode ?? presetCode ?? '',
+    tier: defaultTier, cycle: 'monthly', groupMode: hasGroupPrice && (existingGroupCode || presetCode) ? 'join' : 'solo', code: existingGroupCode ?? presetCode ?? '',
   });
   const [cards, setCards] = useState<CardView[]>(initialCards);
   const [busy, setBusy] = useState(false);
@@ -104,7 +110,9 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
   const toCard = async () => {
     setError(''); setBusy(true);
     try {
-      if (choice.groupMode === 'create') {
+      if (!hasGroupPrice) {
+        setGroupNote('');
+      } else if (choice.groupMode === 'create') {
         const r = await post('/api/billing/groups');
         if (!r.ok) { setError(String(r.out.error || 'We could not start your group.')); setBusy(false); return; }
         const g = r.out.group as { code: string };
@@ -138,7 +146,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
   };
 
   const per = (cycle: Cycle) => (cycle === 'yearly' ? 'a year' : 'a month');
-  const inGroupFlow = choice.groupMode !== 'solo';
+  const inGroupFlow = hasGroupPrice && choice.groupMode !== 'solo';
   const savingNote = (tier: Tier, gm: boolean) => {
     const m = priceFor(tier, gm ? 'group' : 'solo', 'monthly');
     const y = priceFor(tier, gm ? 'group' : 'solo', 'yearly');
@@ -146,7 +154,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
   };
 
   const plan = getPlan(planCodeFor(choice.tier, 'solo', choice.cycle))!;
-  const summary = now ? checkoutSummary({ tier: choice.tier, cycle: choice.cycle, withGroup: inGroupFlow, start: now }, (d) => fmtDate(d.toISOString(), tz)) : null;
+  const summary = now ? checkoutSummary({ tier: choice.tier, cycle: choice.cycle, withGroup: inGroupFlow, start: now, currency }, (d) => fmtDate(d.toISOString(), tz)) : null;
 
   // ── Done ──────────────────────────────────────────────────
   if (step === 4 && started) {
@@ -155,7 +163,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
         <div className="rx-card st" role="status" aria-live="polite">
           <span className="rx-tag rust" style={{ alignSelf: 'flex-start' }}>Trial started</span>
           <h1 className="rx-title" style={{ fontSize: 28 }}>You are in. Your {TRIAL_DAYS} days free have started.</h1>
-          <p className="rx-p">Your free trial runs until {fmtDate(started.trialEndsAt, tz)}. Your first charge is on {fmtDate(started.nextChargeAt, tz)}: {inGroupFlow ? `${formatNaira(priceFor(choice.tier, 'group', choice.cycle))} if ${GROUP_MIN} members of your group are active by then, otherwise ${formatNaira(plan.amountKobo)}` : formatNaira(plan.amountKobo)}. You can cancel before then and pay nothing. You can manage everything under Settings, Billing.</p>
+          <p className="rx-p">Your free trial runs until {fmtDate(started.trialEndsAt, tz)}. Your first charge is on {fmtDate(started.nextChargeAt, tz)}: {inGroupFlow ? `${formatNaira(priceFor(choice.tier, 'group', choice.cycle))} if ${GROUP_MIN} members of your group are active by then, otherwise ${formatNaira(planAmount(plan, currency))}` : formatNaira(planAmount(plan, currency))}. You can cancel before then and pay nothing. You can manage everything under Settings, Billing.</p>
           <div className="rx-row">
             <Link href="/dashboard" className="rx-btn primary bl-focus">Go to your dashboard</Link>
             <Link href="/settings/billing" className="rx-btn secondary bl-focus">See your billing</Link>
@@ -211,7 +219,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
             </div>
           </fieldset>
 
-          <fieldset className="rx-stack-sm" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+          {hasGroupPrice && <fieldset className="rx-stack-sm" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
             <legend className="rx-sl" style={{ marginBottom: 8 }}>3. Pay alone, or with friends</legend>
             <div className="bl-tiers" role="group" aria-label="Group">
               <button type="button" aria-pressed={choice.groupMode === 'solo'} className="bl-choice" onClick={() => set({ groupMode: 'solo' })}>
@@ -238,7 +246,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
                 <input id="co-code" className="rx-in" value={choice.code} onChange={(e) => set({ code: e.target.value })} placeholder="ASC-7K2Q or the link your friend sent" autoComplete="off" spellCheck={false} disabled={!!existingGroupCode} />
               </div>
             )}
-          </fieldset>
+          </fieldset>}
 
           {error && <div className="bl-msg bad" role="alert">{error}</div>}
           <div><button type="button" className="rx-btn primary block bl-focus" disabled={busy} onClick={toCard}>{busy ? 'One moment...' : 'Continue to your card'}</button></div>

@@ -5,12 +5,12 @@ import { createAttempt } from '@/lib/paymentSettlement';
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as commerceSchemas from '@/lib/validation/schemas/commerce';
+import { requestCurrency } from '@/lib/geo';
+import { DONATION_LIMITS } from '@/app/(marketing)/donate/donateFormSchema';
 
-// Minimum/maximum a donor can send through the online form. Below the
-// minimum, Paystack fees would eat most of the donation; above the maximum,
-// we ask them to contact us directly rather than risk a mistyped amount.
-const MIN_KOBO = 50_000;        // ₦500
-const MAX_KOBO = 500_000_000;   // ₦5,000,000
+// Donors in Nigeria give in naira, everyone else in US dollars. The currency is decided here from the request, never by the
+// client. Below the minimum, Paystack fees would eat most of the donation; above the maximum, we ask them to contact us
+// directly rather than risk a mistyped amount.
 
 export async function POST(req: NextRequest) {
   const secret    = process.env.PAYSTACK_SECRET_KEY;
@@ -34,17 +34,19 @@ export async function POST(req: NextRequest) {
   const email = parsed.data.email;
   const phone = parsed.data.phone;
   const message = parsed.data.message ? parsed.data.message.slice(0, 500) : null;
-  const amountNaira = parsed.data.amount;
+  const amountNaira = parsed.data.amount; // major units of `currency` (naira or dollars)
+  const currency = requestCurrency(req);
+  const limits = DONATION_LIMITS[currency];
 
   if (!isValidPhoneNumber(phone)) {
     return NextResponse.json({ error: 'A valid phone number is required.' }, { status: 400 });
   }
 
-  const amountKobo = Math.round(amountNaira * 100);
-  if (amountKobo < MIN_KOBO) {
-    return NextResponse.json({ error: 'The minimum donation is NGN 500.' }, { status: 400 });
+  const amountKobo = Math.round(amountNaira * 100); // kobo or cents
+  if (amountNaira < limits.min) {
+    return NextResponse.json({ error: `The minimum donation is ${limits.name} ${limits.min.toLocaleString('en-US')}.` }, { status: 400 });
   }
-  if (amountKobo > MAX_KOBO) {
+  if (amountNaira > limits.max) {
     return NextResponse.json({ error: 'That amount is too large for online payment. Please contact us directly.' }, { status: 400 });
   }
 
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
         email,
         phone,
         amount: amountNaira,
-        currency: 'NGN',
+        currency,
         status: 'pending',
         message: message || null,
       })
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
       amountKobo,
       email,
       donationId:  donation.id,
+      currency,
     });
 
     await supabaseAdmin
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
       donationId: donation.id,
       reference,
       amount:     amountKobo,
-      currency:   'NGN',
+      currency,
       public_key: publicKey,
       email,
       full_name:  fullName,

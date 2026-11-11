@@ -1,5 +1,5 @@
 // ================================================================
-// POST /api/shop/checkout   (NGN only)
+// POST /api/shop/checkout   (NGN only; orders from Nigeria only: the shop ships within Nigeria)
 // Prices the cart on the SERVER, records the order + a payment attempt, and returns Paystack's
 // hosted page. Settlement (callback, webhook, reconciliation) then fulfils it exactly once through
 // lib/paymentSettlement.ts, comparing the payment to the amount recorded here.
@@ -15,6 +15,7 @@ import { parseJson } from '@/lib/validation/http';
 import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 import { priceCart } from '@/lib/shop';
 import type { ShopShippingKey } from '@/lib/shop-shared';
+import { requestCurrency } from '@/lib/geo';
 
 const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
 
@@ -22,6 +23,12 @@ export async function POST(req: NextRequest) {
   const limit = paymentLimiter.check(getClientIp(req));
   if (!limit.allowed) {
     return NextResponse.json({ error: 'Too many attempts. Please wait a minute and try again.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } });
+  }
+
+  // Buyers outside Nigeria pay in US dollars everywhere else, but the shop is priced in naira and delivers within Nigeria
+  // only, so it does not take orders from abroad.
+  if (requestCurrency(req) !== 'NGN') {
+    return NextResponse.json({ error: 'The shop delivers within Nigeria only for now, so orders can only be placed from Nigeria.', code: 'nigeria_only' }, { status: 403 });
   }
 
   const parsed = await parseJson(req, commerceSchemas.shopCheckout);
