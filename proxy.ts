@@ -144,6 +144,8 @@ const PUBLIC_ROUTES = [
   '/admin-login',
   // Summit door check-in for volunteers: gated by its own door code and signed cookie (lib/summitDoor.ts).
   '/door',
+  // Summit walk-in self check-in (QR poster at the entrance); open only on the day unless an admin opens it.
+  '/walk-in',
 ];
 
 // Origins allowed to make state-changing API calls besides the request's own host

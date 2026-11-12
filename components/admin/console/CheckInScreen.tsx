@@ -5,7 +5,7 @@
 // already used it. Anyone without their code can be found by name, email or phone. All rules live on the server.
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import jsQR from 'jsqr';
-import { checkInByIdAction, scanTicketAction, searchAction, setDoorAccessAction, statsAction, undoCheckInAction, type DoorAccessView, type ScanResult } from '@/app/admin/c/checkin/actions';
+import { checkInByIdAction, scanTicketAction, searchAction, setDoorAccessAction, setWalkInModeAction, statsAction, undoCheckInAction, type DoorAccessView, type ScanResult } from '@/app/admin/c/checkin/actions';
 import type { Attendee, CheckInStats } from '@/lib/summitCheckin';
 
 const SCAN_EVERY_MS = 180;
@@ -61,9 +61,11 @@ interface Props {
   volunteer?: { name: string; onLeave: () => void };
   /** Admins with Full access: the volunteer-access controls. */
   door?: DoorAccessView;
+  /** Admins with Full access: the walk-in self check-in switch. */
+  walkIn?: 'auto' | 'open' | 'closed';
 }
 
-export default function CheckInScreen({ initialStats, canAdmit, api = ADMIN_API, volunteer, door }: Props) {
+export default function CheckInScreen({ initialStats, canAdmit, api = ADMIN_API, volunteer, door, walkIn }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -81,6 +83,8 @@ export default function CheckInScreen({ initialStats, canAdmit, api = ADMIN_API,
   const [undoError, setUndoError] = useState('');
   const [doorView, setDoorView] = useState<DoorAccessView | undefined>(door);
   const [doorBusy, startDoor] = useTransition();
+  const [walkMode, setWalkMode] = useState(walkIn);
+  const [walkErr, setWalkErr] = useState('');
   const [origin, setOrigin] = useState('');
   useEffect(() => setOrigin(window.location.origin), []);
 
@@ -265,6 +269,21 @@ export default function CheckInScreen({ initialStats, canAdmit, api = ADMIN_API,
           ))}
         </div>
 
+        {walkMode && (
+          <div className="card st8">
+            <p className="h3">Walk-in self check-in</p>
+            <p className="sm p">People who didn’t register scan the entrance poster, enter their name, email and WhatsApp number, and get a green pass with a live clock. Let them in when you see a moving green screen with their name. They’re added to Registrations as walk-ins.</p>
+            <p className="sm" style={{ margin: 0 }}>Page: <b style={{ wordBreak: 'break-all' }}>{origin ? `${origin}/walk-in` : '/walk-in'}</b></p>
+            <div className="opts" role="group" aria-label="Walk-in check-in">
+              {([['auto', 'Summit day only'], ['open', 'Open now'], ['closed', 'Closed']] as const).map(([k, l]) => (
+                <button key={k} type="button" className={`opt${walkMode === k ? ' on' : ''}`} aria-pressed={walkMode === k} disabled={doorBusy}
+                  onClick={() => startDoor(async () => { const r = await setWalkInModeAction(k); setWalkErr(r.error ?? ''); if (!r.error) setWalkMode(r.mode); })}>{l}</button>
+              ))}
+            </div>
+            {walkErr && <p className="sm" style={{ color: 'var(--err)' }}>{walkErr}</p>}
+            <p className="sm" style={{ margin: 0 }}>“Summit day only” opens it automatically on 19 November. Use “Open now” to test it, then set it back.</p>
+          </div>
+        )}
         {doorView && (
           <div className="card st8">
             <p className="h3">Volunteer access</p>

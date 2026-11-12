@@ -52,6 +52,8 @@ export async function sendEventDayEmails(opts: { force?: boolean; budgetMs?: num
     .select('id, full_name, email, attendance_type')
     .eq('payment_status', 'paid')
     .is('event_day_email_sent_at', null)
+    // Already through the door (walk-ins, early arrivals): they don't need the entry-code email.
+    .is('checked_in_at', null)
     .limit(2000);
   if (error) throw new Error(`could not load paid registrations: ${error.message}`);
 

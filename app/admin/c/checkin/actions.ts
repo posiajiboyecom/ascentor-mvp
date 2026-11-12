@@ -4,6 +4,7 @@
 import { staffForAction } from '@/lib/admin/access';
 import { auditAdmin } from '@/lib/admin/audit';
 import { setDoorAccess } from '@/lib/summitDoor';
+import { setWalkInMode, type WalkInMode } from '@/lib/summitWalkIn';
 import { checkIn, checkInStats, registrationIdFromScan, searchAttendees, undoCheckIn, type Attendee, type CheckInResult, type CheckInStats } from '@/lib/summitCheckin';
 
 const AREA = 'Entrance check-in';
@@ -76,4 +77,16 @@ export async function setDoorAccessAction(enabled: boolean, newCode: boolean): P
     void auditAdmin(staff, newCode ? 'Made a new volunteer door code' : enabled ? 'Turned volunteer access on' : 'Turned volunteer access off', 'Volunteer access', AREA);
     return { enabled: a.enabled, code: a.code };
   } catch (e) { return { enabled: false, code: '', error: msg(e) }; }
+}
+
+/** Walk-in self check-in (/walk-in): 'auto' = open on the Summit day only. Needs Full on Entrance check-in. */
+export async function setWalkInModeAction(mode: string): Promise<{ mode: WalkInMode; error?: string }> {
+  const m: WalkInMode = mode === 'open' || mode === 'closed' ? mode : 'auto';
+  try {
+    const staff = await staffForAction();
+    staff.require('checkin', 'full');
+    await setWalkInMode(m, staff.userId);
+    void auditAdmin(staff, `Walk-in check-in set to ${m}`, 'Walk-in check-in', AREA);
+    return { mode: m };
+  } catch (e) { return { mode: m, error: msg(e) }; }
 }

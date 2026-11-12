@@ -33,7 +33,7 @@ function newCode(): string {
 export async function getDoorAccess(): Promise<DoorAccess> {
   const { data } = await supabaseAdmin.from('summit_door_access').select('enabled, code, version, updated_at').eq('id', 1).maybeSingle();
   if (!data) return { enabled: false, code: '', version: 0, updatedAt: null };
-  return { enabled: !!data.enabled, code: data.code as string, version: data.version as number, updatedAt: data.updated_at as string };
+  return { enabled: !!data.enabled, code: (data.code as string | null) ?? '', version: data.version as number, updatedAt: data.updated_at as string };
 }
 
 /** Turn volunteer access on or off. Turning it on for the first time, or asking for a new code, makes a new code. */
