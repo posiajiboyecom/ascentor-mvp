@@ -6,6 +6,8 @@ import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '
 import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUMMIT_DATE_LABEL, SUMMIT_DATETIME_LABEL } from '@/lib/elevationSummit';
+import QRCode from 'qrcode';
+import { ticketPayload } from '@/lib/summitCheckin';
 
 const SUMMIT_URL = 'https://joinascentor.com/elevation-summit';
 const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
@@ -33,7 +35,7 @@ type MailOpts = {
   to: string;
   subject: string;
   html: string;
-  attachments?: { filename: string; content: Buffer; contentType: string }[];
+  attachments?: { filename: string; content: Buffer; contentType: string; cid?: string }[];
   /** A team alert, not a registrant email: sent from the normal Ascentor address instead of summit@. */
   internal?: boolean;
 };
@@ -223,19 +225,32 @@ export async function sendEventDayVirtualEmail(to: string, fullName: string) {
   });
 }
 
-export async function sendEventDayPhysicalEmail(to: string, fullName: string) {
+/** The entrance QR for one registration, as a PNG. Big and with a wide quiet zone so the door scanner reads it fast off a phone screen. */
+export async function entranceQrPng(registrationId: string): Promise<Buffer> {
+  return QRCode.toBuffer(ticketPayload(registrationId, 'onsite'), { width: 480, margin: 3, errorCorrectionLevel: 'M', color: { dark: '#0F0F0E', light: '#FFFFFF' } });
+}
+
+export async function sendEventDayPhysicalEmail(to: string, fullName: string, registrationId: string) {
+  const qr = await entranceQrPng(registrationId);
   await sendSummitMail({
     to,
-    subject: "Today's the day: The Elevation Summit",
+    subject: "Today's the day: your Elevation Summit entry code",
+    attachments: [{ filename: 'elevation-summit-entry-code.png', content: qr, contentType: 'image/png', cid: 'entry-qr' }],
     html: brandedEmailLayout({
-      preheader: `See you today, ${SUMMIT_DATETIME_LABEL}.`,
+      preheader: `Show this QR code at the entrance today, ${SUMMIT_DATETIME_LABEL}.`,
       eyebrow: `Elevation Summit · Today`,
       heading: 'Today is the day.',
       recipient: to,
       content:
         p(`Hi ${esc(fullName)},`) +
-        p(`The Elevation Summit begins today, <strong>${esc(SUMMIT_DATETIME_LABEL)}</strong>. We look forward to seeing you at the venue.`) +
-        p('Please bring a valid form of identification and arrive with enough time to check in before the programme starts.') +
+        p(`The Elevation Summit begins today, <strong>${esc(SUMMIT_DATETIME_LABEL)}</strong>. Show the code below at the entrance and we will check you in.`) +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;"><tr><td align="center" style="padding:20px;background-color:#FFFFFF;border:1px solid #E8E6E1;border-radius:12px;">
+          <img src="cid:entry-qr" width="240" height="240" alt="Your entry QR code" style="display:block;width:240px;height:240px;border:0;" />
+          <p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#0F0F0E;">${esc(fullName)}</p>
+          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6B7280;">Entry code · works once</p>
+        </td></tr></table>` +
+        p('Turn your screen brightness up when you reach the door. The code is also attached to this email, so you can save it to your photos in case the venue has a weak signal.') +
+        p('This code admits one person, once. Please do not share it.') +
         p('<span style="color:#9CA3AF;font-size:13px;">See you soon.</span>'),
     }),
   });

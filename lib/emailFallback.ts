@@ -4,7 +4,7 @@
 // Optional: EMAIL_FALLBACK_FROM  (e.g. Ascentor <hello@joinascentor.com>) - must be on a domain verified in Resend.
 // With neither set, nothing here runs and sending behaves exactly as before.
 
-type Attachment = { filename: string; content: Buffer; contentType: string };
+type Attachment = { filename: string; content: Buffer; contentType: string; cid?: string };
 export type FallbackMessage = { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string; attachments?: Attachment[] };
 
 export function fallbackEnabled(): boolean {
@@ -24,7 +24,7 @@ export async function sendViaFallback(m: FallbackMessage): Promise<void> {
       html: m.html,
       ...(m.text ? { text: m.text } : {}),
       ...(m.replyTo ? { reply_to: m.replyTo } : {}),
-      ...(m.attachments?.length ? { attachments: m.attachments.map((a) => ({ filename: a.filename, content: a.content.toString('base64') })) } : {}),
+      ...(m.attachments?.length ? { attachments: m.attachments.map((a) => ({ filename: a.filename, content: a.content.toString('base64'), ...(a.cid ? { content_id: a.cid } : {}) })) } : {}),
     }),
     signal: AbortSignal.timeout(15_000),
   });

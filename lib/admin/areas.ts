@@ -22,7 +22,7 @@ export const NAV: [string, NavItem[]][] = [
   ['Community', [['groups', 'Groups'], ['cities', 'City groups'], ['meetups', 'Meetups'], ['categories', 'Post categories'], ['announcements', 'Announcements'], ['broadcasts', 'Broadcasts'], ['moderation', 'Moderation'], ['chats', 'Conversations', 1]]],
   ['Learn', [['pathways', 'Pathways and lessons'], ['knowledge', 'Sage knowledge base']]],
   ['Revenue', [['payments', 'Payments', 1], ['plans', 'Plans and pricing', 1], ['referrals', 'Referrals', 1], ['products', 'Shop products', 1], ['orders', 'Shop orders', 1]]],
-  ['Elevation Summit', [['registrations', 'Registrations', 1], ['donations', 'Donations', 1], ['livestream', 'Livestream', 1]]],
+  ['Elevation Summit', [['registrations', 'Registrations', 1], ['donations', 'Donations', 1], ['livestream', 'Livestream', 1], ['checkin', 'Entrance check-in']]],
   ['Marketing', [['blog', 'Blog'], ['pages', 'Landing pages', 1], ['newsletter', 'Email'], ['billboards', 'Billboards', 1], ['partners', 'Partners', 1], ['careers', 'Careers', 1], ['events', 'Public events', 1]]],
   ['Insights', [['analysis', 'AI analysis', 1], ['intel', 'Platform intel'], ['reports', 'Reports'], ['surveys', 'Surveys'], ['audit', 'Audit log', 1]]],
   ['Settings', [['platform', 'Platform settings', 1]]],
@@ -37,7 +37,7 @@ export const areaOf = (key: string) => AREAS.find((a) => a.key === key);
 export const areaHref = (key: string) => (key === 'overview' ? '/admin' : `/admin/c/${key}`);
 
 /** Areas that have their own page (bespoke screens in the prototype); the rest use the generic list screen. */
-export const BESPOKE = ['overview', 'team', 'chats', 'plans', 'platform', 'recs', 'analysis'] as const;
+export const BESPOKE = ['overview', 'team', 'chats', 'plans', 'platform', 'recs', 'analysis', 'checkin'] as const;
 
 // ── roles ──────────────────────────────────────────────────────────────────
 export interface RoleDef { id: string; name: string; locked?: boolean; levels: Record<string, Level> }
@@ -47,7 +47,7 @@ export const DEFAULT_ROLES: RoleDef[] = [
   { id: 'moderator', name: 'Moderator', levels: { overview: 'view', members: 'view', mentors: 'edit', circles: 'edit', matching: 'edit', mentorship: 'view', groups: 'edit', cities: 'edit', meetups: 'edit', categories: 'edit', announcements: 'edit', moderation: 'full', pathways: 'edit', knowledge: 'edit', blog: 'edit', newsletter: 'edit', intel: 'view', reports: 'view' } },
   { id: 'community', name: 'Community manager', levels: { overview: 'view', recs: 'edit', members: 'view', mentors: 'view', circles: 'edit', matching: 'edit', mentorship: 'edit', groups: 'edit', cities: 'edit', meetups: 'edit', categories: 'edit', announcements: 'edit', broadcasts: 'edit', moderation: 'full', chats: 'view', analysis: 'view' } },
   { id: 'finance', name: 'Finance', levels: { overview: 'view', members: 'view', payments: 'full', plans: 'edit', referrals: 'edit', products: 'view', orders: 'full', registrations: 'view', donations: 'full', reports: 'full' } },
-  { id: 'summit', name: 'Summit team', levels: { overview: 'view', announcements: 'edit', orders: 'view', registrations: 'full', donations: 'view', livestream: 'full', events: 'edit' } },
+  { id: 'summit', name: 'Summit team', levels: { overview: 'view', announcements: 'edit', orders: 'view', registrations: 'full', donations: 'view', livestream: 'full', checkin: 'full', events: 'edit' } },
 ];
 
 // ── status colours (a dot plus the word, never colour alone) ────────────────

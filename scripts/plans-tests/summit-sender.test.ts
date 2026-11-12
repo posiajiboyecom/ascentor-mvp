@@ -74,7 +74,7 @@ test('each registrant-facing path is sent From summit@ with Reply-To summit@', a
   await mod.sendPaymentReminderEmail('guest@example.com', 'Test Guest', 'virtual');
   await mod.sendStreamAccessEmail('guest@example.com', 'Test Guest');
   await mod.sendEventDayVirtualEmail('guest@example.com', 'Test Guest');
-  await mod.sendEventDayPhysicalEmail('guest@example.com', 'Test Guest');
+  await mod.sendEventDayPhysicalEmail('guest@example.com', 'Test Guest', '00000000-0000-0000-0000-000000000001');
   await mod.sendPaymentConfirmedEmail(ticket);
   await mod.sendComplimentaryTicketEmail(ticket);
   await mod.sendDonationReceiptEmail({ full_name: 'Test Guest', email: 'guest@example.com', amount: 5000, currency: 'NGN', reference: 'D-1' });

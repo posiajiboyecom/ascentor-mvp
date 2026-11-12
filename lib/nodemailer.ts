@@ -177,7 +177,8 @@ export async function sendEmail(opts: {
   text?: string;
   from?: string;
   replyTo?: string;
-  attachments?: { filename: string; content: Buffer; contentType: string }[];
+  /** `cid` shows the attachment inline where the HTML has <img src="cid:...">. */
+  attachments?: { filename: string; content: Buffer; contentType: string; cid?: string }[];
   /** Codes the member cannot continue without (sign-up, password reset): throw instead of skipping when mail is not configured. */
   required?: boolean;
   /** Extra headers, e.g. List-Unsubscribe for bulk mail. */

@@ -75,7 +75,7 @@ export async function sendEventDayEmails(opts: { force?: boolean; budgetMs?: num
         await sendEventDayVirtualEmail(r.email, r.full_name);
         summary.sentVirtual++;
       } else {
-        await sendEventDayPhysicalEmail(r.email, r.full_name);
+        await sendEventDayPhysicalEmail(r.email, r.full_name, r.id);
         summary.sentPhysical++;
       }
     } catch (err) {
