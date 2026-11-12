@@ -42,7 +42,7 @@ export default async function PrivateSessionPage() {
             <p className="rx-h3">{paused ? 'Private sessions are paused' : 'Part of Pinnacle'}</p>
             <p className="rx-p">{paused
               ? 'Reactivate your plan in Billing and you can book straight away.'
-              : 'Pinnacle members get a private 20-minute session with a mentor every month, on top of Circle mentorship. Pinnacle also includes unlimited Sage, four live expert sessions a month and priority support.'}</p>
+              : 'Pinnacle members get a private 20-minute session with a mentor every month, on top of Circle mentorship. Pinnacle also includes Sage with no daily cap, four live expert sessions a month and priority support.'}</p>
             <div><Link href="/settings/billing" className="rx-btn primary">{paused ? 'Reactivate' : 'See Pinnacle in Billing'}</Link></div>
           </div>
           {side}

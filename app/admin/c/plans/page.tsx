@@ -14,7 +14,7 @@ export const metadata = { title: 'Plans and pricing' };
 const WHO: Record<string, string> = {
   explorer: 'For members finding their direction.',
   builder: 'For members building a career or business. Any member can choose it.',
-  pinnacle: 'Everything in Builder, plus a private mentor session each month, unlimited Sage, more expert sessions and priority support.',
+  pinnacle: 'Everything in Builder, plus a private mentor session each month, Sage with no daily cap (fair use), more expert sessions and priority support.',
 };
 
 export default async function PlansPage() {

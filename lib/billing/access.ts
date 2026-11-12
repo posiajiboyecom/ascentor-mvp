@@ -15,7 +15,7 @@
 //   light (lapsed after grace, cancelled after period end): Today, daily practices, own growth record, open house,
 //         direct messages. Sage, Circle chat, advanced Learn and mentor sessions are off.
 //   Direct messages are ON for every tier and every state (owner answer: Seekers get direct messages).
-//   Pinnacle (full only) adds: a private mentor session each month, unlimited Sage, priority support.
+//   Pinnacle (full only) adds: a private mentor session each month, Sage with no daily cap (fair use), priority support.
 //   SAGE_DAILY_MESSAGES caps Sage messages a day by tier (null = no cap).
 // ─────────────────────────────────────────────────────────────────────────────
 

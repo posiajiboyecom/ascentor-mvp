@@ -101,7 +101,7 @@ const SECTIONS: Section[] = [
         type: "table",
         rows: [
           { purpose: "Provide & personalise the platform", detail: "Your profile, goals, and career stage directly shape how Sage, your AI assistant, responds to you and which content and experts are surfaced." },
-          { purpose: "AI assistance (Sage)", detail: "Your conversation history with Sage is processed through Anthropic's Claude API to generate contextual, relevant responses. Your data is not used to train Anthropic's models." },
+          { purpose: "AI assistance (Sage)", detail: "To answer you, Sage sends your recent messages and the profile details Sage may use (first name, goal, this week's plan, interests and the notes you can see and edit) to an AI service. We use Groq and Cloudflare Workers AI, and, only when those are busy, OpenRouter or Anthropic. Groq does not keep these requests by default. Messages that look like a crisis are never sent to an AI service. We don't sell your conversations, and we choose services that do not use them to train their models wherever that option exists." },
           { purpose: "Chat review for safety and improvement", detail: "Messages on the platform (Circle chats, group rooms, direct messages and your conversations with Sage) can be read by authorised members of the Ascentor team, to keep members safe, to investigate reports, and to improve Ascentor and Sage. Other members cannot read chats they are not part of. Every time the team opens or downloads a chat, it is recorded. You agree to this when you join, and you can ask us to export or delete your data at any time from Settings." },
           { purpose: "Match you with peer cohorts", detail: "Onboarding data (industry, experience level, goals) drives the algorithm that places you in the right Accountability Circle." },
           { purpose: "Process subscriptions & payments", detail: "Plan selection, billing cycle, and payment confirmations are handled via Paystack. We never store card numbers." },
@@ -125,7 +125,7 @@ const SECTIONS: Section[] = [
       {
         type: "table",
         rows: [
-          { purpose: "Service providers", detail: "Supabase (database & auth), Anthropic (AI coaching), Paystack/Selar (payments), Vercel (hosting), Google Analytics (anonymised). All processors sign DPAs." },
+          { purpose: "Service providers", detail: "Supabase (database & auth), Groq, Cloudflare, OpenRouter and Anthropic (AI responses for Sage), Paystack/Selar (payments), Vercel (hosting), Google Analytics (anonymised). We rely on each provider’s data processing terms." },
           { purpose: "Legal requests", detail: "When compelled by court order, subpoena, or regulatory authority. We will notify you unless legally prohibited." },
           { purpose: "Business transfers", detail: "In a merger, acquisition, or asset sale, your data may transfer as part of the business. You will be notified and your rights preserved." },
           { purpose: "Safety emergencies", detail: "If we believe disclosure is necessary to prevent imminent harm to a person." },
@@ -203,7 +203,7 @@ const SECTIONS: Section[] = [
     content: [
       {
         type: "para",
-        text: "Ascentor is operated from Nigeria. Your data may be processed in the United States (Supabase on AWS, Anthropic) and Europe (Vercel). We rely on Standard Contractual Clauses (SCCs) and the EU-US Data Privacy Framework where applicable to ensure adequate protection.",
+        text: "Ascentor is operated from Nigeria. Your data may be processed in the United States (Supabase on AWS, Groq, Cloudflare, OpenRouter, Anthropic) and Europe (Vercel). We rely on Standard Contractual Clauses (SCCs) and the EU-US Data Privacy Framework where applicable to ensure adequate protection.",
       },
     ],
   },
@@ -361,7 +361,7 @@ export default function PrivacyPage() {
         </h1>
         <div className="hero-meta">
           <span className="hero-meta-item"><strong>Effective</strong> March 2026</span>
-          <span className="hero-meta-item"><strong>Last updated</strong> March 2026</span>
+          <span className="hero-meta-item"><strong>Last updated</strong> November 2026</span>
           <span className="hero-meta-item"><strong>Version</strong> 1.0</span>
         </div>
         <div className="hero-divider" />

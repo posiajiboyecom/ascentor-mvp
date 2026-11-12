@@ -7,7 +7,8 @@
 // that points to a real person and the emergency number.
 
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { askSage, sageConfigured, SageBusyError } from '@/lib/ai/sage-models';
+import { parseSageJson, type SageJson } from '@/lib/ai/sage-json';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
@@ -19,7 +20,11 @@ import { SAGE_DAILY_MESSAGES } from '@/lib/billing/access';
 
 export const runtime = 'nodejs';
 
-const MODEL = 'claude-sonnet-4-6';
+// Free-tier safety limit across all members: Sage messages per UTC day before Sage says it is busy until tomorrow.
+// Set SAGE_DAILY_TOTAL in Vercel to raise or lower it. The model chain is in lib/ai/sage-models.ts.
+const DAILY_TOTAL = Math.max(1, Number(process.env.SAGE_DAILY_TOTAL) || 400);
+const BUSY_NOW = 'Sage is busy right now. Please try again in a few minutes.';
+const BUSY_TODAY = 'Sage has had a very busy day and is resting until tomorrow. Your Circle and mentor are still here for you.';
 const TOPICS = new Set(['open', 'plan', 'lesson', 'missed', 'reframe', 'report', 'silent', 'crisis']);
 
 const CRISIS_REPLY = {
@@ -97,28 +102,13 @@ export async function POST(req: Request) {
   const blocked = await featureBlock(user.id, 'sage');
   if (blocked) return NextResponse.json({ error: blocked, paused: true }, { status: 403 });
 
-  // Daily message cap by plan (lib/billing/access.ts SAGE_DAILY_MESSAGES): Seeker 25, Builder 75, Pinnacle none.
-  // Counted over the last 24 hours from stored messages. Members without a v2 subscription row keep no cap.
-  const access = await getMemberAccess(user.id);
-  const cap = access.v2 && access.tier ? SAGE_DAILY_MESSAGES[access.tier] : null;
-  if (cap != null) {
-    const { count } = await supabaseAdmin.from('sage_messages').select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id).eq('role', 'user').gte('created_at', new Date(Date.now() - 86400000).toISOString());
-    if ((count ?? 0) >= cap) {
-      return NextResponse.json({
-        error: `You’ve sent your ${cap} messages to Sage for today. More open up over the next 24 hours. Pinnacle has no daily limit.`,
-        limit: true, upgradeUrl: '/settings/billing',
-      }, { status: 429 });
-    }
-  }
-
   let body: { topic?: string; conversationId?: string | null; messages?: { role?: string; text?: string }[] };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
   const topic = TOPICS.has(body.topic ?? '') ? (body.topic as string) : 'plan';
   const history = (Array.isArray(body.messages) ? body.messages : [])
     .filter((m) => (m.role === 'user' || m.role === 'sage') && typeof m.text === 'string')
-    .slice(-12)
-    .map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: cleanText(m.text, 1200) }))
+    .slice(-8)   // the last few turns are enough context, and keep each free-tier request small
+    .map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: cleanText(m.text, 1000) }))
     .filter((m) => m.content);
   const last = history[history.length - 1];
   if (!last || last.role !== 'user') return NextResponse.json({ error: 'Say something first.' }, { status: 400 });
@@ -129,7 +119,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ ...CRISIS_REPLY, conversationId: cid });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: 'Sage is resting. Try again soon.' }, { status: 503 });
+  // Limits come after the crisis check, so a member who has hit a limit still gets the crisis support above.
+  // Daily message cap by plan (lib/billing/access.ts SAGE_DAILY_MESSAGES): Seeker 25, Builder 75, Pinnacle none.
+  // Counted over the last 24 hours from stored messages. Members without a v2 subscription row keep no cap.
+  const access = await getMemberAccess(user.id);
+  const cap = access.v2 && access.tier ? SAGE_DAILY_MESSAGES[access.tier] : null;
+  if (cap != null) {
+    const { count } = await supabaseAdmin.from('sage_messages').select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id).eq('role', 'user').gte('created_at', new Date(Date.now() - 86400000).toISOString());
+    if ((count ?? 0) >= cap) {
+      return NextResponse.json({
+        error: `You’ve sent your ${cap} messages to Sage for today. More open up over the next 24 hours. Pinnacle has no daily cap.`,
+        limit: true, upgradeUrl: '/settings/billing',
+      }, { status: 429 });
+    }
+  }
+
+  // Safety limit across all members (free AI tiers have daily quotas).
+  {
+    const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+    const { count } = await supabaseAdmin.from('sage_messages').select('id', { count: 'exact', head: true })
+      .eq('role', 'user').gte('created_at', dayStart.toISOString());
+    if ((count ?? 0) >= DAILY_TOTAL) return NextResponse.json({ error: BUSY_TODAY, busy: true }, { status: 503 });
+  }
+
+  if (!sageConfigured()) return NextResponse.json({ error: 'Sage is resting. Try again soon.' }, { status: 503 });
 
   // ── what Sage may know about this member ──
   const [{ data: prof }, { data: mp }, { data: goal }, { data: notes }] = await Promise.all([
@@ -159,12 +173,9 @@ export async function POST(req: Request) {
   };
 
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const r = await anthropic.messages.create({ model: MODEL, max_tokens: 500, system: systemPrompt(topic, ctx), messages: history });
-    const block = r.content[0];
-    const raw = block && block.type === 'text' ? block.text : '';
-    let parsed: { reply?: string; draft?: { cue?: string; action?: string; trigger?: string; fallback?: string }; note?: string } = {};
-    try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); } catch { parsed = { reply: raw.trim() }; }
+    const raw = (await askSage(systemPrompt(topic, ctx), history, 500)).text;
+    let parsed: SageJson = {};
+    parsed = parseSageJson(raw);
 
     const reply = cleanText(parsed.reply, 900) || 'Tell me a little more, and we’ll find one small next step.';
     const d = parsed.draft;
@@ -182,6 +193,10 @@ export async function POST(req: Request) {
     const conversationId = await saveExchange(user.id, topic, body.conversationId, last.content, reply);
     return NextResponse.json({ reply, draft, note, conversationId });
   } catch (e) {
+    if (e instanceof SageBusyError) {
+      console.error('[rx/sage] no provider answered', e.tried.join(', '));
+      return NextResponse.json({ error: BUSY_NOW, busy: true }, { status: 503 });
+    }
     console.error('[rx/sage] model call failed', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'Sage is having trouble right now. Please try again.' }, { status: 502 });
   }

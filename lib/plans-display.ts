@@ -36,7 +36,7 @@ export const PLAN_BLURBS: Record<FeaturedPlan, string> = {
 export const PLAN_BULLETS: Record<FeaturedPlan, string[]> = {
   explorer: ['Your Circle, with a weekly call', 'Circle mentorship', 'Core Learn pathways', 'Sage · AI coach, 25 messages a day', 'One live expert session a month', 'Community and direct messages'],
   builder: ['Everything in Seeker', 'Advanced Learn pathways', 'Sage · AI coach, 75 messages a day', 'Two live expert sessions a month', 'Industry mentorship', 'Remote internships and work experience', 'Opportunities for business owners'],
-  pinnacle: ['Everything in Builder', 'A private 20-minute mentor session every month', 'Unlimited Sage · AI coach', 'Four live expert sessions a month, with seats held for you', 'Priority support'],
+  pinnacle: ['Everything in Builder', 'A private 20-minute mentor session every month', 'Sage · AI coach with no daily cap (fair use)', 'Four live expert sessions a month, with seats held for you', 'Priority support'],
 };
 
 /** True when moving from `from` to `to` is an upgrade. */
