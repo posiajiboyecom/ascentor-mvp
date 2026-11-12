@@ -14,7 +14,8 @@ test('reply parsing: clean JSON, fenced JSON, JSON inside prose, plain text', ()
 
 test('provider chain: default order and back-off rules', async () => {
   const src = (await import('node:fs')).readFileSync(new URL('../../lib/ai/sage-models.ts', import.meta.url), 'utf8');
-  assert.match(src, /'groq,cloudflare,openrouter'/, 'default order is groq, cloudflare, openrouter');
+  assert.match(src, /'groq,cloudflare,sambanova,openrouter'/, 'default order is groq, cloudflare, sambanova, openrouter');
+  assert.match(src, /sambanova\('DeepSeek-V3\.1'\), sambanova\('gemma-4-31B-it'\)/, 'SambaNova tries DeepSeek V3.1 then Gemma 4');
   assert.match(src, /groq\('openai\/gpt-oss-120b'\), groq\('openai\/gpt-oss-20b'\)/, 'Groq tries 120b then 20b');
   assert.match(src, /anthropic: \[anthropic\]/, 'paid Claude only when listed');
   assert.ok(src.includes('if (env == null && !chain.some((t) => t.ready())) return BY_NAME.anthropic;'), 'Claude only until a free key exists');

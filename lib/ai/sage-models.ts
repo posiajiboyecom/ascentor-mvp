@@ -3,11 +3,13 @@ import 'server-only';
 // Sage's language models: a chain of providers, each tried in turn until one answers. Built for running Sage with no
 // AI budget on free tiers; a paid provider can be added at the end later.
 //
-//   Order (env SAGE_PROVIDERS, comma separated; default "groq,cloudflare,openrouter"):
+//   Order (env SAGE_PROVIDERS, comma separated; default "groq,cloudflare,sambanova,openrouter"):
 //     groq        Groq free plan, OpenAI's open gpt-oss models. Two models with separate daily quotas: 120b first,
 //                 then 20b. About 200K tokens a day each. Groq does not keep inference data by default.  GROQ_API_KEY
 //     cloudflare  Cloudflare Workers AI, Gemma 4 26B. 10,000 free "neurons" a day (roughly 300 Sage replies).
 //                 CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_AI_TOKEN (a token with Workers AI permission)
+//     sambanova   SambaNova Cloud free tier, DeepSeek V3.1, then Gemma 4 31B. A small daily allowance (about 20 requests),
+//                 so it only covers Groq and Cloudflare being busy.  SAMBANOVA_API_KEY
 //     openrouter  OpenRouter's free-model router (about 50 requests a day). Last resort: some free models behind it
 //                 may log prompts, depending on the account's privacy settings.  OPENROUTER_API_KEY
 //     anthropic   Claude (paid). Only used if listed in SAGE_PROVIDERS.  ANTHROPIC_API_KEY
@@ -79,6 +81,17 @@ const cloudflare: Target = {
     signal),
 };
 
+function sambanova(model: string): Target {
+  return {
+    id: `sambanova:${model}`, provider: 'sambanova', model,
+    ready: () => !!process.env.SAMBANOVA_API_KEY,
+    call: (system, turns, maxTokens, signal) => openAiCompatible('https://api.sambanova.ai/v1/chat/completions',
+      { Authorization: `Bearer ${process.env.SAMBANOVA_API_KEY}` },
+      { model, messages: asMessages(system, turns), max_tokens: maxTokens, temperature: 0.7 },
+      signal),
+  };
+}
+
 const openrouter: Target = {
   id: 'openrouter:openrouter/free', provider: 'openrouter', model: 'openrouter/free',
   ready: () => !!process.env.OPENROUTER_API_KEY,
@@ -103,13 +116,14 @@ const anthropic: Target = {
 const BY_NAME: Record<string, Target[]> = {
   groq: [groq('openai/gpt-oss-120b'), groq('openai/gpt-oss-20b')],
   cloudflare: [cloudflare],
+  sambanova: [sambanova('DeepSeek-V3.1'), sambanova('gemma-4-31B-it')],
   openrouter: [openrouter],
   anthropic: [anthropic],
 };
 
 /** The chain in order, from SAGE_PROVIDERS. */
 export function sageChain(env = process.env.SAGE_PROVIDERS): Target[] {
-  const names = (env ?? 'groq,cloudflare,openrouter').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const names = (env ?? 'groq,cloudflare,sambanova,openrouter').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   const chain = names.flatMap((n) => BY_NAME[n] ?? []);
   // Changeover: until a free provider's keys are added (and SAGE_PROVIDERS is not set), keep using Claude as before,
   // so Sage never goes quiet in between. As soon as one free key exists, Claude drops out unless listed.
