@@ -103,6 +103,7 @@ function Countdown({ startsAt }: { startsAt: string }) {
 
 export default function WatchClient() {
   const [result, setResult] = useState<Result>({ state: 'loading' });
+  const [reloadKey, setReloadKey] = useState(0); // bumping it reloads the YouTube player (e.g. joined before the stream went live)
   const verifiedEmail = useRef<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<WatchFormValues>({
@@ -262,6 +263,7 @@ export default function WatchClient() {
           </p>
           <div style={{ position: 'relative', paddingTop: '56.25%', background: '#0F0F0E', borderRadius: '1rem', overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
             <iframe
+              key={reloadKey}
               src={
                 (result.videoId
                   ? `https://www.youtube-nocookie.com/embed/${result.videoId}`
@@ -275,7 +277,9 @@ export default function WatchClient() {
             />
           </div>
           <p style={{ textAlign: 'center', color: '#9CA3AF', fontSize: '0.8125rem', marginTop: '1.25rem' }}>
-            Video not loading? <a href={result.channelUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', textDecoration: 'underline' }}>Open directly on YouTube</a>.
+            Video not showing yet?{' '}
+            <button type="button" onClick={() => setReloadKey((k) => k + 1)} style={{ background: 'none', border: 'none', padding: 0, color: '#6B7280', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Reload the stream</button>
+            {' '}or <a href={result.videoId ? `https://www.youtube.com/watch?v=${result.videoId}` : `${result.channelUrl}/live`} target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', textDecoration: 'underline' }}>watch it on YouTube</a>.
           </p>
         </div>
       )}

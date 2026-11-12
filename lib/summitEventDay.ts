@@ -62,6 +62,14 @@ export async function sendEventDayEmails(opts: { force?: boolean; budgetMs?: num
     const r = list[i];
     if (Date.now() + gap + 8_000 > deadline) { summary.remaining = list.length - i; break; }
     const started = Date.now();
+    // Claim this person first, so two jobs running at once (the Vercel cron, the hourly job and the Trigger.dev
+    // task all fire on the morning) can never both email them. Only the job that flips sent_at from empty sends.
+    const { data: claimed } = await supabaseAdmin.from('summit_registrations')
+      .update({ event_day_email_sent_at: new Date().toISOString() })
+      .eq('id', r.id)
+      .is('event_day_email_sent_at', null)
+      .select('id');
+    if (!claimed?.length) continue; // another job already has them
     try {
       if (r.attendance_type === 'virtual') {
         await sendEventDayVirtualEmail(r.email, r.full_name);
@@ -70,11 +78,10 @@ export async function sendEventDayEmails(opts: { force?: boolean; budgetMs?: num
         await sendEventDayPhysicalEmail(r.email, r.full_name);
         summary.sentPhysical++;
       }
-      await supabaseAdmin.from('summit_registrations')
-        .update({ event_day_email_sent_at: new Date().toISOString() })
-        .eq('id', r.id);
     } catch (err) {
       summary.failed++;
+      // Release the claim so the next run tries this person again.
+      await supabaseAdmin.from('summit_registrations').update({ event_day_email_sent_at: null }).eq('id', r.id);
       console.error('[summitEventDay] send failed for', maskEmail(r.email), (err as Error).message);
     }
     const wait = gap - (Date.now() - started);

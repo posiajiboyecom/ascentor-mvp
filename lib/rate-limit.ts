@@ -95,9 +95,10 @@ export const summitRegisterLimiter = new RateLimiter({
   windowMs: 10 * 60 * 1000,
 });
 
-/** Summit stream email-gate: 15 checks per 10 minutes per IP (a typo shouldn't lock anyone out) */
+/** Summit stream email-gate: 60 checks per 10 minutes per IP. Generous on purpose: many Nigerian mobile users share one
+ *  carrier IP, and page refreshes count too, so a tight limit would lock out real attendees on the morning. */
 export const summitStreamLimiter = new RateLimiter({
-  limit:    15,
+  limit:    60,
   windowMs: 10 * 60 * 1000,
 });
 

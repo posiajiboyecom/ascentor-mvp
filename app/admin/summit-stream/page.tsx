@@ -211,7 +211,7 @@ export default function SummitStreamPage() {
         </p>
 
         <label style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ledger-ink-soft)', display: 'block', marginBottom: 6 }}>
-          Specific YouTube video (recommended: paste your Unlisted stream link here)
+          Specific YouTube video (optional: leave blank to play our channel's live stream)
         </label>
         <input
           value={videoIdInput}
@@ -220,8 +220,8 @@ export default function SummitStreamPage() {
           style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', fontSize: 13, fontFamily: 'var(--ledger-font-mono, monospace)', marginBottom: 6, boxSizing: 'border-box' }}
         />
         <p style={{ fontSize: 11.5, color: 'var(--ledger-ink-soft)', margin: '0 0 14px' }}>
-          Leaving this blank auto-shows whatever is currently live on{' '}
-          <a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#8A6A1F' }}>youtube.com/@AscentorGlobal</a>, but only if that stream is set to Public. See the notice above.
+          Blank (recommended) plays whatever is live right now on{' '}
+          <a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#8A6A1F' }}>youtube.com/@AscentorGlobal</a>. The stream must be Public, with embedding allowed, and it should be the only live or upcoming stream on the channel. Paste a link here only if you stream from another account or as Unlisted.
         </p>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
