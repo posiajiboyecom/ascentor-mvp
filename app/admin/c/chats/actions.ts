@@ -12,7 +12,9 @@ import { logAccess, type ChatScope } from '@/lib/rx/chats';
 const SCOPES: ScopeKind[] = ['one', 'members', 'tab', 'everything', 'sage', 'dm', 'circlegroup', 'posts', 'agenda'];
 const isTab = (t: unknown): t is TabKey => TABS.some((x) => x.key === t);
 const tabLabel = (t: TabKey) => TABS.find((x) => x.key === t)!.label;
-const okId = (id: unknown): id is string => typeof id === 'string' && /^(cs:)?[0-9a-f-]{36}$/i.test(id);
+const okId = (id: unknown): id is string => typeof id === 'string' && (/^(cs:)?[0-9a-f-]{36}$/i.test(id) || /^ch:[a-z0-9_-]{1,64}$/i.test(id));
+const LOGGED = ['sage', 'dm', 'circle', 'group', 'member', 'calls', 'channels', 'removed'];
+const refOf = (id: string) => (/^[0-9a-f-]{36}$/i.test(id) ? id : null);
 const msg = (e: unknown) => (e instanceof Error && e.message ? e.message : 'That did not work. Please try again.');
 
 export async function loadTabAction(tab: TabKey): Promise<{ ok: true; list: TabList } | { ok: false; error: string }> {
@@ -32,7 +34,7 @@ export async function openConversationAction(tab: TabKey, id: string, name: stri
     const conv = await openConversation(tab, id, String(name ?? '').slice(0, 200));
     if (!conv) return { ok: false, error: 'That conversation is no longer available.' };
     await auditAdmin(staff, 'Read', conv.name, tabLabel(tab));
-    if (['sage', 'dm', 'circle', 'group', 'member'].includes(tab)) await logAccess(staff.userId, 'view', tab as ChatScope, id.startsWith('cs:') ? null : id);
+    if (LOGGED.includes(tab)) await logAccess(staff.userId, 'view', tab as ChatScope, refOf(id), undefined, id.startsWith('ch:') ? { channel: id.slice(3) } : {});
     return { ok: true, conv };
   } catch (e) { return { ok: false, error: msg(e) }; }
 }
@@ -55,7 +57,7 @@ export async function exportAction(req: ExportRequest): Promise<ExportDone | { o
 
     const built = await buildExport(r, staff.name);
     await auditAdmin(staff, `Exported (${r.format}${r.anon ? ', names hidden' : ''}${built.capped ? ', capped at 20,000 messages' : ''})`, `${r.title} · ${r.scopeLabel} · ${r.range}`, 'Exports');
-    if (r.tab && ['sage', 'dm', 'circle', 'group', 'member'].includes(r.tab)) await logAccess(staff.userId, 'export', r.tab as ChatScope, r.scope === 'one' && r.id && !r.id.startsWith('cs:') ? r.id : null, r.format, { messages: built.messages, scope: r.scope });
+    if (r.tab && LOGGED.includes(r.tab)) await logAccess(staff.userId, 'export', r.tab as ChatScope, r.scope === 'one' && r.id ? refOf(r.id) : null, r.format, { messages: built.messages, scope: r.scope });
     return { ok: true, filename: built.filename, mime: built.mime, base64: built.data.toString('base64'), messages: built.messages, capped: built.capped };
   } catch (e) { return { ok: false, error: msg(e) }; }
 }

@@ -1,7 +1,7 @@
 'use client';
 
-// In-call chat. Messages travel only between the people in the call (Daily sendAppMessage) and are never stored:
-// calls are not recorded, and that includes their chat. Someone who joins late receives the messages so far from the
+// In-call chat. Messages travel between the people in the call (Daily sendAppMessage) and each sender also saves their own
+// message to Ascentor (POST /api/rx/call/chat), like every other chat in the app. Audio and video are never recorded. Someone who joins late receives the messages so far from the
 // member who has been in the call longest. When the call ends, the chat is gone.
 
 import { useEffect, useRef, useState } from 'react';
@@ -74,7 +74,7 @@ export function ChatPanel({ messages, onSend, autoFocus }: { messages: ChatMsg[]
   return (
     <div className="sg-chat">
       <ol className="sg-chat-list" ref={listRef} aria-label="Chat messages" aria-live="polite">
-        {messages.length === 0 && <li className="sg-chat-empty">Messages here are seen only by people in this call and disappear when it ends.</li>}
+        {messages.length === 0 && <li className="sg-chat-empty">Messages here are seen by people in this call and saved with your Ascentor chats. Audio and video are not recorded.</li>}
         {messages.map((m, i) => {
           const grouped = i > 0 && messages[i - 1].fromId === m.fromId && m.at - messages[i - 1].at < 120000;
           return (

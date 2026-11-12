@@ -7,7 +7,7 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { previewOf, parseBody } from './media';
 
-export type ChatScope = 'circle' | 'group' | 'dm' | 'sage' | 'member';
+export type ChatScope = 'circle' | 'group' | 'dm' | 'sage' | 'member' | 'calls' | 'channels' | 'removed';
 
 export interface TranscriptLine { at: string; who: string; text: string }
 export interface Transcript { title: string; subtitle: string; scope: ChatScope; id: string; lines: TranscriptLine[]; truncated: boolean }
@@ -181,5 +181,6 @@ export async function getTranscripts(scope: ChatScope, id: string, from?: string
     case 'dm': { const t = await dmTranscript(id, from, to); return t ? [t] : []; }
     case 'sage': { const t = await sageTranscript(id, from, to); return t ? [t] : []; }
     case 'member': return memberTranscripts(id, from, to);
+    default: return [];   // calls, channels and removed messages are read in the Conversations console
   }
 }

@@ -21,7 +21,7 @@ export interface Convo { tab: TabKey; id: string; title: string; kind: string; l
 export interface ListRow { id: string; cells: string[] }
 export interface TabList { rows: ListRow[]; note?: string }
 
-const PLAN_LABEL: Record<string, string> = { explorer: 'Seeker', builder: 'Builder', leader: 'Leader' };
+const PLAN_LABEL: Record<string, string> = { explorer: 'Seeker', builder: 'Builder', pinnacle: 'Pinnacle', leader: 'Leader' };
 
 // ── small helpers ───────────────────────────────────────────────────────────
 
@@ -202,18 +202,108 @@ async function listPosts(limit: number): Promise<TabList> {
   };
 }
 
+// Chat typed during calls (call_chat_messages), one row per call.
+interface CallMsg { id: string; call_id: string; kind: string; circle_id: string | null; private_session_id: string | null; user_id: string | null; sender_name: string; body: string; created_at: string }
+
+async function callTitles(rows: { call_id: string; kind: string; circle_id: string | null; private_session_id: string | null; created_at: string }[]): Promise<Map<string, string>> {
+  const circleIds = [...new Set(rows.map((r) => r.circle_id).filter(Boolean) as string[])];
+  const privIds = [...new Set(rows.map((r) => r.private_session_id).filter(Boolean) as string[])];
+  const [{ data: cs }, { data: ps }] = await Promise.all([
+    circleIds.length ? db.from('circles').select('id, name, number').in('id', circleIds) : Promise.resolve({ data: [] }),
+    privIds.length ? db.from('private_mentor_sessions').select('id, member_id, human_mentors(name)').in('id', privIds) : Promise.resolve({ data: [] }),
+  ]);
+  const circ = new Map(((cs ?? []) as { id: string; name: string; number: number }[]).map((c) => [c.id, `${c.name} · Circle ${c.number}`]));
+  const pr = (ps ?? []) as unknown as { id: string; member_id: string; human_mentors: { name: string | null } | null }[];
+  const nm = await names(pr.map((p) => p.member_id));
+  const priv = new Map(pr.map((p) => [p.id, `${nm.get(p.member_id) ?? 'Member'} ↔ ${p.human_mentors?.name ?? 'mentor'}`]));
+  const out = new Map<string, string>();
+  for (const r of rows) {
+    if (out.has(r.call_id)) continue;
+    const day = dateLabel(r.created_at);
+    out.set(r.call_id, r.kind === 'private' ? `Private session · ${priv.get(r.private_session_id ?? '') ?? 'member ↔ mentor'} · ${day}`
+      : `${circ.get(r.circle_id ?? '') ?? 'Circle'} · ${r.kind === 'mentor' ? 'mentor session' : 'Circle call'} · ${day}`);
+  }
+  return out;
+}
+
+async function listCalls(limit: number): Promise<TabList> {
+  const { data } = await db.from('call_chat_messages').select('call_id, kind, circle_id, private_session_id, user_id, sender_name, body, created_at').order('created_at', { ascending: false }).limit(FETCH_CAP);
+  const ms = (data ?? []) as Omit<CallMsg, 'id'>[];
+  const order: string[] = [];
+  const count = new Map<string, number>();
+  const people = new Map<string, Set<string>>();
+  const last = new Map<string, Omit<CallMsg, 'id'>>();
+  for (const m of ms) {
+    if (!last.has(m.call_id)) { last.set(m.call_id, m); order.push(m.call_id); }
+    count.set(m.call_id, (count.get(m.call_id) ?? 0) + 1);
+    if (m.user_id) people.set(m.call_id, (people.get(m.call_id) ?? new Set()).add(m.user_id));
+  }
+  const ids = order.slice(0, limit);
+  const titles = await callTitles(ids.map((id) => last.get(id)!));
+  return {
+    rows: ids.map((id) => {
+      const l = last.get(id)!;
+      return { id, cells: [titles.get(id) ?? 'Call', num(people.get(id)?.size ?? 0), num(count.get(id) ?? 0), `${(l.sender_name || 'Member').split(' ')[0]}: ${snip(l.body, 50)}`] };
+    }),
+  };
+}
+
+// The older community channels (community_messages), one row per channel. Ids are "ch:<slug>".
+async function listChannels(limit: number): Promise<TabList> {
+  const { data } = await db.from('community_messages').select('channel, user_id, content, created_at').eq('deleted', false).order('created_at', { ascending: false }).limit(FETCH_CAP);
+  const ms = (data ?? []) as { channel: string; user_id: string | null; content: string; created_at: string }[];
+  const order: string[] = [];
+  const count = new Map<string, number>();
+  const people = new Map<string, Set<string>>();
+  const last = new Map<string, (typeof ms)[number]>();
+  for (const m of ms) {
+    const k = m.channel || 'general';
+    if (!last.has(k)) { last.set(k, m); order.push(k); }
+    count.set(k, (count.get(k) ?? 0) + 1);
+    if (m.user_id) people.set(k, (people.get(k) ?? new Set()).add(m.user_id));
+  }
+  const keys = order.filter((k) => /^[a-z0-9_-]{1,64}$/i.test(k)).slice(0, limit);
+  const nm = await names(keys.map((k) => last.get(k)!.user_id));
+  return {
+    rows: keys.map((k) => {
+      const l = last.get(k)!;
+      const first = l.user_id ? (nm.get(l.user_id) ?? 'Member').split(' ')[0] : 'Ascentor';
+      return { id: `ch:${k}`, cells: [`#${k}`, num(people.get(k)?.size ?? 0), num(count.get(k) ?? 0), `${first}: ${snip(l.content, 50)}`] };
+    }),
+  };
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  circle_messages: 'Circle chat', rx_group_messages: 'Group chat', dm_messages: 'Direct message', community_messages: 'Community channel',
+  sage_messages: 'Sage chat', call_chat_messages: 'Call chat',
+};
+
+// Copies of messages kept when they were deleted (chat_archive, filled by a database trigger).
+async function listRemoved(limit: number): Promise<TabList> {
+  const { data } = await db.from('chat_archive').select('id, source, author_id, body, sent_at, archived_at').order('archived_at', { ascending: false }).limit(limit);
+  const rs = (data ?? []) as { id: string; source: string; author_id: string | null; body: string | null; sent_at: string | null; archived_at: string }[];
+  const nm = await names(rs.map((r) => r.author_id));
+  return {
+    rows: rs.map((r) => ({ id: r.id, cells: [`${SOURCE_LABEL[r.source] ?? r.source} · removed ${dateLabel(r.archived_at)}`, r.author_id ? nm.get(r.author_id) ?? 'Member' : 'Ascentor', dateLabel(r.sent_at), snip(lineFrom(r.body ?? '', false))] })),
+  };
+}
+
 interface Activity { sage: number; chats: number; posts: number }
 
 async function memberActivity(): Promise<Map<string, Activity>> {
   const out = new Map<string, Activity>();
   const add = (id: string | null, k: keyof Activity) => { if (!id) return; const a = out.get(id) ?? { sage: 0, chats: 0, posts: 0 }; a[k]++; out.set(id, a); };
-  const [s, d, c, g, p] = await Promise.all([
+  const [s, d, c, g, p, k, ch] = await Promise.all([
     db.from('sage_messages').select('user_id').eq('role', 'user').limit(FETCH_CAP),
     db.from('dm_messages').select('sender_id').limit(FETCH_CAP),
     db.from('circle_messages').select('user_id').limit(FETCH_CAP),
     db.from('rx_group_messages').select('user_id').limit(FETCH_CAP),
     db.from('feed_posts').select('user_id').eq('deleted', false).limit(FETCH_CAP),
+    db.from('call_chat_messages').select('user_id').limit(FETCH_CAP),
+    db.from('community_messages').select('user_id').eq('deleted', false).limit(FETCH_CAP),
   ]);
+  for (const r of (k.data ?? []) as { user_id: string | null }[]) add(r.user_id, 'chats');
+  for (const r of (ch.data ?? []) as { user_id: string | null }[]) add(r.user_id, 'chats');
   for (const r of (s.data ?? []) as { user_id: string | null }[]) add(r.user_id, 'sage');
   for (const r of (d.data ?? []) as { sender_id: string }[]) add(r.sender_id, 'chats');
   for (const r of (c.data ?? []) as { user_id: string | null }[]) add(r.user_id, 'chats');
@@ -231,6 +321,7 @@ async function listMembers(limit: number): Promise<TabList> {
 
 export async function listTab(tab: TabKey, limit = LIST_CAP): Promise<TabList> {
   const l = tab === 'sage' ? await listSage(limit) : tab === 'dm' ? await listDm(limit) : tab === 'circle' ? await listCircle(limit) : tab === 'group' ? await listGroup(limit)
+    : tab === 'calls' ? await listCalls(limit) : tab === 'channels' ? await listChannels(limit) : tab === 'removed' ? await listRemoved(limit)
     : tab === 'agenda' ? await listAgenda(limit) : tab === 'posts' ? await listPosts(limit) : await listMembers(limit);
   return { ...l, note: l.rows.length >= limit ? `Showing the ${limit} newest.` : undefined };
 }
@@ -351,6 +442,46 @@ async function postConvo(id: string, since: string | null, b: Budget): Promise<C
   return finish('posts', id, snip((p.body as string | null) ?? '', 80), lines, nm, b, false);
 }
 
+async function callConvo(id: string, since: string | null, b: Budget, onlyUser?: string): Promise<Convo | null> {
+  if (!isUuid(id)) return null;
+  const { data: head } = await db.from('call_chat_messages').select('call_id, kind, circle_id, private_session_id, created_at').eq('call_id', id).order('created_at').limit(1).maybeSingle();
+  if (!head) return null;
+  const { rows, over } = await fetchMsgs<CallMsg>((limit) => {
+    let q = db.from('call_chat_messages').select('id, call_id, kind, circle_id, private_session_id, user_id, sender_name, body, created_at').eq('call_id', id).order('created_at', { ascending: false }).limit(limit);
+    if (since) q = q.gte('created_at', since);
+    if (onlyUser) q = q.eq('user_id', onlyUser);
+    return q;
+  }, b);
+  const title = (await callTitles([head as CallMsg])).get(id) ?? 'Call';
+  const nm = await names(rows.map((r) => r.user_id));
+  return finish('calls', id, title, rows.map((r) => mk(r.id, r.created_at, r.user_id, (r.user_id && nm.get(r.user_id)) || r.sender_name || 'Member', r.body)), nm, b, over);
+}
+
+async function channelConvo(id: string, since: string | null, b: Budget, onlyUser?: string): Promise<Convo | null> {
+  const m = /^ch:([a-z0-9_-]{1,64})$/i.exec(id);
+  if (!m) return null;
+  const { rows, over } = await fetchMsgs<{ id: string; user_id: string | null; content: string; created_at: string; flagged: boolean | null }>((limit) => {
+    let q = db.from('community_messages').select('id, user_id, content, created_at, flagged').eq('channel', m[1]).eq('deleted', false).order('created_at', { ascending: false }).limit(limit);
+    if (since) q = q.gte('created_at', since);
+    if (onlyUser) q = q.eq('user_id', onlyUser);
+    return q;
+  }, b);
+  const nm = await names(rows.map((r) => r.user_id));
+  return finish('channels', id, `#${m[1]}`, rows.map((r) => mk(r.id, r.created_at, r.user_id, r.user_id ? nm.get(r.user_id) ?? 'Member' : 'Ascentor', r.content, !!r.flagged)), nm, b, over);
+}
+
+async function removedConvo(id: string, since: string | null, b: Budget): Promise<Convo | null> {
+  if (!isUuid(id)) return null;
+  const { data: r } = await db.from('chat_archive').select('id, source, author_id, body, sent_at, archived_at').eq('id', id).maybeSingle();
+  if (!r) return null;
+  const at = (r.sent_at as string | null) ?? (r.archived_at as string);
+  if (since && at < since) return finish('removed', id, '', [], new Map(), b, false);
+  const nm = await names([r.author_id as string | null]);
+  const who = r.author_id ? nm.get(r.author_id as string) ?? 'Member' : 'Ascentor';
+  const title = `${SOURCE_LABEL[r.source as string] ?? r.source} · removed ${dateLabel(r.archived_at as string)}`;
+  return finish('removed', id, title, [mk(r.id as string, at, r.author_id as string | null, who, (r.body as string | null) ?? '')], nm, b, false);
+}
+
 /** Post photos and videos as "\n[Media] url" so the attachments toggle can drop or keep them. */
 function mediaLinks(media: unknown): string {
   const urls: string[] = [];
@@ -379,6 +510,12 @@ export async function memberConvos(userId: string, since: string | null, b: Budg
   for (const s of (seats ?? []) as { circle_id: string }[]) { if (b.left <= 0) break; push(await roomConvo('circle', s.circle_id, since, b, userId), 'Circle'); }
   const { data: gm } = await db.from('rx_group_members').select('group_id').eq('user_id', userId).limit(100);
   for (const g of (gm ?? []) as { group_id: string }[]) { if (b.left <= 0) break; push(await roomConvo('group', g.group_id, since, b, userId), 'Group'); }
+  const { data: calls } = await db.from('call_chat_messages').select('call_id').eq('user_id', userId).order('created_at', { ascending: false }).limit(500);
+  for (const id of [...new Set(((calls ?? []) as { call_id: string }[]).map((c) => c.call_id))].slice(0, 100)) { if (b.left <= 0) break; push(await callConvo(id, since, b, userId), 'Call'); }
+  const { data: chans } = await db.from('community_messages').select('channel').eq('user_id', userId).eq('deleted', false).limit(2000);
+  for (const ch of [...new Set(((chans ?? []) as { channel: string }[]).map((c) => c.channel || 'general'))].filter((c) => /^[a-z0-9_-]{1,64}$/i.test(c)).slice(0, 50)) { if (b.left <= 0) break; push(await channelConvo(`ch:${ch}`, since, b, userId), 'Channel'); }
+  const { data: gone } = await db.from('chat_archive').select('id').eq('author_id', userId).order('archived_at', { ascending: false }).limit(200);
+  for (const g of (gone ?? []) as { id: string }[]) { if (b.left <= 0) break; push(await removedConvo(g.id, since, b), 'Removed'); }
   const { data: posts } = await db.from('feed_posts').select('id').eq('user_id', userId).eq('deleted', false).order('created_at', { ascending: false }).limit(100);
   for (const p of (posts ?? []) as { id: string }[]) { if (b.left <= 0) break; push(await postConvo(p.id, since, b), 'Post'); }
   return out;
@@ -387,7 +524,8 @@ export async function memberConvos(userId: string, since: string | null, b: Budg
 async function singleConvo(tab: TabKey, id: string, since: string | null, b: Budget): Promise<Convo[]> {
   if (tab === 'member') return memberConvos(id, since, b);
   const c = tab === 'sage' ? await sageConvo(id, since, b) : tab === 'dm' ? await dmConvo(id, since, b) : tab === 'circle' ? await roomConvo('circle', id, since, b)
-    : tab === 'group' ? await roomConvo('group', id, since, b) : tab === 'agenda' ? await agendaConvo(id, since, b) : await postConvo(id, since, b);
+    : tab === 'group' ? await roomConvo('group', id, since, b) : tab === 'calls' ? await callConvo(id, since, b) : tab === 'channels' ? await channelConvo(id, since, b)
+    : tab === 'removed' ? await removedConvo(id, since, b) : tab === 'agenda' ? await agendaConvo(id, since, b) : await postConvo(id, since, b);
   return c ? [c] : [];
 }
 
@@ -411,7 +549,7 @@ const stripMedia = (t: string) => t.replace(/\n\[\[media\]\] \S+/g, '\n[Media]')
 // ── exports ─────────────────────────────────────────────────────────────────
 
 const RANGE_DAYS: Record<string, number | null> = { 'Last 7 days': 7, 'Last 30 days': 30, 'Last 90 days': 90, 'All time': null };
-const EVERYTHING: TabKey[] = ['sage', 'dm', 'circle', 'group', 'agenda', 'posts'];
+const EVERYTHING: TabKey[] = ['sage', 'dm', 'circle', 'group', 'calls', 'channels', 'agenda', 'posts', 'removed'];
 
 async function collect(req: ExportRequest, since: string | null, b: Budget): Promise<Convo[]> {
   const all = async (tab: TabKey): Promise<Convo[]> => {
@@ -438,7 +576,7 @@ async function collect(req: ExportRequest, since: string | null, b: Budget): Pro
     case 'everything': { const out: Convo[] = []; for (const t of EVERYTHING) out.push(...(await all(t))); return out; }
     case 'sage': return all('sage');
     case 'dm': return all('dm');
-    case 'circlegroup': return [...(await all('circle')), ...(await all('group'))];
+    case 'circlegroup': return [...(await all('circle')), ...(await all('group')), ...(await all('calls'))];
     case 'posts': return all('posts');
     case 'agenda': return all('agenda');
   }

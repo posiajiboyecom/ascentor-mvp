@@ -27,6 +27,9 @@ const BUSY_NOW = 'Sage is busy right now. Please try again in a few minutes.';
 const BUSY_TODAY = 'Sage has had a very busy day and is resting until tomorrow. Your Circle and mentor are still here for you.';
 const TOPICS = new Set(['open', 'plan', 'lesson', 'missed', 'reframe', 'report', 'silent', 'crisis']);
 
+/** How many recent messages (member and Sage) the AI sees. Kept small for the free tiers' daily quotas. */
+const HISTORY_TURNS = 8;
+
 const CRISIS_REPLY = {
   reply: 'Thank you for telling me. I’m an AI, and you deserve a real person right now. You don’t have to explain everything. Please reach out below.',
   crisis: true,
@@ -107,11 +110,28 @@ export async function POST(req: Request) {
   const topic = TOPICS.has(body.topic ?? '') ? (body.topic as string) : 'plan';
   const history = (Array.isArray(body.messages) ? body.messages : [])
     .filter((m) => (m.role === 'user' || m.role === 'sage') && typeof m.text === 'string')
-    .slice(-8)   // the last few turns are enough context, and keep each free-tier request small
+    .slice(-HISTORY_TURNS)   // the last few turns are enough context, and keep each free-tier request small
     .map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: cleanText(m.text, 1000) }))
     .filter((m) => m.content);
   const last = history[history.length - 1];
   if (!last || last.role !== 'user') return NextResponse.json({ error: 'Say something first.' }, { status: 400 });
+
+  // The conversation so far comes from Ascentor's database, not the phone: whichever AI service answers sees the same
+  // saved history, and nothing the browser sends can rewrite what was said. The phone's copy is used only for a new
+  // conversation (nothing saved yet) or if the database cannot be read.
+  if (body.conversationId && /^[0-9a-f-]{36}$/i.test(body.conversationId)) {
+    const { data: conv } = await supabaseAdmin.from('sage_conversations').select('id').eq('id', body.conversationId).eq('user_id', user.id).maybeSingle();
+    if (conv) {
+      const { data: saved, error } = await supabaseAdmin.from('sage_messages').select('role, body')
+        .eq('conversation_id', body.conversationId).order('created_at', { ascending: false }).order('role', { ascending: true }).limit(HISTORY_TURNS - 1);
+      if (!error && saved?.length) {
+        const fromDb = (saved as { role: string; body: string }[]).reverse()
+          .map((m) => ({ role: m.role === 'sage' ? ('assistant' as const) : ('user' as const), content: cleanText(m.body, 1000) }))
+          .filter((m) => m.content);
+        history.splice(0, history.length, ...fromDb, last);
+      }
+    }
+  }
 
   // Anything that looks like a crisis in the recent messages is handled without the model.
   if (history.slice(-3).some((m) => m.role === 'user' && CRISIS_PATTERN.test(m.content))) {

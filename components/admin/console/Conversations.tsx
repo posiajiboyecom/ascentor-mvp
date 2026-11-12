@@ -85,12 +85,12 @@ export default function Conversations({ initialTab, initialRows, initialNote, lo
 
   const analyseHref = (name: string, src: TabKey) => `/admin/c/analysis?narrow=${encodeURIComponent(name)}&src=${src}`;
 
-  const exportTab = () => setDlg({ title: meta.label, tab, scopes: [{ label: 'Everything in this tab', scope: 'tab', tab }, { label: 'Everything: all conversations, agendas and posts', scope: 'everything' }] });
+  const exportTab = () => setDlg({ title: meta.label, tab, scopes: [{ label: 'Everything in this tab', scope: 'tab', tab }, { label: 'Everything: all conversations, call chats, channels, agendas, posts and removed messages', scope: 'everything' }] });
   const exportAll = () => setDlg({
     title: 'all conversation data', defaultRange: 'All time',
     scopes: [
-      { label: 'Everything: Sage, direct messages, Circles, groups, agendas, posts and replies', scope: 'everything' },
-      { label: 'Only Sage', scope: 'sage' }, { label: 'Only direct messages', scope: 'dm' }, { label: 'Only Circle and group chats', scope: 'circlegroup' },
+      { label: 'Everything: Sage, direct messages, Circles, groups, call chats, channels, agendas, posts, replies and removed messages', scope: 'everything' },
+      { label: 'Only Sage', scope: 'sage' }, { label: 'Only direct messages', scope: 'dm' }, { label: 'Only Circle, group and call chats', scope: 'circlegroup' },
       { label: 'Only posts and replies', scope: 'posts' }, { label: 'Only agendas', scope: 'agenda' },
     ],
   });

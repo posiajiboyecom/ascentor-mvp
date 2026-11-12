@@ -1,14 +1,17 @@
 // Client-safe constants for the Conversations screen (tabs and export choices), copied from the admin prototype.
 
-export type TabKey = 'sage' | 'dm' | 'circle' | 'group' | 'agenda' | 'posts' | 'member';
+export type TabKey = 'sage' | 'dm' | 'circle' | 'group' | 'calls' | 'channels' | 'agenda' | 'posts' | 'removed' | 'member';
 
 export const TABS: { key: TabKey; label: string; kind: string; cols: string[] }[] = [
   { key: 'sage', label: 'Sage chats', kind: 'Sage · AI coach', cols: ['Conversation', 'Member', 'Messages', 'Last topic'] },
   { key: 'dm', label: 'Direct messages', kind: 'Direct message', cols: ['Conversation', 'People', 'Messages', 'Last message'] },
   { key: 'circle', label: 'Circle chats', kind: 'Circle chat', cols: ['Circle', 'Members', 'Messages', 'Last message'] },
   { key: 'group', label: 'Group chats', kind: 'Group chat', cols: ['Group', 'Members', 'Messages', 'Last message'] },
+  { key: 'calls', label: 'Call chats', kind: 'Chat during a call', cols: ['Call', 'People', 'Messages', 'Last message'] },
+  { key: 'channels', label: 'Community channels', kind: 'Community channel', cols: ['Channel', 'People', 'Messages', 'Last message'] },
   { key: 'agenda', label: 'Session agendas', kind: 'Mentor session agenda', cols: ['Agenda', 'Circle', 'Questions', 'Status'] },
   { key: 'posts', label: 'Posts and replies', kind: 'Community post', cols: ['Post', 'Author', 'Replies', 'Type'] },
+  { key: 'removed', label: 'Removed messages', kind: 'Removed message (kept copy)', cols: ['Where', 'From', 'Sent', 'Message'] },
   { key: 'member', label: 'By member', kind: 'Everything from one member', cols: ['Member', 'Sage', 'Chats', 'Posts'] },
 ];
 

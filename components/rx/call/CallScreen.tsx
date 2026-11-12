@@ -495,6 +495,12 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     const msg = { type: 'chat' as const, id: crypto.randomUUID(), text: text.slice(0, CHAT_MAX), at: Date.now() };
     c.sendAppMessage(msg satisfies ChatWire, '*');
     setChat((m) => mergeChat(m, [{ id: msg.id, fromId: me?.session_id ?? 'me', name: firstName, text: msg.text, at: msg.at, mine: true }]));
+    // Save it with the member's other chats. Retried once; never blocks the call.
+    const save = () => fetch('/api/rx/call/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', keepalive: true,
+      body: JSON.stringify({ id: msg.id, kind, circleId, sessionId: sessionId ?? null, text: msg.text, name: firstName }),
+    });
+    void save().then((r) => (r.ok || r.status < 500 ? r : save())).catch(() => setTimeout(() => { void save().catch(() => {}); }, 3000));
   }
   function openPeople() {
     if (window.matchMedia('(max-width: 767px)').matches) setSheet('people');
