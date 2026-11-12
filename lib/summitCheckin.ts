@@ -43,8 +43,8 @@ export type CheckInResult =
   | { status: 'not_paid'; attendee: Attendee }
   | { status: 'not_found' };
 
-const COLS = 'id, full_name, email, whatsapp, attendance_type, payment_status, ticket_type, checked_in_at, checked_in_by';
-type Row = { id: string; full_name: string | null; email: string | null; whatsapp: string | null; attendance_type: string | null; payment_status: string | null; ticket_type: string | null; checked_in_at: string | null; checked_in_by: string | null };
+const COLS = 'id, full_name, email, whatsapp, attendance_type, payment_status, ticket_type, checked_in_at, checked_in_by, checked_in_by_name';
+type Row = { id: string; full_name: string | null; email: string | null; whatsapp: string | null; attendance_type: string | null; payment_status: string | null; ticket_type: string | null; checked_in_at: string | null; checked_in_by: string | null; checked_in_by_name: string | null };
 
 function toAttendee(r: Row): Attendee {
   return {
@@ -59,21 +59,25 @@ function toAttendee(r: Row): Attendee {
   };
 }
 
-async function staffName(userId: string | null): Promise<string | null> {
-  if (!userId) return null;
-  const { data } = await supabaseAdmin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+async function admittedBy(r: Row): Promise<string | null> {
+  if (r.checked_in_by_name) return r.checked_in_by_name;
+  if (!r.checked_in_by) return null;
+  const { data } = await supabaseAdmin.from('profiles').select('full_name').eq('id', r.checked_in_by).maybeSingle();
   return (data?.full_name as string | null)?.trim() || null;
 }
 
+/** Who is admitting: a staff member (their user id), or a volunteer at /door (no account, just a name). */
+export interface Actor { userId: string | null; name: string }
+
 /** Admit one registration. Safe if two scanners read the same ticket at the same moment: only one gets "admitted". */
-export async function checkIn(registrationId: string, staffId: string, method: 'qr' | 'search'): Promise<CheckInResult> {
+export async function checkIn(registrationId: string, actor: Actor, method: 'qr' | 'search'): Promise<CheckInResult> {
   const { data: row } = await supabaseAdmin.from('summit_registrations').select(COLS).eq('id', registrationId).maybeSingle<Row>();
   if (!row) return { status: 'not_found' };
   if (row.payment_status !== 'paid') return { status: 'not_paid', attendee: toAttendee(row) };
-  if (row.checked_in_at) return { status: 'already', attendee: toAttendee(row), checkedInBy: await staffName(row.checked_in_by) };
+  if (row.checked_in_at) return { status: 'already', attendee: toAttendee(row), checkedInBy: await admittedBy(row) };
 
   const { data: won } = await supabaseAdmin.from('summit_registrations')
-    .update({ checked_in_at: new Date().toISOString(), checked_in_by: staffId, check_in_method: method })
+    .update({ checked_in_at: new Date().toISOString(), checked_in_by: actor.userId, checked_in_by_name: actor.name, check_in_method: method })
     .eq('id', registrationId)
     .is('checked_in_at', null)
     .select(COLS);
@@ -81,15 +85,18 @@ export async function checkIn(registrationId: string, staffId: string, method: '
 
   // Someone else admitted them a split second earlier.
   const { data: now } = await supabaseAdmin.from('summit_registrations').select(COLS).eq('id', registrationId).maybeSingle<Row>();
-  return now ? { status: 'already', attendee: toAttendee(now), checkedInBy: await staffName(now.checked_in_by) } : { status: 'not_found' };
+  return now ? { status: 'already', attendee: toAttendee(now), checkedInBy: await admittedBy(now) } : { status: 'not_found' };
 }
 
-/** Undo a check-in made by mistake. */
-export async function undoCheckIn(registrationId: string): Promise<boolean> {
-  const { error } = await supabaseAdmin.from('summit_registrations')
-    .update({ checked_in_at: null, checked_in_by: null, check_in_method: null })
+/** Undo a check-in made by mistake. `onlyIfBy` limits it to a check-in that this person made in the last 15 minutes
+ *  (volunteers can undo their own slip, not someone else's). Returns false when nothing was undone. */
+export async function undoCheckIn(registrationId: string, onlyIfBy?: string): Promise<boolean> {
+  let q = supabaseAdmin.from('summit_registrations')
+    .update({ checked_in_at: null, checked_in_by: null, checked_in_by_name: null, check_in_method: null })
     .eq('id', registrationId);
-  return !error;
+  if (onlyIfBy) q = q.eq('checked_in_by_name', onlyIfBy).gte('checked_in_at', new Date(Date.now() - 15 * 60_000).toISOString());
+  const { data, error } = await q.select('id');
+  return !error && !!data?.length;
 }
 
 /** Find people by name, email or phone, for anyone without their QR code. */

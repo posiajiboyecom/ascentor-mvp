@@ -142,6 +142,8 @@ const PUBLIC_ROUTES = [
   // (community gate), so admins need their own entry point. Same accounts,
   // same Supabase auth; the page verifies the admin/moderator role itself.
   '/admin-login',
+  // Summit door check-in for volunteers: gated by its own door code and signed cookie (lib/summitDoor.ts).
+  '/door',
 ];
 
 // Origins allowed to make state-changing API calls besides the request's own host

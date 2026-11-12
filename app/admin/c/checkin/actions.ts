@@ -3,6 +3,7 @@
 // Entrance check-in. Admitting someone needs Edit on "Entrance check-in"; the check runs here, not in the page.
 import { staffForAction } from '@/lib/admin/access';
 import { auditAdmin } from '@/lib/admin/audit';
+import { setDoorAccess } from '@/lib/summitDoor';
 import { checkIn, checkInStats, registrationIdFromScan, searchAttendees, undoCheckIn, type Attendee, type CheckInResult, type CheckInStats } from '@/lib/summitCheckin';
 
 const AREA = 'Entrance check-in';
@@ -17,7 +18,7 @@ export async function scanTicketAction(raw: string): Promise<ScanResult> {
     staff.require('checkin', 'edit');
     const id = registrationIdFromScan(String(raw ?? '').slice(0, 300));
     if (!id) return { status: 'not_ticket' };
-    const r = await checkIn(id, staff.userId, 'qr');
+    const r = await checkIn(id, { userId: staff.userId, name: staff.name }, 'qr');
     if (r.status === 'admitted') void auditAdmin(staff, 'Checked in (QR)', r.attendee.name, AREA);
     return r;
   } catch (e) { return { status: 'error', error: msg(e) }; }
@@ -30,7 +31,7 @@ export async function checkInByIdAction(id: string): Promise<ScanResult> {
     staff.require('checkin', 'edit');
     const clean = registrationIdFromScan(String(id ?? ''));
     if (!clean) return { status: 'not_found' };
-    const r = await checkIn(clean, staff.userId, 'search');
+    const r = await checkIn(clean, { userId: staff.userId, name: staff.name }, 'search');
     if (r.status === 'admitted') void auditAdmin(staff, 'Checked in (search)', r.attendee.name, AREA);
     return r;
   } catch (e) { return { status: 'error', error: msg(e) }; }
@@ -62,4 +63,17 @@ export async function statsAction(): Promise<CheckInStats | null> {
     staff.require('checkin', 'view');
     return await checkInStats();
   } catch { return null; }
+}
+
+// ── Volunteer access (/door). Changing it needs Full on Entrance check-in. ─────────────────────────────────────────
+export interface DoorAccessView { enabled: boolean; code: string; error?: string }
+
+export async function setDoorAccessAction(enabled: boolean, newCode: boolean): Promise<DoorAccessView> {
+  try {
+    const staff = await staffForAction();
+    staff.require('checkin', 'full');
+    const a = await setDoorAccess({ enabled: !!enabled, newCode: !!newCode }, staff.userId);
+    void auditAdmin(staff, newCode ? 'Made a new volunteer door code' : enabled ? 'Turned volunteer access on' : 'Turned volunteer access off', 'Volunteer access', AREA);
+    return { enabled: a.enabled, code: a.code };
+  } catch (e) { return { enabled: false, code: '', error: msg(e) }; }
 }

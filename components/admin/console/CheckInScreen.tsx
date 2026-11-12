@@ -5,7 +5,7 @@
 // already used it. Anyone without their code can be found by name, email or phone. All rules live on the server.
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import jsQR from 'jsqr';
-import { checkInByIdAction, scanTicketAction, searchAction, statsAction, undoCheckInAction, type ScanResult } from '@/app/admin/c/checkin/actions';
+import { checkInByIdAction, scanTicketAction, searchAction, setDoorAccessAction, statsAction, undoCheckInAction, type DoorAccessView, type ScanResult } from '@/app/admin/c/checkin/actions';
 import type { Attendee, CheckInStats } from '@/lib/summitCheckin';
 
 const SCAN_EVERY_MS = 180;
@@ -43,7 +43,27 @@ const PANEL: Record<string, { bg: string; fg: string; title: string }> = {
   error: { bg: '#4B5563', fg: '#fff', title: 'Could not check' },
 };
 
-export default function CheckInScreen({ initialStats, canAdmit }: { initialStats: CheckInStats; canAdmit: boolean }) {
+/** The server actions the screen calls: the admin set by default, the volunteer set (app/door/actions.ts) at /door. */
+export interface CheckInApi {
+  scan: (raw: string) => Promise<ScanResult>;
+  checkInById: (id: string) => Promise<ScanResult>;
+  undo: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  search: (q: string) => Promise<{ rows: Attendee[]; error?: string }>;
+  stats: () => Promise<CheckInStats | null>;
+}
+const ADMIN_API: CheckInApi = { scan: scanTicketAction, checkInById: checkInByIdAction, undo: undoCheckInAction, search: searchAction, stats: statsAction };
+
+interface Props {
+  initialStats: CheckInStats;
+  canAdmit: boolean;
+  api?: CheckInApi;
+  /** Set at /door: the volunteer's name and a sign-out. */
+  volunteer?: { name: string; onLeave: () => void };
+  /** Admins with Full access: the volunteer-access controls. */
+  door?: DoorAccessView;
+}
+
+export default function CheckInScreen({ initialStats, canAdmit, api = ADMIN_API, volunteer, door }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -58,13 +78,19 @@ export default function CheckInScreen({ initialStats, canAdmit }: { initialStats
   const [found, setFound] = useState<Attendee[]>([]);
   const [searching, startSearch] = useTransition();
   const [busy, setBusy] = useState(false);
+  const [undoError, setUndoError] = useState('');
+  const [doorView, setDoorView] = useState<DoorAccessView | undefined>(door);
+  const [doorBusy, startDoor] = useTransition();
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(window.location.origin), []);
 
-  const refreshStats = useCallback(async () => { const s = await statsAction(); if (s) setStats(s); }, []);
+  const refreshStats = useCallback(async () => { const s = await api.stats(); if (s) setStats(s); }, [api]);
   useEffect(() => { const id = setInterval(() => void refreshStats(), 30_000); return () => clearInterval(id); }, [refreshStats]);
 
   const clearResult = useCallback(() => {
     if (holdTimer.current) clearTimeout(holdTimer.current);
     setResult(null);
+    setUndoError('');
     busyRef.current = false;
   }, []);
 
@@ -83,10 +109,10 @@ export default function CheckInScreen({ initialStats, canAdmit }: { initialStats
     lastCode.current = { text, at: now };
     busyRef.current = true;
     setBusy(true);
-    try { show(await scanTicketAction(text)); }
+    try { show(await api.scan(text)); }
     catch { show({ status: 'error', error: 'Network problem. Check the connection and try again.' }); }
     finally { setBusy(false); }
-  }, [show]);
+  }, [show, api]);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -133,21 +159,22 @@ export default function CheckInScreen({ initialStats, canAdmit }: { initialStats
   const runSearch = (q: string) => {
     setQuery(q);
     if (q.trim().length < 2) { setFound([]); return; }
-    startSearch(async () => { const r = await searchAction(q); setFound(r.rows); });
+    startSearch(async () => { const r = await api.search(q); setFound(r.rows); });
   };
 
   const admitFound = async (a: Attendee) => {
     busyRef.current = true;
     setBusy(true);
     try {
-      const r = await checkInByIdAction(a.id);
+      const r = await api.checkInById(a.id);
       show(r);
       if ('attendee' in r) setFound((rows) => rows.map((x) => (x.id === a.id ? r.attendee : x)));
     } finally { setBusy(false); }
   };
 
   const undo = async (id: string) => {
-    const r = await undoCheckInAction(id);
+    const r = await api.undo(id);
+    if (!r.ok) { setUndoError(r.error ?? 'Could not undo.'); return; }
     if (r.ok) { setFound((rows) => rows.map((x) => (x.id === id ? { ...x, checkedInAt: null } : x))); clearResult(); void refreshStats(); }
   };
 
@@ -157,7 +184,15 @@ export default function CheckInScreen({ initialStats, canAdmit }: { initialStats
   return (
     <div className="admc">
       <div className="pg screen" style={{ maxWidth: 720 }}>
-        <div><p className="eyebrow">Elevation Summit</p><h1 className="pt">Entrance check-in</h1><span className="ul" /></div>
+        <div className="sb" style={{ alignItems: 'flex-end', flexWrap: 'wrap', gap: 10 }}>
+          <div><p className="eyebrow">Elevation Summit</p><h1 className="pt">Entrance check-in</h1><span className="ul" /></div>
+          {volunteer && (
+            <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+              <span className="sm">Volunteer: <b>{volunteer.name}</b></span>
+              <button type="button" className="btn bs" onClick={() => { stopCamera(); volunteer.onLeave(); }}>Sign out</button>
+            </div>
+          )}
+        </div>
 
         <div className="kpis" style={{ gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
           <div className="card kpi"><span className="k">Checked in</span><span className="v">{stats.checkedIn}</span></div>
@@ -192,6 +227,7 @@ export default function CheckInScreen({ initialStats, canAdmit }: { initialStats
               {result.status === 'not_found' && <p style={{ margin: 0, fontSize: 15 }}>No registration matches this code. Try searching by name.</p>}
               {result.status === 'not_ticket' && <p style={{ margin: 0, fontSize: 15 }}>This QR code isn&apos;t a Summit ticket.</p>}
               {result.status === 'error' && <p style={{ margin: 0, fontSize: 15 }}>{result.error}</p>}
+              {undoError && <p style={{ margin: 0, fontSize: 14 }}>{undoError}</p>}
               <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                 <button type="button" className="btn" style={{ background: '#fff', color: '#111', minWidth: 120 }} onClick={clearResult}>Next</button>
                 {result.status === 'admitted' && <button type="button" className="btn" style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,.7)' }} onClick={() => void undo(result.attendee.id)}>Undo</button>}
@@ -228,6 +264,28 @@ export default function CheckInScreen({ initialStats, canAdmit }: { initialStats
             </div>
           ))}
         </div>
+
+        {doorView && (
+          <div className="card st8">
+            <p className="h3">Volunteer access</p>
+            <p className="sm p">Lets volunteers without an admin account scan tickets on their own phones. They open the link, type their name and the door code, and can only check people in. They see emails and phone numbers partly hidden.</p>
+            {doorView.error && <p className="sm" style={{ color: 'var(--err)' }}>{doorView.error}</p>}
+            {doorView.enabled ? (
+              <>
+                <div className="rz st8">
+                  <p className="sm" style={{ margin: 0 }}>Link: <b style={{ wordBreak: 'break-all' }}>{origin ? `${origin}/door` : '/door'}</b></p>
+                  <p className="sm" style={{ margin: 0 }}>Door code: <b style={{ fontSize: 22, letterSpacing: '.18em', color: 'var(--text)' }}>{doorView.code}</b></p>
+                </div>
+                <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" className="btn bs" disabled={doorBusy} onClick={() => { if (window.confirm('Make a new code? Every volunteer is signed out and needs the new code.')) startDoor(async () => setDoorView(await setDoorAccessAction(true, true))); }}>New code (signs everyone out)</button>
+                  <button type="button" className="btn bs" style={{ color: 'var(--err)' }} disabled={doorBusy} onClick={() => startDoor(async () => setDoorView(await setDoorAccessAction(false, false)))}>Turn off</button>
+                </div>
+              </>
+            ) : (
+              <div><button type="button" className="btn bp" disabled={doorBusy} onClick={() => startDoor(async () => setDoorView(await setDoorAccessAction(true, false)))}>Turn on volunteer access</button></div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
