@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launch icon: the Ascentor mark on its dark tile, sized to sit inside the system splash circle. -->
+<!-- Launch icon: the Ascentor mark (public/ascentor-LM-*.svg) on its dark tile, sized to sit inside the system splash circle. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="288dp"
     android:height="288dp"
@@ -13,14 +13,23 @@
         <path
             android:fillColor="#0C0B08"
             android:pathData="M184,0H840A184,184 0,0 1,1024 184V840A184,184 0,0 1,840 1024H184A184,184 0,0 1,0 840V184A184,184 0,0 1,184 0Z" />
-        <path
-            android:fillColor="#E8A020"
-            android:pathData="M512,163.4L890.9,860.6L133.1,860.6Z" />
-        <path
-            android:fillColor="#0C0B08"
-            android:pathData="M512,271.4L821.3,822.3L202.8,822.3Z" />
-        <path
-            android:fillColor="#E8A020"
-            android:pathData="M299.8,522.1H724.2V585.6H299.8Z" />
+        <group
+            android:translateX="1.51"
+            android:translateY="127.59"
+            android:scaleX="7.6"
+            android:scaleY="7.6">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M105.19,71.38H57l-2.73,6.11h53.63ZM83.83,23.62H78.37L58.82,67.39h44.59Zm-2.7,16.32,7.93,18.63H73.19Z" />
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M74.64,23.64L55.14,67.39L53.36,71.38L50.62,77.54L44.92,77.54L47.66,71.38L49.44,67.39L68.95,23.64Z" />
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M65.42,23.64L41.39,77.54L35.69,77.54L59.72,23.64Z" />
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M56.12,23.64L36.61,67.39L34.83,71.38L32.09,77.54L26.39,77.54L29.14,71.38L30.92,67.39L50.42,23.64Z" />
+        </group>
     </group>
 </vector>
