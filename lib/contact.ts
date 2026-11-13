@@ -9,16 +9,22 @@
 //   MAIL_FROM            Ascentor <address>   the From line of every mail (EMAIL_FROM is still read, for older setups)
 //   MAIL_REPLY_TO        where replies go
 //   ADMIN_NOTIFY_EMAIL   where the team's alerts go (new sign-ups, contact form, Summit registrations, payments)
-//   SUPPORT_EMAIL        the address shown to visitors. Set NEXT_PUBLIC_SUPPORT_EMAIL to the same value so pages and the
-//                        browser agree.
+//   SUPPORT_EMAIL        the address shown to visitors (default joinascentor@gmail.com, never a.samuel@). If set, set
+//                        NEXT_PUBLIC_SUPPORT_EMAIL to the same value so pages and the browser agree.
 //
 // No server-only imports here: pages, emails and client components can all use it.
 
 /** The real mailbox. The default for everything below. */
 export const MAILBOX_EMAIL = 'a.samuel@joinascentor.com';
 
-/** The address shown to visitors on pages, footer, mailto links and structured data. */
-export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || MAILBOX_EMAIL;
+/**
+ * The public address for general enquiries. a.samuel@ is reserved for serious business communication: general mail goes to
+ * this inbox, and the CEO moves serious business messages across to a.samuel@ by hand.
+ */
+export const PUBLIC_EMAIL = 'joinascentor@gmail.com';
+
+/** The address shown to visitors on pages, footer, mailto links and structured data. Never the private mailbox. */
+export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || PUBLIC_EMAIL;
 
 export const FROM_NAME = 'Ascentor';
 export const FROM_DEFAULT = process.env.MAIL_FROM || process.env.EMAIL_FROM || `${FROM_NAME} <${MAILBOX_EMAIL}>`;

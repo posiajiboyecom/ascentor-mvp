@@ -1,11 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addressOf, nameOf, refusedSender, guardRecipient } from '../../lib/nodemailer';
-import { MAILBOX_EMAIL, FROM_DEFAULT, REPLY_TO, SUPPORT_EMAIL, adminNotifyEmail, fromAs } from '../../lib/contact';
+import { MAILBOX_EMAIL, FROM_DEFAULT, REPLY_TO, SUPPORT_EMAIL, PUBLIC_EMAIL, adminNotifyEmail, fromAs } from '../../lib/contact';
 
-test('every default address is the real mailbox, never an alias', () => {
+test('the address shown to visitors is the public inbox, never the private mailbox', () => {
+  // a.samuel@ is reserved for serious business mail; visitors write to the Gmail inbox.
+  assert.equal(PUBLIC_EMAIL, 'joinascentor@gmail.com');
+  assert.equal(SUPPORT_EMAIL, PUBLIC_EMAIL);
+  assert.equal(SUPPORT_EMAIL.includes(MAILBOX_EMAIL), false);
+});
+
+test('every default sending/alert address is the real mailbox, never an alias', () => {
   assert.equal(MAILBOX_EMAIL, 'a.samuel@joinascentor.com');
-  for (const v of [FROM_DEFAULT, REPLY_TO, SUPPORT_EMAIL, adminNotifyEmail()]) {
+  for (const v of [FROM_DEFAULT, REPLY_TO, adminNotifyEmail()]) {
     assert.equal(v.includes(MAILBOX_EMAIL), true, v);
     assert.equal(/contact@|hello@/i.test(v), false, v);
   }
