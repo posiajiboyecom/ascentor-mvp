@@ -49,6 +49,8 @@ export function VideoPlayer({ src, poster, title, startAt = 0, onProgress, onEnd
   const hlsRef = useRef<Hls | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReport = useRef(0);
+  // What the last press on the video itself was, and whether the controls were showing at that moment.
+  const tapRef = useRef<{ touch: boolean; wasVisible: boolean }>({ touch: false, wasVisible: true });
   const resumedRef = useRef(false);
   const progressCb = useRef(onProgress);
   const endedCb = useRef(onEnded);
@@ -292,7 +294,9 @@ export function VideoPlayer({ src, poster, title, startAt = 0, onProgress, onEnd
       aria-label={title ? `Video: ${title}` : 'Video player'}
       onKeyDown={onKey}
       onPointerMove={poke}
-      onPointerLeave={() => playing && setShowControls(false)}
+      onPointerDown={poke}
+      // Touch fires pointerleave on every finger lift; only a mouse leaving the player should hide the controls.
+      onPointerLeave={(e) => e.pointerType === 'mouse' && playing && setShowControls(false)}
       className={`group ${className ?? 'relative w-full h-full'} bg-[#0F0F0E] select-none outline-none overflow-hidden ${controlsVisible ? '' : 'cursor-none'}`}
     >
       <video
@@ -301,8 +305,14 @@ export function VideoPlayer({ src, poster, title, startAt = 0, onProgress, onEnd
         playsInline
         preload="metadata"
         className="absolute inset-0 w-full h-full object-contain"
-        onClick={toggle}
-        onDoubleClick={toggleFullscreen}
+        onPointerDown={(e) => { tapRef.current = { touch: e.pointerType !== 'mouse', wasVisible: controlsVisible }; }}
+        onClick={() => {
+          // Mouse: click the picture to play/pause. Touch: a tap only shows or hides the controls, so a tap
+          // aimed at a control that had just faded out never pauses the video. Play/pause is the button.
+          if (!tapRef.current.touch) { toggle(); return; }
+          if (tapRef.current.wasVisible && playing) { setShowControls(false); setMenu(null); }
+        }}
+        onDoubleClick={() => { if (!tapRef.current.touch) toggleFullscreen(); }}
         onPlay={() => { setPlaying(true); setStarted(true); }}
         onPause={() => { setPlaying(false); report(true); }}
         onWaiting={() => setWaiting(true)}
