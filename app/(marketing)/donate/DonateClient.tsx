@@ -121,7 +121,8 @@ export default function DonateClient({ currency = 'NGN' }: { currency?: Donation
     if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
       const s = document.createElement('script');
       s.id = 'paystack-script';
-      s.src = 'https://js.paystack.co/v1/inline.js';
+      // InlineJS v2: required for Apple Pay (and the wallet pre-checkout on Safari).
+      s.src = 'https://js.paystack.co/v2/inline.js';
       s.async = true;
       document.head.appendChild(s);
     }
@@ -171,21 +172,29 @@ export default function DonateClient({ currency = 'NGN' }: { currency?: Donation
       }
 
       openPayment.current = { reference: config.reference, donationId: config.donationId };
-      const handler = (window as any).PaystackPop.setup({
+      // v2 checkout(): on Safari/iOS it first offers Apple Pay (and Google Pay where available), then the usual card,
+      // bank and transfer options. The reference we created on the server is passed through unchanged, so
+      // /api/donate/verify matches it to this donation exactly as before.
+      const popup = new (window as any).PaystackPop();
+      let settled = false;
+      await popup.checkout({
         key: config.public_key,
         email: config.email,
         amount: config.amount,
         currency: config.currency,
-        ref: config.reference,
+        reference: config.reference,
         metadata: {
           donation_id: config.donationId,
           full_name: config.full_name,
         },
-        callback: (response: { reference: string }) => {
+        onSuccess: (transaction: { reference: string }) => {
+          settled = true;
           openPayment.current = null;
-          verifyAndFinish(response.reference, config.donationId, config.amount / 100);
+          paymentStarting.current = false;
+          verifyAndFinish(transaction.reference || config.reference, config.donationId, config.amount / 100);
         },
-        onClose: () => {
+        onCancel: () => {
+          if (settled) return;
           paymentStarting.current = false;
           if (openPayment.current) {
             reportAbandoned(openPayment.current.reference, openPayment.current.donationId);
@@ -193,9 +202,12 @@ export default function DonateClient({ currency = 'NGN' }: { currency?: Donation
           }
           alert('You closed the payment window before finishing. Nothing was charged.', 'Payment Not Completed');
         },
+        onError: () => {
+          paymentStarting.current = false;
+          openPayment.current = null;
+          alert('We could not open the payment window. Please try again.', 'Something Went Wrong');
+        },
       });
-
-      handler.openIframe();
     } catch {
       paymentStarting.current = false;
       await alert('We could not process your donation. Please try again.', 'Something Went Wrong');

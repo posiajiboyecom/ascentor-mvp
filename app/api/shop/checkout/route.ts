@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       amount: amountKobo,
       currency: 'NGN',
       callback_url: `${APP_URL}/api/shop/callback`,
-      channels: ['card', 'bank', 'bank_transfer', 'mobile_money', 'ussd', 'qr'],
+      // No `channels` list: the Paystack dashboard decides (so Apple Pay / Google Pay show when enabled there).
       metadata: { order_id: order.id, kind: 'shop', ...(user ? { user_id: user.id } : {}) },
     }),
   });
