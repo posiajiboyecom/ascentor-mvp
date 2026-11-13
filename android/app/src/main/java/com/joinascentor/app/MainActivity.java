@@ -1,4 +1,4 @@
-package com.ascentor.app;
+package com.joinascentor.app;
 
 import com.getcapacitor.BridgeActivity;
 

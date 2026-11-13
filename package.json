@@ -6,7 +6,7 @@
     "predev": "node scripts/dev-guard.js",
     "dev": "next dev",
     "build": "next build",
-    "build:mobile": "next build && npx cap sync",
+    "build:mobile": "npx cap sync",
     "start": "next start",
     "lint": "next lint",
     "cap:ios": "npx cap open ios",

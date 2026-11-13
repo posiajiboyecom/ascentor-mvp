@@ -5,6 +5,16 @@ All notable changes to the Ascentor platform will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased: iOS and Android apps (branch `feat/native-apps`)
+- The Capacitor shells now load the live site at `/dashboard` (app ID `com.joinascentor.app`), with a bundled
+  no-connection screen, brand icon and launch screen, camera, microphone and notification permissions, and
+  portrait-only phones. See `docs/mobile-apps.md`.
+- `lib/native.ts` tells web code when it runs inside the apps. The splash and the Settings device card adapt.
+- Native push no longer registers at launch (it crashed Android without Firebase); it stays off until
+  `NEXT_PUBLIC_NATIVE_PUSH=1`.
+- New workflow `Build mobile apps`: installable Android debug APK, signed release bundle once the keystore
+  secrets exist, and an iOS compile check.
+
 ## Unreleased: reimagined member app
 - Member app colours, sidebar, pills and buttons now match the App Prototype exactly. New reusable `NoticeCard` (also in the sidebar and phone menu). New admin Broadcasts: send in-app and/or email messages to everyone or a chosen audience (`20261011_broadcasts.sql`).
 - New data model (`20261008_reimagine.sql`), 12-step onboarding, Today, Learn, Circle, Community feed and Groups, Messages,

@@ -658,7 +658,7 @@ npm run dev                      # http://localhost:3000
 | `npm run test:auth:otp` | Sign-up code logic against the real table (no email sent, no account created) |
 | `npm run test:auth:http` | Black-box tests against a running server (`BASE_URL`, default `http://localhost:3111`) |
 | `npm run trigger:dev` / `trigger:deploy` | Run or deploy Trigger.dev tasks |
-| `npm run build:mobile` | Build and sync the Capacitor apps |
+| `npm run build:mobile` | Sync the iOS and Android shells after a native change (see [docs/mobile-apps.md](docs/mobile-apps.md)) |
 
 Project layout:
 

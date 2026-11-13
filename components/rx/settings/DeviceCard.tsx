@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { Smartphone } from 'lucide-react';
 import { usePush } from '@/components/PushPermission';
 import { useToast } from '@/components/rx/Toast';
+import { isNativeApp, NATIVE_PUSH_ENABLED } from '@/lib/native';
 
 interface InstallEvent extends Event { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> }
 
@@ -18,10 +19,21 @@ export default function DeviceCard() {
   const [installed, setInstalled] = useState(false);
   const [ios, setIos] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Inside the iOS / Android app there is nothing to install, and push goes through the phone (APNs / FCM), not the browser.
+  const [native, setNative] = useState(false);
+  const [nativeOn, setNativeOn] = useState(false);
 
   useEffect(() => {
-    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const inApp = isNativeApp();
+    setNative(inApp);
+    const standalone = inApp || window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
     setInstalled(standalone);
+    if (inApp && NATIVE_PUSH_ENABLED) {
+      void import('@capacitor/push-notifications')
+        .then(({ PushNotifications }) => PushNotifications.checkPermissions())
+        .then((perm) => setNativeOn(perm.receive === 'granted'))
+        .catch(() => {});
+    }
     setIos(/iphone|ipad|ipod/i.test(navigator.userAgent));
     const onPrompt = (e: Event) => { e.preventDefault(); setInstall(e as InstallEvent); };
     const onInstalled = () => { setInstalled(true); setInstall(null); toast('Ascentor is installed.'); };
@@ -46,6 +58,16 @@ export default function DeviceCard() {
     finally { setTesting(false); }
   }
   const needsHomeScreen = ios && !installed;
+
+  async function enableNative() {
+    setBusy(true);
+    try {
+      const { enableMobilePush } = await import('@/lib/mobile-push');
+      const ok = await enableMobilePush();
+      setNativeOn(ok);
+      toast(ok ? 'Push notifications are on for this device.' : 'Notifications are blocked. Allow them for Ascentor in your phone settings.');
+    } finally { setBusy(false); }
+  }
 
   async function toggle() {
     setBusy(true);
@@ -76,11 +98,20 @@ export default function DeviceCard() {
         </div>
       )}
 
-      <div className="rx-between">
+      {native && (
+        <div className="rx-between">
+          <div>
+            <p className="rx-p">Push notifications</p>
+            <p className="rx-sm">{!NATIVE_PUSH_ENABLED ? 'Coming to the app soon. Email notifications still reach you.' : nativeOn ? 'On for this device. Turn them off in your phone settings.' : 'Off for this device.'}</p>
+          </div>
+          {NATIVE_PUSH_ENABLED && !nativeOn && <button type="button" className="rx-btn secondary" disabled={busy} onClick={() => void enableNative()}>Turn on</button>}
+        </div>
+      )}
+      {!native && <div className="rx-between">
         <div><p className="rx-p">Push notifications</p><p className="rx-sm">{state === 'unsupported' ? 'Not available on this browser.' : state === 'denied' ? 'Blocked in your browser settings.' : on ? 'On for this device.' : 'Off for this device.'}</p></div>
         <button type="button" className="rx-toggle" aria-label="Push notifications on this device" aria-pressed={on} disabled={busy || state === 'unsupported' || needsHomeScreen} onClick={() => void toggle()} />
-      </div>
-      {on && (
+      </div>}
+      {!native && on && (
         <div className="rx-row" style={{ alignItems: 'center', gap: 12 }}>
           <button type="button" className="rx-btn secondary" disabled={testing} onClick={() => void sendTest()}>{testing ? 'Sending…' : 'Send a test'}</button>
           {testMsg && <p className="rx-sm" role="status" style={{ margin: 0 }}>{testMsg}</p>}
