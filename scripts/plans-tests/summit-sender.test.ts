@@ -88,6 +88,7 @@ test('each registrant-facing path is sent From summit@ with Reply-To summit@', a
 });
 
 test('ticket emails show a scannable entry QR in the body that the door scanner accepts', async () => {
+  // @ts-expect-error pngjs ships without type declarations (test-only use)
   const { PNG } = await import('pngjs');
   const jsQR = (await import('jsqr')).default;
   const { registrationIdFromScan } = await import('../../lib/summitCheckin');
