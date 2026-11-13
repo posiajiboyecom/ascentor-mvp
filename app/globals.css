@@ -249,6 +249,15 @@
   color: #0F0F0E !important;
 }
 
+/* Dark theme (member app only, see styles/dark.css). In the base layer on purpose: the body
+   colours above it are !important inside that layer, and only a rule in the same layer can win. */
+@layer base {
+  html[data-app-theme="dark"] body {
+    background-color: #0A0A0A !important;
+    color: #ECEAE6 !important;
+  }
+}
+
 :root:not([data-partner]) {
   --accent:       #C8A96E;
   --accent-hover: #A8894E;

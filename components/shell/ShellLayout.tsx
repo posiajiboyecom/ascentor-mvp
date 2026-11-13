@@ -229,7 +229,7 @@ function ShellInner({
           <button
             type="button"
             className="sh-icon-btn sh-drawer-only"
-            style={{ color: '#5F6672' }}
+            style={{ color: 'var(--sb-muted)' }}
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
           >
@@ -420,7 +420,7 @@ function ShellInner({
         positionStrategy="fixed"
         style={{
           zIndex: 200, padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-          background: '#FAFAF8', color: '#0F0F0E', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+          background: 'var(--sh-tip-bg, #FAFAF8)', color: 'var(--sh-tip-fg, #0F0F0E)', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
         }}
       />
     </div>

@@ -1,0 +1,207 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dark theme for the member app.
+
+   Light is the default. Dark is on only while <html data-app-theme="dark">, which
+   lib/theme.ts sets on member app pages when the member picked Dark in Settings.
+   The public website, admin, sign-in and the call screen never get the attribute,
+   so nothing here can reach them.
+
+   Values are the dark theme of the Ascentor App Prototype (design/reimagine):
+     bg #0A0A0A · surface #15181D · raised #1C2027 · border #23272E · line #3A3F47
+     text #ECEAE6 · muted #9CA3AF · rust #B6502A (fills) / #D9714A (text) · gold #CAA228
+
+   This file only re-points tokens and repaints the few hard-coded light colours.
+   Layout, spacing and type are untouched.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+html[data-app-theme='dark'] {
+  color-scheme: dark;
+  background-color: #0A0A0A;
+}
+html[data-app-theme='dark'] #ascentor-splash-cover { background: #0A0A0A !important; }
+
+/* ── legacy and shared tokens (confirm dialogs, notifications, older screens) ── */
+html:root[data-app-theme='dark'] {
+  --bg:              #0A0A0A;
+  --bg-card:         #15181D;
+  --bg-card-hover:   #1C2027;
+  --bg-input:        #1C2027;
+  --text:            #ECEAE6;
+  --text-muted:      #C3C6CC;
+  --text-dim:        #9CA3AF;
+  --border:          #23272E;
+  --border-light:    #2A2F37;
+  --accent-glow:     rgba(202, 162, 40, 0.14);
+  --gold-muted:      rgba(202, 162, 40, 0.12);
+  --success:         #7FB08A;
+  --error:           #F2A0AE;
+  --color-success:   #7FB08A;
+  --color-error:     #F2A0AE;
+  --blue:            #6FA8C7;
+
+  --app-bg:           #0A0A0A;
+  --app-bg-card:      #15181D;
+  --app-bg-input:     #1C2027;
+  --app-bg-hover:     #1C2027;
+  --app-text:         #ECEAE6;
+  --app-text-muted:   #C3C6CC;
+  --app-text-dim:     #9CA3AF;
+  --app-border:       #23272E;
+  --app-border-gold:  rgba(202, 162, 40, 0.30);
+  --app-nav-shadow:   rgba(0, 0, 0, 0.5);
+  --app-accent-glow:  rgba(202, 162, 40, 0.14);
+  --app-card-shadow:  none;
+  --app-accent-ink:   #CAA228;
+  --app-accent-soft:  rgba(202, 162, 40, 0.16);
+  --app-success-ink:  #7FB08A;
+
+  --color-bg:            #0A0A0A;
+  --color-bg-card:       #15181D;
+  --color-bg-card-hover: #1C2027;
+  --color-bg-input:      #1C2027;
+  --color-text:          #ECEAE6;
+  --color-text-muted:    #C3C6CC;
+  --color-text-dim:      #9CA3AF;
+  --color-border:        #23272E;
+  --color-border-light:  #2A2F37;
+}
+html[data-app-theme='dark'] .circle-surface { --color-border-secondary: #3A3F47; }
+
+/* ── rx: the member screens ─────────────────────────────────────────────────── */
+html[data-app-theme='dark'] .rx {
+  --rx-ink:      #ECEAE6;
+  --rx-body:     #ECEAE6;
+  --rx-muted:    #9CA3AF;
+  --rx-bg:       #0A0A0A;
+  --rx-card:     #15181D;
+  --rx-input:    #1C2027;
+  --rx-hover:    #1C2027;
+  --rx-border:   #23272E;
+  --rx-line:     #3A3F47;
+  --rx-seg:      #2A2F37;
+  --rx-accent:   #CAA228;
+  --rx-gold:     #CAA228;
+  --rx-rust:     #B6502A;
+  --rx-rustt:    #D9714A;
+  --rx-soft:     color-mix(in srgb, #B6502A 20%, #15181D);
+  --rx-danger:   #F2A0AE;
+  --rx-err:      #F2A0AE;
+  --rx-warn-bg:  #1C2027;
+  --rx-glow:     rgba(182, 80, 42, 0.11);
+  --rx-glow-strong: rgba(202, 162, 40, 0.14);
+  --rx-shadow:   none;
+}
+
+/* Rust as small text needs the lighter rust on dark grounds (6:1 on #0A0A0A). */
+html[data-app-theme='dark'] .rx-newtag { color: var(--rx-rustt); }
+
+html[data-app-theme='dark'] .rx-banner { color: #E0BD4F; }
+html[data-app-theme='dark'] .rx-banner.err { color: var(--rx-danger); border-color: color-mix(in srgb, #F2A0AE 45%, transparent); }
+html[data-app-theme='dark'] .rx-skel { background: linear-gradient(90deg, #1F2329 25%, #2A2F37 50%, #1F2329 75%); background-size: 200% 100%; }
+html[data-app-theme='dark'] .rx-btn:disabled,
+html[data-app-theme='dark'] .rx-btn[aria-disabled='true'],
+html[data-app-theme='dark'] .rx-btn.bmuted { background: #1F2228; color: #7D828B; }
+html[data-app-theme='dark'] .rx-in,
+html[data-app-theme='dark'] .rx-search { background: var(--rx-input); }
+html[data-app-theme='dark'] .rx-in:-webkit-autofill { -webkit-text-fill-color: #ECEAE6; box-shadow: 0 0 0 1000px #1C2027 inset; }
+html[data-app-theme='dark'] .rx-slot { color: #9CA3AF; }
+html[data-app-theme='dark'] .rx-slot.on { color: #fff; }
+html[data-app-theme='dark'] .rx-toast { background: #ECEAE6; color: #161616; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .rx-toast svg { color: #8A6D12; }
+html[data-app-theme='dark'] .rx-scrim { background: rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .rx-thumb { background: linear-gradient(135deg, #1C2027, #23272E); }
+html[data-app-theme='dark'] .rx-video { background: #000; border: 1px solid var(--rx-border); }
+html[data-app-theme='dark'] .rx-video .rx-btn.secondary { color: #161616; }
+html[data-app-theme='dark'] .rx-drop { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .rx-sage { box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .rx-welcome-art { background: linear-gradient(180deg, #15181D, #0A0A0A); }
+html[data-app-theme='dark'] .rx-chart .ln { background: #2A2F37; }
+html[data-app-theme='dark'] .rx-chart .pt3,
+html[data-app-theme='dark'] .rx-lg3 { background: #ECEAE6; }
+html[data-app-theme='dark'] .rx-smark { background: #1C2027; border: 1px solid #3A3F47; }
+html[data-app-theme='dark'] .rx-call-btn[aria-pressed='true'] { background: #ECEAE6; color: #0A0A0A; border-color: #ECEAE6; }
+@media (min-width: 1024px) { html[data-app-theme='dark'] .rx-call { background: rgba(0, 0, 0, 0.6); } }
+
+/* onboarding illustrations: drawn with light-paper colours, repainted for a dark ground */
+html[data-app-theme='dark'] .rx-ob svg [stroke='#0F0F0E'] { stroke: #ECEAE6; }
+html[data-app-theme='dark'] .rx-ob svg [fill='#0F0F0E'] { fill: #ECEAE6; }
+html[data-app-theme='dark'] .rx-ob svg [stroke='#D6D3CB'],
+html[data-app-theme='dark'] .rx-ob svg [stroke='#B8B3A6'] { stroke: #3A3F47; }
+html[data-app-theme='dark'] .rx-ob svg [fill='#B8B3A6'] { fill: #3A3F47; }
+html[data-app-theme='dark'] .rx-ob svg [fill='#FFFFFF'],
+html[data-app-theme='dark'] .rx-ob svg [fill='#fff'] { fill: #1C2027; }
+html[data-app-theme='dark'] .rx-ob svg [fill='#F1EBDD'] { fill: #15181D; }
+html[data-app-theme='dark'] .rx-ob svg [fill='#E8E0CC'] { fill: #1C2027; }
+html[data-app-theme='dark'] .rx-ob input[type='checkbox'] { accent-color: #CAA228 !important; }
+
+/* billing, community, messaging, pages */
+html[data-app-theme='dark'] .bl-msg.ok { border-color: color-mix(in srgb, #7FB08A 55%, transparent); }
+html[data-app-theme='dark'] .rx-editor { background: #1C2027; }
+html[data-app-theme='dark'] .rx-attach .thumb .busy { background: rgba(10, 10, 10, 0.7); }
+html[data-app-theme='dark'] .rxm-dpanel { box-shadow: 0 -2px 18px rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .rx-menu { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .rx-netpill { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6); }
+/* The QR code keeps its white card so phones can still scan it. */
+
+/* ── shell: sidebar, header, search palette ────────────────────────────────── */
+html[data-app-theme='dark'] .sh-root[data-variant='app'] {
+  --sh-bg:         #0A0A0A;
+  --sh-bg-2:       #0A0A0A;
+  --sh-fg:         #ECEAE6;
+  --sh-muted:      #9CA3AF;
+  --sh-faint:      #9CA3AF;
+  --sh-border:     #23272E;
+  --sh-border-2:   #3A3F47;
+  --sh-hover:      #1C2027;
+  --sh-input:      #1C2027;
+  --sh-active-bg:  #1C2027;
+  --sh-active-fg:  #D9714A;
+  --sh-accent:     #B6502A;
+  --sh-danger:     #F2A0AE;
+  --sh-shadow:     0 12px 32px rgba(0, 0, 0, 0.6);
+  --sh-tip-bg:     #ECEAE6;
+  --sh-tip-fg:     #0A0A0A;
+}
+html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-sidebar {
+  --sb-bg:         #15181D;
+  --sb-fg:         #ECEAE6;
+  --sb-muted:      #9CA3AF;
+  --sb-faint:      #9CA3AF;
+  --sb-border:     #23272E;
+  --sb-hover:      #1C2027;
+  --sb-active-bg:  #1C2027;
+  --sb-active-fg:  #D9714A;
+  --sb-accent:     #B6502A;
+  scrollbar-color: rgba(236, 234, 230, 0.2) transparent;
+}
+html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-nav::-webkit-scrollbar-thumb { background: rgba(236, 234, 230, 0.2); }
+html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-user { background: #1C2027; }
+html[data-app-theme='dark'] .sh-root[data-variant='app'] :is(.sh-menu, .sh-palette) { background: #15181D; }
+html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-logout:hover { background: rgba(242, 160, 174, 0.12); color: #F2A0AE; }
+html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-backdrop { background: rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .sh-root[data-variant='app'] :is(a, button, [role='button'], [tabindex], input, select, textarea, summary):focus-visible { outline-color: #D9714A; }
+/* the sidebar logo: swap to the version drawn for dark pages */
+html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-logo-full { content: url('/ascentor-color-for-dark-pages.svg'); }
+
+/* ── Sage tab and bubble (the floating coach) ──────────────────────────────── */
+html[data-app-theme='dark'] .sage-tab,
+html[data-app-theme='dark'] .sage-bubble {
+  background: #15181D;
+  border-color: #3A3F47;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+html[data-app-theme='dark'] .sage-tab:hover,
+html[data-app-theme='dark'] .sage-open .sage-tab { border-color: #D9714A; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(182, 80, 42, 0.2); }
+html[data-app-theme='dark'] .sage-tab-label { color: #C3C6CC; }
+html[data-app-theme='dark'] .sage-tab-live { box-shadow: 0 0 0 2px #15181D, 0 0 6px rgba(34, 197, 94, 0.5); }
+html[data-app-theme='dark'] .sage-tab-x { background: #1C2027; color: #ECEAE6; border-color: #3A3F47; }
+html[data-app-theme='dark'] .sage-head-name { color: #ECEAE6; }
+html[data-app-theme='dark'] .sage-head-status,
+html[data-app-theme='dark'] .sage-icon-btn { color: #9CA3AF; }
+html[data-app-theme='dark'] .sage-icon-btn:hover { background: rgba(236, 234, 230, 0.08); color: #ECEAE6; }
+html[data-app-theme='dark'] .sage-text { color: #ECEAE6; }
+html[data-app-theme='dark'] .sage-caret,
+html[data-app-theme='dark'] .sage-typing > i { background: #D9714A; }
+html[data-app-theme='dark'] .sage-ghost { border-color: #3A3F47; color: #C3C6CC; }
+html[data-app-theme='dark'] .sage-ghost:hover { background: rgba(236, 234, 230, 0.06); border-color: #D9714A; color: #ECEAE6; }
+html[data-app-theme='dark'] .sage-cta:focus-visible { outline-color: #ECEAE6; }

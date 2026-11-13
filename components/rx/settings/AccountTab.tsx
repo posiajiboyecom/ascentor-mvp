@@ -10,6 +10,7 @@ import { confirmAction } from '@/components/Modal';
 import { useToast } from '@/components/rx/Toast';
 import { LanguageSelect, TimezoneSelect } from '@/components/rx/settings/SettingsClient';
 import { signOutAndLeave } from '@/lib/auth/sign-out';
+import AppearanceCard from '@/components/rx/settings/AppearanceCard';
 
 const PROVIDER: Record<string, string> = { google: 'Google', linkedin_oidc: 'LinkedIn', linkedin: 'LinkedIn', email: 'Email and password' };
 
@@ -74,6 +75,8 @@ export default function AccountTab({ name, email, memberSince, methods, hasPassw
       </p>
 
       {methods.includes('email') && <ChangeEmail current={email} />}
+
+      <AppearanceCard />
 
       <div className="rx-card st">
         <p className="rx-sl">Language and time zone</p>
