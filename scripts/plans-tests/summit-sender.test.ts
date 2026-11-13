@@ -7,7 +7,7 @@ import net from 'node:net';
 
 type Mode = { sender: 'any' | 'mailbox-only'; auth: 'ok' | 'fail' };
 const mode: Mode = { sender: 'any', auth: 'ok' };
-const seen: { envFrom: string; from: string; replyTo: string; to: string; subject: string }[] = [];
+const seen: { envFrom: string; from: string; replyTo: string; to: string; subject: string; raw: string }[] = [];
 let attempts = 0;
 const MAILBOX = 'a.samuel@joinascentor.com';
 
@@ -24,7 +24,7 @@ const server = net.createServer((sock) => {
         const end = data.indexOf('\r\n.\r\n'); if (end < 0) return;
         const head = data.slice(0, end).replace(/\r\n[ \t]+/g, ' ');
         const h = (n: string) => (head.match(new RegExp(`^${n}:\\s*(.+)$`, 'im')) || [, ''])[1].trim();
-        seen.push({ envFrom, from: h('From'), replyTo: h('Reply-To'), to: rcpt, subject: h('Subject') });
+        seen.push({ envFrom, from: h('From'), replyTo: h('Reply-To'), to: rcpt, subject: h('Subject'), raw: data.slice(0, end) });
         data = ''; inData = false; send('250 2.0.0 queued'); buf = ''; continue;
       }
       const i = buf.indexOf('\r\n'); if (i < 0) return;
@@ -84,6 +84,28 @@ test('each registrant-facing path is sent From summit@ with Reply-To summit@', a
     assert.match(m.from, /The Elevation Summit/); assert.match(m.from, /summit@joinascentor\.com/);
     assert.equal(String(m.replyTo).replace(/.*<|>.*/g, ''), 'summit@joinascentor.com', JSON.stringify(m));
     assert.equal(m.to, 'guest@example.com');
+  }
+});
+
+test('ticket emails show a scannable entry QR in the body that the door scanner accepts', async () => {
+  const { PNG } = await import('pngjs');
+  const jsQR = (await import('jsqr')).default;
+  const { registrationIdFromScan } = await import('../../lib/summitCheckin');
+  for (const send of [mod.sendPaymentConfirmedEmail, mod.sendComplimentaryTicketEmail]) {
+    seen.length = 0; mode.sender = 'any';
+    await send(ticket);
+    assert.equal(seen.length, 1);
+    const raw = seen[0].raw.replace(/=\r\n/g, '');
+    assert.match(raw, /src=3D"cid:entry-qr"|src="cid:entry-qr"/, 'the HTML shows the QR inline');
+    const part = raw.split(/\r\n--/).find((x) => /Content-ID:\s*<entry-qr>/i.test(x));
+    assert.ok(part, 'the QR is attached with Content-ID entry-qr');
+    assert.match(part!, /Content-Type:\s*image\/png/i);
+    const b64 = part!.split(/\r\n\r\n/)[1].replace(/\s+/g, '');
+    const png = PNG.sync.read(Buffer.from(b64, 'base64'));
+    const code = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
+    assert.ok(code, 'the image decodes as a QR code');
+    assert.equal(registrationIdFromScan(code!.data), ticket.registrationId, 'and the scanner reads it as this registration');
+    assert.match(raw, /Elevation-Summit-2026-Ticket\.pdf/, 'the PDF ticket is still attached');
   }
 });
 

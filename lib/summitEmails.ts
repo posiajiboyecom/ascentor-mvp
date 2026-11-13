@@ -144,6 +144,7 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
   } catch (err) {
     console.error('[summitTicket] PDF generation failed:', err);
   }
+  const qr = await entryQrAttachment(ticketData.registrationId);
 
   await sendSummitMail({
     to: email,
@@ -163,6 +164,9 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
           summaryRow('Status', '<span style="color:#C8A96E;">Confirmed</span>')
         ) +
         attendanceBlock +
+        (qr ? p(isVirtual
+          ? 'Your entry code is below. You registered to join online, but if you come in person, show it at the entrance.'
+          : 'Show this code at the entrance on the day. It is your ticket, and it works once.') + entryQrBlock(fullName) : '') +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
         lasuWhatsappBlock() +
         (await referralBlocks(ticketData.registrationId)) +
@@ -170,13 +174,10 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
     }),
-    ...(pdfBuffer ? {
-      attachments: [{
-        filename: 'Elevation-Summit-2026-Ticket.pdf',
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      }],
-    } : {}),
+    attachments: [
+      ...(qr ? [qr] : []),
+      ...(pdfBuffer ? [{ filename: 'Elevation-Summit-2026-Ticket.pdf', content: pdfBuffer, contentType: 'application/pdf' }] : []),
+    ],
   });
 }
 
@@ -230,12 +231,34 @@ export async function entranceQrPng(registrationId: string): Promise<Buffer> {
   return QRCode.toBuffer(ticketPayload(registrationId, 'onsite'), { width: 480, margin: 3, errorCorrectionLevel: 'M', color: { dark: '#0F0F0E', light: '#FFFFFF' } });
 }
 
+const ENTRY_QR_CID = 'entry-qr';
+
+/** The entry QR shown inside an email (it refers to the attachment from entryQrAttachment by cid). */
+function entryQrBlock(fullName: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;"><tr><td align="center" style="padding:20px;background-color:#FFFFFF;border:1px solid #E8E6E1;border-radius:12px;">
+          <img src="cid:${ENTRY_QR_CID}" width="240" height="240" alt="Your entry QR code" style="display:block;width:240px;height:240px;border:0;" />
+          <p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#0F0F0E;">${esc(fullName)}</p>
+          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6B7280;">Entry code · works once</p>
+        </td></tr></table>`;
+}
+
+/** The entry QR as an inline attachment, or null if it could not be made (the email still goes out without it). */
+async function entryQrAttachment(registrationId: string | null | undefined) {
+  if (!registrationId) return null;
+  try {
+    return { filename: 'elevation-summit-entry-code.png', content: await entranceQrPng(registrationId), contentType: 'image/png', cid: ENTRY_QR_CID };
+  } catch (err) {
+    console.error('[summitEmails] entry QR generation failed:', err);
+    return null;
+  }
+}
+
 export async function sendEventDayPhysicalEmail(to: string, fullName: string, registrationId: string) {
   const qr = await entranceQrPng(registrationId);
   await sendSummitMail({
     to,
     subject: "Today's the day: your Elevation Summit entry code",
-    attachments: [{ filename: 'elevation-summit-entry-code.png', content: qr, contentType: 'image/png', cid: 'entry-qr' }],
+    attachments: [{ filename: 'elevation-summit-entry-code.png', content: qr, contentType: 'image/png', cid: ENTRY_QR_CID }],
     html: brandedEmailLayout({
       preheader: `Show this QR code at the entrance today, ${SUMMIT_DATETIME_LABEL}.`,
       eyebrow: `Elevation Summit · Today`,
@@ -244,11 +267,7 @@ export async function sendEventDayPhysicalEmail(to: string, fullName: string, re
       content:
         p(`Hi ${esc(fullName)},`) +
         p(`The Elevation Summit begins today, <strong>${esc(SUMMIT_DATETIME_LABEL)}</strong>. Show the code below at the entrance and we will check you in.`) +
-        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;"><tr><td align="center" style="padding:20px;background-color:#FFFFFF;border:1px solid #E8E6E1;border-radius:12px;">
-          <img src="cid:entry-qr" width="240" height="240" alt="Your entry QR code" style="display:block;width:240px;height:240px;border:0;" />
-          <p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#0F0F0E;">${esc(fullName)}</p>
-          <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6B7280;">Entry code · works once</p>
-        </td></tr></table>` +
+        entryQrBlock(fullName) +
         p('Turn your screen brightness up when you reach the door. The code is also attached to this email, so you can save it to your photos in case the venue has a weak signal.') +
         p('This code admits one person, once. Please do not share it.') +
         p('<span style="color:#9CA3AF;font-size:13px;">See you soon.</span>'),
@@ -408,6 +427,7 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
   } catch (err) {
     console.error('[summitTicket] PDF generation failed:', err);
   }
+  const qr = await entryQrAttachment(ticketData.registrationId);
 
   await sendSummitMail({
     to: email,
@@ -428,6 +448,9 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
         (isVirtual
           ? p('Your Zoom link for the virtual session will be shared with you separately closer to the event date. Keep an eye on your inbox.')
           : p('Venue details will follow closer to the event date.')) +
+        (qr ? p(isVirtual
+          ? 'Your entry code is below. You registered to join online, but if you come in person, show it at the entrance.'
+          : 'Show this code at the entrance on the day. It is your ticket, and it works once.') + entryQrBlock(fullName) : '') +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
         lasuWhatsappBlock() +
         (await referralBlocks(ticketData.registrationId)) +
@@ -435,13 +458,10 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
     }),
-    ...(pdfBuffer ? {
-      attachments: [{
-        filename: 'Elevation-Summit-2026-Ticket.pdf',
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      }],
-    } : {}),
+    attachments: [
+      ...(qr ? [qr] : []),
+      ...(pdfBuffer ? [{ filename: 'Elevation-Summit-2026-Ticket.pdf', content: pdfBuffer, contentType: 'application/pdf' }] : []),
+    ],
   });
 }
 
