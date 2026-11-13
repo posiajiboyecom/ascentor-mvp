@@ -25,6 +25,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 import { platformOpen } from '@/lib/launch';
+import { NATIVE_APP_HOME, isNativeAppPath, isNativeAppRequest } from '@/lib/native-routes';
 
 // ── Nonce-based CSP (M-06 fix) ────────────────────────────────────────────────
 // A fresh cryptographic nonce is generated on every request.
@@ -217,6 +218,15 @@ export default async function proxy(request: NextRequest) {
     const callback = new URL('/auth/callback', request.url);
     callback.searchParams.set('code', request.nextUrl.searchParams.get('code')!);
     return NextResponse.redirect(callback);
+  }
+
+  // iOS / Android apps: the apps are the member app and admin only. Any public website page asked for
+  // from inside an app (the home page after signing out, a link to /pricing) goes back into the app.
+  // Only once the platform is open: while it is closed, /login itself redirects to the home page, and
+  // sending that back here would loop.
+  if (platformOpen() && request.method === 'GET' && !isNativeAppPath(pathname)
+      && isNativeAppRequest(request.headers.get('user-agent'))) {
+    return NextResponse.redirect(new URL(NATIVE_APP_HOME, request.url));
   }
 
   // Community gate: /login and /signup are not yet open.

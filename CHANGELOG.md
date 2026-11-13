@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Capacitor shells now load the live site at `/dashboard` (app ID `com.joinascentor.app`), with a bundled
   no-connection screen, brand icon and launch screen, camera, microphone and notification permissions, and
   portrait-only phones. See `docs/mobile-apps.md`.
+- The apps are the member app and admin only: `proxy.ts` sends any public website page requested from inside
+  an app back to `/dashboard` (`lib/native-routes.ts`).
 - `lib/native.ts` tells web code when it runs inside the apps. The splash and the Settings device card adapt.
 - Native push no longer registers at launch (it crashed Android without Firebase); it stays off until
   `NEXT_PUBLIC_NATIVE_PUSH=1`.

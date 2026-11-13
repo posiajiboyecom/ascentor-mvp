@@ -2,6 +2,12 @@
 
 Status: groundwork in place on the `feat/native-apps` branch. Nothing is in a store yet.
 
+## Scope
+
+The apps are the member app and the admin, nothing else. The public website (home, pricing, blog,
+Summit pages, public shop) stays in the browser; its job is to send people to the stores. Members
+sign in inside the app.
+
 ## How the apps work
 
 The iOS and Android apps are thin native shells (Capacitor 8) around the live site. The shell opens
@@ -20,6 +26,7 @@ The iOS and Android apps are thin native shells (Capacitor 8) around the live si
 | iOS project | `ios/` |
 | "Am I inside the app?" for web code | `lib/native.ts` (`isNativeApp()`, `nativePlatform()`) |
 | Launch hand-off, status bar | `components/MobileInit.ts` |
+| Pages allowed inside the apps | `lib/native-routes.ts`, enforced in `proxy.ts` |
 | Native push (off until configured) | `lib/mobile-push.ts`, `NEXT_PUBLIC_NATIVE_PUSH` |
 | Cloud builds | `.github/workflows/mobile-build.yml` |
 
@@ -39,6 +46,10 @@ Never ship a build made that way.
 
 ## What the web app does differently inside the apps
 
+- Public website pages never show: `proxy.ts` sends any of them back to `/dashboard` (which sends
+  signed-out people to `/login`). The list of pages that belong in the apps is `lib/native-routes.ts`.
+  Privacy, Terms and Contact stay reachable because the app links to them and the stores require it.
+  This only applies once the platform is open (`NEXT_PUBLIC_PLATFORM_OPEN`).
 - The splash plays on app open and on return after 5+ minutes (same rule as the installed PWA).
 - Settings, "On this phone": no install instructions; push shows as coming soon until native push is on.
 - Web push (service worker) is not used; native push replaces it.
@@ -70,5 +81,7 @@ Build work still to do
 8. Android release signing: create the upload keystore and add the four `ANDROID_*` secrets listed
    in the workflow file.
 9. iOS signing and TestFlight upload in the workflow, once the Apple account exists.
-10. Store listings: screenshots, descriptions, privacy answers (data collected, admin access to
+10. Website: "Get the app" buttons (App Store and Google Play badges) once the store links exist, and
+    retire the PWA install prompts in favour of them.
+11. Store listings: screenshots, descriptions, privacy answers (data collected, admin access to
     member conversations), a reviewer test account. In-app account deletion already exists.
