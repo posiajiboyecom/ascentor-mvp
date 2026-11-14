@@ -3,8 +3,8 @@
 
    Light is the default. Dark is on only while <html data-app-theme="dark">, which
    lib/theme.ts sets on member app pages when the member picked Dark in Settings.
-   The public website, admin, sign-in and the call screen never get the attribute,
-   so nothing here can reach them.
+   Member app and admin pages only. The public website, sign-in and the call
+   screen never get the attribute, so nothing here can reach them.
 
    Values are the dark theme of the Ascentor App Prototype (design/reimagine):
      bg #0A0A0A · surface #15181D · raised #1C2027 · border #23272E · line #3A3F47
@@ -146,7 +146,7 @@ html[data-app-theme='dark'] .rx-netpill { box-shadow: 0 4px 14px rgba(0, 0, 0, 0
 /* The QR code keeps its white card so phones can still scan it. */
 
 /* ── shell: sidebar, header, search palette ────────────────────────────────── */
-html[data-app-theme='dark'] .sh-root[data-variant='app'] {
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) {
   --sh-bg:         #0A0A0A;
   --sh-bg-2:       #0A0A0A;
   --sh-fg:         #ECEAE6;
@@ -164,7 +164,7 @@ html[data-app-theme='dark'] .sh-root[data-variant='app'] {
   --sh-tip-bg:     #ECEAE6;
   --sh-tip-fg:     #0A0A0A;
 }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-sidebar {
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-sidebar {
   --sb-bg:         #15181D;
   --sb-fg:         #ECEAE6;
   --sb-muted:      #9CA3AF;
@@ -176,14 +176,14 @@ html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-sidebar {
   --sb-accent:     #B6502A;
   scrollbar-color: rgba(236, 234, 230, 0.2) transparent;
 }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-nav::-webkit-scrollbar-thumb { background: rgba(236, 234, 230, 0.2); }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-user { background: #1C2027; }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] :is(.sh-menu, .sh-palette) { background: #15181D; }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-logout:hover { background: rgba(242, 160, 174, 0.12); color: #F2A0AE; }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-backdrop { background: rgba(0, 0, 0, 0.6); }
-html[data-app-theme='dark'] .sh-root[data-variant='app'] :is(a, button, [role='button'], [tabindex], input, select, textarea, summary):focus-visible { outline-color: #D9714A; }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-nav::-webkit-scrollbar-thumb { background: rgba(236, 234, 230, 0.2); }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-user { background: #1C2027; }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) :is(.sh-menu, .sh-palette) { background: #15181D; }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-logout:hover { background: rgba(242, 160, 174, 0.12); color: #F2A0AE; }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-backdrop { background: rgba(0, 0, 0, 0.6); }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) :is(a, button, [role='button'], [tabindex], input, select, textarea, summary):focus-visible { outline-color: #D9714A; }
 /* the sidebar logo: swap to the version drawn for dark pages */
-html[data-app-theme='dark'] .sh-root[data-variant='app'] .sh-logo-full { content: url('/ascentor-color-for-dark-pages.svg'); }
+html[data-app-theme='dark'] .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-logo-full { content: url('/ascentor-color-for-dark-pages.svg'); }
 
 /* ── Sage tab and bubble (the floating coach) ──────────────────────────────── */
 html[data-app-theme='dark'] .sage-tab,
@@ -207,3 +207,51 @@ html[data-app-theme='dark'] .sage-typing > i { background: #D9714A; }
 html[data-app-theme='dark'] .sage-ghost { border-color: #3A3F47; color: #C3C6CC; }
 html[data-app-theme='dark'] .sage-ghost:hover { background: rgba(236, 234, 230, 0.06); border-color: #D9714A; color: #ECEAE6; }
 html[data-app-theme='dark'] .sage-cta:focus-visible { outline-color: #ECEAE6; }
+
+/* ── Admin ──────────────────────────────────────────────────────────────────
+   Admin pages use four sets of colours: --admin-* (older pages), the Ledger
+   ([data-ledger]), the console (.admc) and rx (newer pages, covered above).
+   Accent colours (gold, rust, red, green, teal, purple) stay as they are: they
+   read on both grounds. Only surfaces, ink and lines change. */
+html:root[data-app-theme='dark'] {
+  --admin-bg:            #0A0A0A;
+  --admin-bg-deep:       #111317;
+  --admin-bg-card:       #15181D;
+  --admin-bg-card-hover: #1C2027;
+  --admin-bg-input:      #1C2027;
+  --admin-text-heading:  #F3F1ED;
+  --admin-text:          #ECEAE6;
+  --admin-text-dim:      #C3C6CC;
+  --admin-text-muted:    #A3A9B2;
+  --admin-text-faint:    #8B919A;
+  --admin-border:        rgba(255, 255, 255, 0.09);
+  --admin-border-strong: rgba(255, 255, 255, 0.16);
+}
+html[data-app-theme='dark'] [data-ledger] {
+  --ledger-bg:            #0A0A0A;
+  --ledger-bg-deep:       #111317;
+  --ledger-bg-card:       #15181D;
+  --ledger-bg-card-hover: #1C2027;
+  --ledger-bg-input:      #1C2027;
+  --ledger-ink:           #ECEAE6;
+  --ledger-ink-soft:      #C3C6CC;
+  --ledger-ink-faint:     #8B919A;
+  --ledger-line:          rgba(255, 255, 255, 0.09);
+  --ledger-line-strong:   rgba(255, 255, 255, 0.16);
+  --ledger-shadow:        0 2px 16px rgba(0, 0, 0, 0.5);
+  --ledger-gold-deep:     #D9BC85;
+  --ledger-good:          #7FB08A;
+  --ledger-bad:           #F2A0AE;
+  --ledger-warn:          #E0BD4F;
+  --ledger-info:          #8DB3E8;
+  color-scheme: dark;
+}
+html[data-app-theme='dark'] .admc {
+  --bg: #0A0A0A; --surface: #15181D; --raised: #1C2027; --border: #23272E; --line: #3A3F47;
+  --text: #ECEAE6; --muted: #9CA3AF; --rust: #B6502A; --rustt: #D9714A; --gold: #CAA228; --goldt: #E0BD4F;
+  --err: #F2A0AE; --ok: #7FB08A; --warn: #E0BD4F; --disbg: #1F2228; --dist: #7D828B; --seg: #2A2F37;
+  --scrim: rgba(0, 0, 0, 0.6); --shadow: none; --glow: rgba(182, 80, 42, 0.11);
+}
+/* form controls the browser draws (selects, date pickers) follow the dark ground */
+html[data-app-theme='dark'] [data-ledger] :is(input, select, textarea) { color-scheme: dark; }
+html[data-app-theme='dark'] [data-ledger] option { background: #15181D; color: #ECEAE6; }

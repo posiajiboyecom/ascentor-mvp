@@ -16,7 +16,7 @@ function Milestone({ n }: { n: number }) {
   const pct = Math.round((n / GOAL) * 100);
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <span aria-hidden style={{ width: 60, height: 6, borderRadius: 3, background: '#E8E6E1', overflow: 'hidden', display: 'inline-block' }}><span style={{ display: 'block', width: `${pct}%`, height: '100%', background: '#C8A84B' }} /></span>
+      <span aria-hidden style={{ width: 60, height: 6, borderRadius: 3, background: 'var(--seg, #E8E6E1)', overflow: 'hidden', display: 'inline-block' }}><span style={{ display: 'block', width: `${pct}%`, height: '100%', background: '#C8A84B' }} /></span>
       <span style={{ fontSize: 12, opacity: 0.8 }}>{n}/{GOAL} · {GOAL - n} to go</span>
     </span>
   );

@@ -1,7 +1,7 @@
 // lib/theme.ts
-// Light / dark theme for the member app. Light is the default; dark is a per-device choice
-// made in Settings and kept in localStorage. Dark only ever applies on member app pages:
-// the public website, admin, sign-in and the call screen stay light.
+// Light / dark theme for the member app and admin. Light is the default; dark is a per-device
+// choice (sidebar button, or Settings) kept in localStorage. Dark only ever applies on app and
+// admin pages: the public website, sign-in and the call screen stay light.
 //
 // The choice is applied as data-app-theme="dark" on <html>. The inline script from
 // themePrePaintScript() sets it before first paint (no light flash); ThemeSync keeps it
@@ -13,11 +13,11 @@ export const THEME_KEY = 'as_theme';
 export const THEME_EVENT = 'as-theme-change';
 export const THEME_COLOR = { light: '#FAFAF8', dark: '#0A0A0A' } as const;
 
-/** First path segments where the dark theme applies (the member app, minus admin and calls). */
+/** First path segments where the dark theme applies (member app and admin; never calls or the website). */
 export const THEME_SEGMENTS = [
   'dashboard', 'coach', 'circle', 'sessions', 'learn', 'account', 'announcements',
   'community', 'experts', 'growth', 'help', 'messages', 'notifications', 'profile',
-  'referral', 'sage', 'search', 'settings', 'store', 'onboarding', 'offline',
+  'referral', 'sage', 'search', 'settings', 'store', 'onboarding', 'offline', 'admin',
 ];
 
 export function themeApplies(pathname: string): boolean {
