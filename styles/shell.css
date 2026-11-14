@@ -177,6 +177,8 @@
   transition: background 0.15s, color 0.15s;
 }
 .sh-foot-btn:hover { background: var(--sb-hover); color: var(--sb-fg); }
+.sh-theme-btn { min-height: 44px; font-size: 15px; color: var(--sb-fg); }
+@media (min-width: 1024px) { .sh-sidebar[data-collapsed='true'] .sh-theme-btn { justify-content: center; padding-left: 0; padding-right: 0; } }
 .sh-foot-btn:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
 
 /* Signed-in user: avatar + name go to settings, logout icon signs out (with confirmation) */

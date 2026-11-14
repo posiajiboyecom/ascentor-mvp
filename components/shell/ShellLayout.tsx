@@ -29,6 +29,7 @@ import { ChevronsLeft, LogOut, Menu, Search, X } from 'lucide-react';
 import '@/styles/shell.css';
 import { confirmAction } from '@/components/Modal';
 import CommandPalette from './CommandPalette';
+import ThemeToggle from './ThemeToggle';
 import { PageSearchProvider, usePageSearchContext } from './PageSearch';
 import {
   initialsOf, isActivePath,
@@ -267,6 +268,8 @@ function ShellInner({
         {sidebarExtra && <div className="sh-sidebar-extra">{sidebarExtra}</div>}
 
         <div className="sh-sidebar-foot">
+          {/* Light / dark switch: member app only (admin stays light). */}
+          {variant === 'app' && <ThemeToggle />}
           <div className="sh-user">
             <Link
               href={settingsHref}
