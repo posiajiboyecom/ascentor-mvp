@@ -16,7 +16,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Main"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex bg-[#F6F5F2] border-t border-[#E6E3DD] px-1 pt-1"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex bg-[var(--mtab-bg,#F6F5F2)] border-t border-[var(--mtab-border,#E6E3DD)] px-1 pt-1"
       style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
     >
       {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
@@ -29,8 +29,8 @@ export function MobileTabBar() {
             onClick={() => setLastNavTab(href)}
             className="flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] rounded-[10px] transition-colors"
           >
-            <Icon className={`w-[22px] h-[22px] ${active ? 'text-[#B6502A]' : 'text-[#5F6672]'}`} strokeWidth={1.6} aria-hidden="true" />
-            <span className={`text-[11px] font-semibold uppercase tracking-[.1em] ${active ? 'text-[#B6502A]' : 'text-[#5F6672]'}`}>{label}</span>
+            <Icon className={`w-[22px] h-[22px] ${active ? 'text-[var(--mtab-on,#B6502A)]' : 'text-[var(--mtab-off,#5F6672)]'}`} strokeWidth={1.6} aria-hidden="true" />
+            <span className={`text-[11px] font-semibold uppercase tracking-[.1em] ${active ? 'text-[var(--mtab-on,#B6502A)]' : 'text-[var(--mtab-off,#5F6672)]'}`}>{label}</span>
           </Link>
         );
       })}
