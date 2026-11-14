@@ -135,6 +135,9 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
 /* ── 3. controls bar ──────────────────────────────────────────────────────── */
 .sg-notice { flex: none; margin: 0 auto; padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--sg-ink); background: var(--sg-rust-bg); border-top: 1px solid var(--sg-rust-bd); width: 100%; text-align: center; }
 .sg-notice.warn { color: var(--sg-ink); }
+.sg-notice-btn { margin-left: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--sg-rust-bd); background: var(--sg-roster); color: var(--sg-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.sg-field { display: flex; flex-direction: column; gap: 6px; margin: 0 0 14px; font-size: 12px; font-weight: 600; color: var(--sg-ink2); }
+.sg-field select { min-height: 42px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--sg-rust-bd); background: var(--sg-roster); color: var(--sg-ink); font: inherit; font-size: 14px; font-weight: 500; }
 .sg-ctls { flex: none; min-height: 68px; padding: 13px 20px 18px; padding-bottom: max(18px, env(safe-area-inset-bottom)); border-top: 1px solid var(--sg-border); display: flex; justify-content: center; gap: 8px; background: var(--sg-chrome); transition: background-color .3s ease; }
 .sg-ctl { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 0; padding: 0; cursor: pointer; min-width: 54px; }
 .sg-ctl .b { width: 50px; height: 50px; border-radius: 50%; background: var(--sg-ctl); border: 1px solid var(--sg-ctl-bd); display: flex; align-items: center; justify-content: center; transition: background-color .2s ease, transform .15s ease; font-size: 18px; line-height: 1; }

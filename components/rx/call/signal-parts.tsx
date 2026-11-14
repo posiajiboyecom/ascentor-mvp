@@ -69,20 +69,58 @@ export function TrackVideo({ track, mirror, label }: { track: MediaStreamTrack |
   return <video ref={ref} className={mirror ? 'mirror' : undefined} autoPlay playsInline muted aria-label={label} />;
 }
 
+/** How the call plays sound: which speaker to use, and who to tell when the browser refuses to play it. */
+export interface AudioOut { sinkId: string; onBlocked: () => void }
+
 /** A remote member's voice, plus the sound of their shared screen if any. */
-export function RemoteAudio({ p }: { p: DailyParticipant }) {
-  return (<><AudioTrack track={p.tracks?.audio?.persistentTrack} /><AudioTrack track={p.tracks?.screenAudio?.persistentTrack} /></>);
+export function RemoteAudio({ p, out }: { p: DailyParticipant; out: AudioOut }) {
+  return (<><AudioTrack track={p.tracks?.audio?.persistentTrack} out={out} /><AudioTrack track={p.tracks?.screenAudio?.persistentTrack} out={out} /></>);
 }
-function AudioTrack({ track }: { track: MediaStreamTrack | undefined }) {
-  const ref = useRef<HTMLAudioElement>(null);
+
+type SinkAudio = HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
+/** True where the browser can send call sound to a chosen speaker or headset (not Safari / iOS). */
+export const canPickSpeaker = () => typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
+
+function AudioTrack({ track, out }: { track: MediaStreamTrack | undefined; out: AudioOut }) {
+  const ref = useRef<SinkAudio>(null);
+  const outRef = useRef(out);
+  useEffect(() => { outRef.current = out; }, [out]);
   useEffect(() => {
     const el = ref.current;
     if (!el || !track) return;
     el.srcObject = new MediaStream([track]);
-    void el.play().catch(() => undefined);
+    // Every voice gets its own element and plays at the same time as all the others: nobody's sound waits for anyone else's.
+    const play = () => {
+      if (!el.paused) return;
+      el.play().catch((e: unknown) => {
+        // The browser refused to play sound without a tap (autoplay rules, strictest in Brave and Safari). Say so,
+        // instead of leaving the call silent.
+        if ((e as { name?: string })?.name === 'NotAllowedError') outRef.current.onBlocked();
+      });
+    };
+    play();
+    // Resume if the voice comes back after a network blip or the member unmuting, or the tab returning to the front.
+    track.addEventListener('unmute', play);
+    const onVis = () => { if (document.visibilityState === 'visible') play(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      track.removeEventListener('unmute', play);
+      document.removeEventListener('visibilitychange', onVis);
+      el.srcObject = null;
+    };
   }, [track]);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && track && out.sinkId && el.setSinkId) void el.setSinkId(out.sinkId).catch(() => undefined);
+  }, [out.sinkId, track]);
   if (!track) return null;
-  return <audio ref={ref} autoPlay playsInline />;
+  return <audio ref={ref} data-call-audio="" autoPlay playsInline />;
+}
+
+/** Plays every call voice again: called from a tap, which is what the browser was waiting for. */
+export function resumeCallAudio(): Promise<boolean> {
+  const els = Array.from(document.querySelectorAll<HTMLAudioElement>('audio[data-call-audio]'));
+  return Promise.all(els.map((el) => el.play().then(() => true, () => false))).then((r) => r.every(Boolean));
 }
 
 // ── agenda ──────────────────────────────────────────────────────────────────

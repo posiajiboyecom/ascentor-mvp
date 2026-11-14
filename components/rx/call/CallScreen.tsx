@@ -20,7 +20,8 @@ import { createClient } from '@/lib/supabase/client';
 import { clock, loadAgenda } from '@/lib/rx/agenda';
 import {
   AgendaList, Bars, Bars3, IcAgenda, IcCam, IcCamOff, IcClock, IcLeave, IcMic, IcMicOff, IcPeople, IcScreen,
-  IcSmallMic, IcSmallMicOff, RemoteAudio, Silhouette, TrackVideo, cameraOn, feedFor, itemLeft, sharesScreen, type LiveAgenda,
+  IcSmallMic, IcSmallMicOff, RemoteAudio, Silhouette, TrackVideo, cameraOn, canPickSpeaker, feedFor, itemLeft, resumeCallAudio, sharesScreen,
+  type AudioOut, type LiveAgenda,
 } from './signal-parts';
 import { CHAT_MAX, ChatPanel, cleanText, historyBatches, mergeChat, type ChatMsg, type ChatWire } from './call-chat';
 
@@ -51,6 +52,24 @@ const scheduled = (startsAt: string, weekly: boolean) => {
 // Inter for the interface, DM Mono for timers. Loaded from Google Fonts (allowed by the CSP) so builds never depend on fetching them.
 const SIGNAL_FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;500&family=Inter:wght@400;600;700&display=swap';
 const BLUR_KEY = 'ascentor:call-blur';
+const MIC_KEY = 'ascentor:call-mic';
+const SPEAKER_KEY = 'ascentor:call-speaker';
+// Microphone processing: echo cancellation, noise suppression and automatic volume, asked for explicitly.
+const MIC_CONSTRAINTS: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+/** Voice level (Daily's 0..1 scale) above which someone counts as speaking, and how long the light stays on after. */
+const SPEAKING_LEVEL = 0.025;
+const SPEAKING_HOLD_MS = 700;
+type MicIssue = null | 'blocked' | 'missing' | 'in-use' | 'interrupted';
+/** A microphone to (re)open: the chosen one if it is still plugged in, else the system default, else the first one found. */
+async function micDeviceId(c: DailyCall, wanted: string): Promise<string> {
+  try {
+    const { devices } = await c.enumerateDevices();
+    const mics = devices.filter((d) => d.kind === 'audioinput' && d.deviceId);
+    return (mics.find((d) => d.deviceId === wanted) ?? mics.find((d) => d.deviceId === 'default') ?? mics[0])?.deviceId ?? wanted;
+  } catch { return wanted; }
+}
+const lsGet = (k: string) => { try { return localStorage.getItem(k) ?? ''; } catch { return ''; } };
+const lsSet = (k: string, v: string) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* storage unavailable */ } };
 const CAM_SETTINGS = { width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 16 / 9 }, frameRate: { ideal: 30, max: 30 } };
 const IN_APP = /(FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\))/i;
 const SHARE_BUSY = 'Someone is already sharing — wait for them to stop.';
@@ -110,6 +129,17 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [parts, setParts] = useState<DailyParticipant[]>([]);
   const [speaker, setSpeaker] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
+  // Everyone whose voice is above the speaking level right now (several people can be talking at once, as on Zoom).
+  const [speakingKey, setSpeakingKey] = useState('');
+  const lastLoud = useRef<Record<string, number>>({});
+  // The browser refused to play call sound until the member taps the page (autoplay rules).
+  const [soundBlocked, setSoundBlocked] = useState(false);
+  const [micIssue, setMicIssue] = useState<MicIssue>(null);
+  const remoteMuted = useRef(false);
+  // Chosen microphone and speaker (remembered on this device). '' = the system default.
+  const [micId, setMicId] = useState('');
+  const [sinkId, setSinkId] = useState('');
+  const [devices, setDevices] = useState<{ mics: MediaDeviceInfo[]; speakers: MediaDeviceInfo[] }>({ mics: [], speakers: [] });
   const [camOn, setCamOn] = useState(false);
   const [camBusy, setCamBusy] = useState(false);
   // Background blur (desktop browsers only, done by Daily). Remembered on this device; applied whenever the camera is on.
@@ -123,7 +153,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [sharing, setSharing] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat' | 'people'>(null);
+  const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat' | 'people' | 'devices'>(null);
   // Desktop side panel: the people on the call (with the agenda), the chat, or hidden.
   const [panel, setPanel] = useState<null | 'people' | 'chat'>('people');
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -152,16 +182,17 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   chatRef.current = chat;
   chatOpenRef.current = panel === 'chat' || sheet === 'chat';
 
-  useEffect(() => { setIos(isIOS()); }, []);
+  useEffect(() => { setIos(isIOS()); setMicId(lsGet(MIC_KEY)); setSinkId(lsGet(SPEAKER_KEY)); }, []);
   useEffect(() => {
     try { setCanBlur(!!Daily.supportedBrowser().supportsVideoProcessing && !isIOS() && !window.matchMedia('(pointer: coarse)').matches); } catch { setCanBlur(false); }
     try { setBlurOn(localStorage.getItem(BLUR_KEY) === 'on'); } catch { /* storage unavailable */ }
   }, []);
 
   // If the browser already has standing microphone permission for this site, skip straight past the "Allow
-  // microphone" button — there is nothing left to ask for. (Not supported in every browser; where it isn't, the
-  // member still sees the button, same as before.)
+  // microphone" button — there is nothing left to ask for. Only once the room is open: the microphone is not opened
+  // while someone sits on the waiting screen. (Not supported in every browser; where it isn't, the button shows.)
   useEffect(() => {
+    if (phase !== 'prejoin') return;
     const perms = (navigator as Navigator & { permissions?: { query: (o: { name: 'microphone' }) => Promise<{ state: string }> } }).permissions;
     if (!perms?.query) return;
     let cancelled = false;
@@ -171,7 +202,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       else if (status.state === 'denied') setMicOk('blocked');
     }).catch(() => undefined);
     return () => { cancelled = true; };
-  }, []);
+  }, [phase]);
 
   const fetchToken = useCallback(async (takeover = false) => {
     try {
@@ -197,6 +228,17 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   // one-second clock for the countdowns
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
+  // Who is speaking, four times a second (only re-renders when the set changes).
+  useEffect(() => {
+    if (phase !== 'incall') return;
+    const t = setInterval(() => {
+      const cut = Date.now() - SPEAKING_HOLD_MS;
+      const key = Object.entries(lastLoud.current).filter(([, at]) => at > cut).map(([id]) => id).sort().join(',');
+      setSpeakingKey((k) => (k === key ? k : key));
+    }, 250);
+    return () => clearInterval(t);
+  }, [phase]);
+
   // when the room opens, ask again
   useEffect(() => {
     if (phase !== 'waiting' || !info) return;
@@ -219,8 +261,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   }
 
   async function checkMic() {
+    if (micTrack.current?.readyState === 'live') return; // already listening
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const want = lsGet(MIC_KEY);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: want ? { ...MIC_CONSTRAINTS, deviceId: { ideal: want } } : MIC_CONSTRAINTS });
       setMicOk('granted');
       micTrack.current = stream.getAudioTracks()[0] ?? null;
       const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -246,6 +290,19 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     }
     camOnIds.current = onNow;
     setParts(list);
+    // The mute button follows what Daily actually sends, not what we last asked for: the facilitator can mute you,
+    // and the browser can cut the microphone.
+    const mine = list.find((p) => p.local);
+    const a = mine?.tracks?.audio;
+    if (a) {
+      setMuted(a.state === 'off' || a.state === 'blocked');
+      const byHost = !!a.off?.byRemoteRequest;
+      if (byHost && !remoteMuted.current) setNotice('The facilitator muted you. Tap Unmute when you want to speak.');
+      remoteMuted.current = byHost;
+      setMicIssue(a.state === 'blocked'
+        ? (a.blocked?.byPermissions ? 'blocked' : a.blocked?.byDeviceInUse ? 'in-use' : a.blocked?.byDeviceMissing ? 'missing' : 'blocked')
+        : a.state === 'interrupted' ? 'interrupted' : null);
+    }
   }, []);
 
   // One device per account in a call: if this account joins again somewhere else, the newer device keeps the call
@@ -313,10 +370,20 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       // Hand Daily the already-granted microphone track when we have one, so it never has to request its own and
       // trigger a second browser permission prompt.
       const call = Daily.createCallObject({ audioSource: micTrack.current ?? true, videoSource: false, subscribeToTracksAutomatically: true, dailyConfig: { avoidEval: true } });
+      // If that microphone goes away (unplugged, or taken by another app), let Daily open the default one instead.
+      const handed = micTrack.current;
+      handed?.addEventListener('ended', () => {
+        if (callRef.current === call) void micDeviceId(call, lsGet(MIC_KEY)).then((id) => call.setInputDevicesAsync({ audioDeviceId: id })).catch(() => undefined);
+      }, { once: true });
       micTrack.current = null; // Daily owns it now
       callRef.current = call;
+      lastLoud.current = {}; setSpeakingKey(''); setSoundBlocked(false); remoteMuted.current = false;
       call.on('joined-meeting', async () => {
         refreshParts(); setPhase('incall');
+        // Voice levels for everyone (ten times a second), so every person who is talking lights up at the same time.
+        void call.startLocalAudioLevelObserver(100).catch(() => undefined);
+        void call.startRemoteParticipantsAudioLevelObserver(100).catch(() => undefined);
+        void loadDevices(call);
         void reloadAgenda();
         // Higher camera quality. Three simulcast layers, so members on a weak connection still receive the low one.
         call.updateSendSettings({
@@ -344,6 +411,15 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       });
       call.on('participant-updated', refreshParts).on('participant-left', (e) => { refreshParts(); setHands((h) => h.filter((x) => x !== e?.participant?.session_id)); });
       call.on('active-speaker-change', (e) => { const id = e?.activeSpeaker?.peerId; if (id) setSpeaker(id); });
+      call.on('local-audio-level', (e) => {
+        const id = call.participants()?.local?.session_id;
+        if (id && (e?.audioLevel ?? 0) > SPEAKING_LEVEL) lastLoud.current[id] = Date.now();
+      });
+      call.on('remote-participants-audio-level', (e) => {
+        const t = Date.now();
+        for (const [id, lvl] of Object.entries(e?.participantsAudioLevel ?? {})) if (lvl > SPEAKING_LEVEL) lastLoud.current[id] = t;
+      });
+      call.on('available-devices-updated', () => { void loadDevices(call); });
       call.on('app-message', (e) => {
         const d = e?.data as { type?: string; up?: boolean; index?: number; startedAt?: string } | undefined;
         if ((d?.type === 'chat' || d?.type === 'chat-history') && e?.fromId) {
@@ -418,7 +494,38 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     endAttendance(); router.replace(backHref);
   }
 
-  function toggleMute() { const c = callRef.current; if (!c) return; const next = !muted; c.setLocalAudio(!next); setMuted(next); }
+  function toggleMute() {
+    const c = callRef.current; if (!c) return;
+    const on = c.localAudio();
+    c.setLocalAudio(!on); setMuted(on);
+    if (!on) remoteMuted.current = false;
+  }
+
+  /** The microphones and speakers this device has, for the Audio settings sheet. */
+  async function loadDevices(c: DailyCall) {
+    try {
+      const { devices: all } = await c.enumerateDevices();
+      setDevices({ mics: all.filter((d) => d.kind === 'audioinput'), speakers: all.filter((d) => d.kind === 'audiooutput') });
+    } catch { /* the sheet just shows the defaults */ }
+  }
+  async function pickMic(id: string) {
+    const c = callRef.current; if (!c) return;
+    setMicId(id); lsSet(MIC_KEY, id);
+    try { await c.setInputDevicesAsync({ audioDeviceId: await micDeviceId(c, id) }); setMicIssue(null); }
+    catch { toast('That microphone couldn’t be opened. Try another.'); }
+  }
+  function pickSpeaker(id: string) { setSinkId(id); lsSet(SPEAKER_KEY, id); }
+  /** Asks the browser for the microphone again (after allowing it in site settings, or closing the app that held it). */
+  async function retryMic() {
+    const c = callRef.current; if (!c) return;
+    try { await c.setInputDevicesAsync({ audioDeviceId: await micDeviceId(c, micId) }); c.setLocalAudio(true); setMicIssue(null); }
+    catch { toast('Still no microphone. Check your browser’s site settings, then try again.'); }
+  }
+  async function turnOnSound() {
+    const ok = await resumeCallAudio();
+    setSoundBlocked(!ok);
+    if (!ok) toast('Your browser is still blocking sound. Allow sound for this site in its settings.');
+  }
   /** Turns the camera off and releases it, whichever way it was opened. */
   async function stopCamera(c: DailyCall) {
     c.setLocalVideo(false);
@@ -560,7 +667,9 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     const roster = [...parts].sort((a, b) => Number(b.local) - Number(a.local) || Number(b.owner) - Number(a.owner) || joinedMs(a) - joinedMs(b));
     const known = speaker && parts.some((p) => p.session_id === speaker) ? speaker : null;
     const stage = sharer ?? parts.find((p) => p.session_id === known) ?? parts.find((p) => !p.local) ?? me;
-    const isTalking = (p: DailyParticipant) => known === p.session_id && !!p.audio;
+    const speakingNow = new Set(speakingKey ? speakingKey.split(',') : []);
+    const isTalking = (p: DailyParticipant) => speakingNow.has(p.session_id) && (p.local ? !muted : !!p.audio);
+    const audioOut: AudioOut = { sinkId, onBlocked: () => setSoundBlocked(true) };
     const handIdx = (p: DailyParticipant) => (p.local ? (handUp ? 0 : -1) : hands.indexOf(p.session_id));
     const cams = parts.filter(cameraOn).length;
     const camsLabel = cams === 0 ? 'Audio only' : cams === parts.length ? 'All cameras on' : `${cams} ${cams === 1 ? 'camera' : 'cameras'} on`;
@@ -696,7 +805,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
           </section>
 
           {/* Everyone's voice (and screen sound) plays from here, whichever panel is showing. */}
-          <div hidden>{parts.filter((p) => !p.local).map((p) => <RemoteAudio key={p.session_id} p={p} />)}</div>
+          <div hidden>{parts.filter((p) => !p.local).map((p) => <RemoteAudio key={p.session_id} p={p} out={audioOut} />)}</div>
 
           <aside className="sg-roster" hidden={panel === null} aria-label={panel === 'chat' ? 'Chat' : 'On this call'}>
             {panel === 'chat' ? (<>
@@ -738,12 +847,28 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         </div>
 
         {notice && <div className="sg-notice" role="status" aria-live="polite">{notice}</div>}
-        {me && !me.audio && !muted && <div className="sg-notice warn" role="status">Your microphone isn’t sending sound. Check that your browser has permission.</div>}
+        {soundBlocked && (
+          <div className="sg-notice warn" role="alert">
+            Your browser paused the call sound. <button type="button" className="sg-notice-btn" onClick={() => void turnOnSound()}>Turn on sound</button>
+          </div>
+        )}
+        {micIssue && (
+          <div className="sg-notice warn" role="alert">
+            {micIssue === 'blocked' ? 'Your browser is blocking your microphone, so nobody can hear you. Allow it in this site’s settings.'
+              : micIssue === 'in-use' ? 'Another app is using your microphone. Close it, then try again.'
+              : micIssue === 'missing' ? 'No microphone found. Plug one in or pick another in Audio.'
+              : 'Your microphone stopped. Try again, or pick another in Audio.'}
+            {' '}<button type="button" className="sg-notice-btn" onClick={() => void retryMic()}>Try again</button>
+          </div>
+        )}
 
         {/* 3. controls */}
         <div className="sg-ctls" role="toolbar" aria-label="Call controls">
           <button type="button" className={`sg-ctl${muted ? ' off' : ''}`} aria-pressed={!muted} aria-label={muted ? 'Unmute' : 'Mute'} onClick={toggleMute}>
             <span className="b">{muted ? <IcMicOff /> : <IcMic />}</span><span>{muted ? 'Unmute' : 'Mute'}</span>
+          </button>
+          <button type="button" className="sg-ctl" aria-label="Audio settings: microphone and speaker" aria-expanded={sheet === 'devices'} onClick={() => { const c = callRef.current; if (c) void loadDevices(c); setSheet('devices'); }}>
+            <span className="b"><IcSliders /></span><span>Audio</span>
           </button>
           <button type="button" className="sg-ctl" aria-pressed={camOn} aria-label={camOn ? 'Turn camera off' : 'Turn camera on'} disabled={camBusy} onClick={() => void toggleCamera()}>
             <span className="b">{camOn ? <IcCam /> : <IcCamOff />}</span><span>Camera</span>
@@ -785,6 +910,28 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
               <button type="button" className="sg-btn primary" onClick={() => void copyLink()}>Copy call link</button>
               <button type="button" className="sg-btn" onClick={() => setSheet(null)}>Close</button>
             </div>
+          </div>
+        )}
+        {sheet === 'devices' && (
+          <div className="sg-sheet" role="dialog" aria-modal="true" aria-labelledby="sg-dev-h">
+            <div className="grab" aria-hidden />
+            <h2 id="sg-dev-h">Audio</h2>
+            <label className="sg-field"><span>Microphone</span>
+              <select value={micId} onChange={(e) => void pickMic(e.target.value)}>
+                <option value="">System default</option>
+                {devices.mics.filter((d) => d.deviceId && d.deviceId !== 'default').map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>)}
+              </select>
+            </label>
+            {canPickSpeaker() && devices.speakers.length > 0 && (
+              <label className="sg-field"><span>Speaker</span>
+                <select value={sinkId} onChange={(e) => pickSpeaker(e.target.value)}>
+                  <option value="">System default</option>
+                  {devices.speakers.filter((d) => d.deviceId && d.deviceId !== 'default').map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${i + 1}`}</option>)}
+                </select>
+              </label>
+            )}
+            <p>Use headphones if you can. On laptop or phone speakers, the browser’s echo control can cut your voice while someone else is talking. With headphones, people can talk over each other and everyone is still heard.</p>
+            <div className="sg-sheet-acts"><button type="button" className="sg-btn" onClick={() => setSheet(null)}>Done</button></div>
           </div>
         )}
         {sheet === 'people' && (
@@ -867,6 +1014,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             {micOk === 'unknown' && <div><button type="button" className="rx-btn secondary" onClick={() => void checkMic()}><Mic aria-hidden style={{ width: 18, height: 18 }} />Allow microphone</button><p className="rx-sm" style={{ marginTop: 8 }}>Your browser will ask for permission next, so others can hear you.</p></div>}
             {micOk === 'granted' && (<div className="rx-stack-sm"><p className="rx-sm">Say something. The bar moves when your microphone hears you.</p><div className="rx-bar" role="img" aria-label="Microphone level"><span style={{ width: `${Math.round(level * 100)}%`, transition: 'width .08s linear' }} /></div></div>)}
             {micOk === 'blocked' && <div className="rx-banner" role="alert"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>The microphone is blocked.</b> Open your browser’s site settings, allow the microphone for this site, then reload this page. You can still listen without it.</div></div>}
+            <p className="rx-sm">Tip: headphones give the clearest sound, and let people talk at the same time without cutting each other off.</p>
             <div className="rx-row"><button type="button" className="rx-btn primary" onClick={() => void join()}>Join now</button><Link href={backHref} className="rx-link muted">Not now</Link></div>
           </div>
         )}
@@ -893,5 +1041,6 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 }
 
 const IcBlur = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="9" r="3.2" /><path d="M6 20a6 6 0 0 1 12 0" /><path d="M3 4.5h.01M3 9h.01M3 13.5h.01M21 4.5h.01M21 9h.01M21 13.5h.01M5.5 2.5h.01M18.5 2.5h.01" strokeWidth="2.6" /></svg>;
+const IcSliders = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>;
 const IcChat = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /></svg>;
 const IcScreenSmall = () => <svg viewBox="0 0 24 24" aria-hidden width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>;
