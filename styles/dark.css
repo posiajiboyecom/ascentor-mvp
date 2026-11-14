@@ -65,6 +65,8 @@ html:root[data-app-theme='dark'] {
   --color-border:        #23272E;
   --color-border-light:  #2A2F37;
 }
+/* mobile bottom tab bar (components/nav/MobileTabBar.tsx) */
+html[data-app-theme='dark'] { --mtab-bg: #15181D; --mtab-border: #23272E; --mtab-on: #D9714A; --mtab-off: #9CA3AF; }
 html[data-app-theme='dark'] .circle-surface { --color-border-secondary: #3A3F47; }
 
 /* ── rx: the member screens ─────────────────────────────────────────────────── */
