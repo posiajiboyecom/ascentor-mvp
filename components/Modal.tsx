@@ -130,7 +130,7 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
       case 'danger':
         return { ...base, background: 'var(--color-error, #DC2626)', color: '#fff' };
       default:
-        return { ...base, background: '#fff', color: 'var(--text, #0F0F0E)', border: '1px solid var(--border, #E8E6E1)' };
+        return { ...base, background: 'var(--bg-card, #fff)', color: 'var(--text, #0F0F0E)', border: '1px solid var(--border, #E8E6E1)' };
     }
   };
 
@@ -155,7 +155,7 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
         aria-labelledby={config.title ? titleId : undefined}
         aria-describedby={descId}
         style={{
-          background: '#FFFFFF',
+          background: 'var(--bg-card, #FFFFFF)',
           border: '1px solid var(--border, #E8E6E1)',
           borderTop: config.variant ? `4px solid ${VARIANT_COLORS[config.variant]}` : undefined,
           borderRadius: 16, padding: 24, maxWidth: 440, width: '100%',

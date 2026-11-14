@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import '@/styles/rust.css';
+import '@/styles/dark.css';
 import CommunityGateModal from '@/components/CommunityGateModal';
 
 import { ModalProvider } from '@/components/Modal';
@@ -13,6 +14,8 @@ import { headers } from 'next/headers';
 import Script from 'next/script';
 import SplashGate from '@/components/SplashGate';
 import { SPLASH_COVER_ID, splashPrePaintScript } from '@/lib/splash';
+import ThemeSync from '@/components/ThemeSync';
+import { themePrePaintScript } from '@/lib/theme';
 
 // ── Fonts ──────────────────────────────────────────────────────────
 // Metropolis is loaded locally from public/fonts/metropolis/
@@ -114,6 +117,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body suppressHydrationWarning>
+        {/* Dark theme (member app only): set before first paint so a dark app never flashes light. */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themePrePaintScript() }} />
+        <ThemeSync />
         <AuthErrorHandler />
         <AuthRedirectError />
         {/*

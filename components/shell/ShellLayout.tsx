@@ -29,6 +29,7 @@ import { ChevronsLeft, LogOut, Menu, Search, X } from 'lucide-react';
 import '@/styles/shell.css';
 import { confirmAction } from '@/components/Modal';
 import CommandPalette from './CommandPalette';
+import ThemeToggle from './ThemeToggle';
 import { PageSearchProvider, usePageSearchContext } from './PageSearch';
 import {
   initialsOf, isActivePath,
@@ -229,7 +230,7 @@ function ShellInner({
           <button
             type="button"
             className="sh-icon-btn sh-drawer-only"
-            style={{ color: '#5F6672' }}
+            style={{ color: 'var(--sb-muted)' }}
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
           >
@@ -267,6 +268,8 @@ function ShellInner({
         {sidebarExtra && <div className="sh-sidebar-extra">{sidebarExtra}</div>}
 
         <div className="sh-sidebar-foot">
+          {/* Light / dark switch: member app only (admin stays light). */}
+          {variant === 'app' && <ThemeToggle />}
           <div className="sh-user">
             <Link
               href={settingsHref}
@@ -420,7 +423,7 @@ function ShellInner({
         positionStrategy="fixed"
         style={{
           zIndex: 200, padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-          background: '#FAFAF8', color: '#0F0F0E', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+          background: 'var(--sh-tip-bg, #FAFAF8)', color: 'var(--sh-tip-fg, #0F0F0E)', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
         }}
       />
     </div>
