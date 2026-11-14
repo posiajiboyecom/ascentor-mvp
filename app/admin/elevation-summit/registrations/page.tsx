@@ -71,6 +71,36 @@ const when = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
 const waLink = (p: string) => `https://wa.me/${p.replace(/[^\d]/g, '')}`;
 
+// ── Contact exports (CSV) ─────────────────────────────────────────────────────
+// Numbers go out in +234 form so phones save them correctly for WhatsApp.
+// Nigerian local numbers (080…, 80…) get +234; anything else keeps its own code.
+const toIntl = (raw: string | null | undefined): string | null => {
+  if (!raw) return null;
+  const plus = raw.trim().startsWith('+');
+  let d = raw.replace(/\D/g, '');
+  if (!d) return null;
+  if (plus) return `+${d}`;
+  if (d.startsWith('00')) return `+${d.slice(2)}`;
+  if (d.startsWith('234')) return `+${d}`;
+  if (d.startsWith('0') && d.length === 11) d = d.slice(1);
+  if (d.length === 10) return `+234${d}`;
+  return `+${d}`;
+};
+// Registrants type their own names: stop a spreadsheet from running one as a formula.
+const safeText = (v: string) => (/^[=+\-@\t\r]/.test(v) ? `'${v}` : v);
+const csvCell = (v: string) => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+const toCsv = (rows: string[][]) => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+const splitName = (full: string) => {
+  const parts = full.trim().split(/\s+/);
+  return { first: parts[0] ?? '', last: parts.slice(1).join(' ') };
+};
+const saveCsv = (csv: string, name: string) => {
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 export default function ElevationSummitRegistrationsPage() {
   const supabase = useMemo(() => createClient(), []);
   const query = usePageSearch('Search name, email, phone…');
@@ -226,6 +256,49 @@ export default function ElevationSummitRegistrationsPage() {
     setExporting(false);
   };
 
+  // ── CSV exports: everything matching the current search + filters ──────────
+  // WhatsApp: Google Contacts columns, so the file imports straight into a phone's contacts,
+  // all under one "Elevation Summit" label. Emails: name + email. One row per number / email.
+  const downloadContacts = async (kind: 'whatsapp' | 'email') => {
+    setExporting(true); setNote(null);
+    try {
+      const res = await authed(`/api/admin/summit-registrations?${qs(1, 'all')}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Could not prepare the export');
+      const list: Reg[] = body.registrations ?? [];
+      const seen = new Set<string>();
+      const rows: string[][] = [];
+      let missing = 0;
+      for (const r of list) {
+        const key = kind === 'whatsapp' ? toIntl(r.whatsapp) : (r.email || '').trim().toLowerCase();
+        if (!key) { missing++; continue; }
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const name = safeText((r.full_name || '').trim());
+        if (kind === 'whatsapp') {
+          const { first, last } = splitName(name);
+          rows.push([first, last, 'Mobile', key, 'Elevation Summit']);
+        } else {
+          rows.push([name, safeText(key)]);
+        }
+      }
+      if (!rows.length) throw new Error(kind === 'whatsapp' ? 'No WhatsApp numbers match these filters.' : 'No emails match these filters.');
+      const header = kind === 'whatsapp'
+        ? ['First Name', 'Last Name', 'Phone 1 - Label', 'Phone 1 - Value', 'Labels']
+        : ['Name', 'Email'];
+      const day = new Date().toISOString().slice(0, 10);
+      saveCsv(toCsv([header, ...rows]), `elevation-summit-${kind === 'whatsapp' ? 'whatsapp-numbers' : 'emails'}-${day}.csv`);
+      const what = kind === 'whatsapp' ? 'number' : 'email';
+      const dupes = list.length - missing - rows.length;
+      setNote(`CSV downloaded with ${rows.length} ${what}${rows.length === 1 ? '' : 's'}`
+        + (dupes > 0 ? `, ${dupes} duplicate${dupes === 1 ? '' : 's'} removed` : '')
+        + (missing > 0 ? `, ${missing} registrant${missing === 1 ? '' : 's'} without one skipped` : '') + '.');
+    } catch (e) {
+      setNote((e as Error).message);
+    }
+    setExporting(false);
+  };
+
   const act = async (action: 'resend' | 'remind' | 'comp' | 'referral_invite') => {
     if (!open) return;
     setBusy(true); setPanelMsg(null);
@@ -373,6 +446,14 @@ export default function ElevationSummitRegistrationsPage() {
           <button type="button" className="ledger-btn ledger-btn-ghost" onClick={downloadPdf} disabled={exporting}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Download a PDF of the records matching the current search and filters">
             <FileDown size={14} /> {exporting ? 'Preparing…' : 'Download PDF'}
+          </button>
+          <button type="button" className="ledger-btn ledger-btn-ghost" onClick={() => downloadContacts('whatsapp')} disabled={exporting}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Download the WhatsApp numbers matching the current search and filters, ready to import into your phone's contacts">
+            <MessageCircle size={14} /> WhatsApp numbers (CSV)
+          </button>
+          <button type="button" className="ledger-btn ledger-btn-ghost" onClick={() => downloadContacts('email')} disabled={exporting}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Download the emails matching the current search and filters">
+            <Mail size={14} /> Emails (CSV)
           </button>
           <button type="button" className="ledger-btn ledger-btn-primary" onClick={load} disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
