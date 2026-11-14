@@ -67,7 +67,7 @@ export default function OffCanvas({ open, onClose, title, subtitle, footer, chil
         style={{
           position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 101,
           width: 'min(440px, 100vw)', display: 'flex', flexDirection: 'column',
-          background: '#FFFFFF', color: 'var(--ledger-ink)', borderLeft: '1px solid var(--ledger-line-strong)',
+          background: 'var(--ledger-bg-card)', color: 'var(--ledger-ink)', borderLeft: '1px solid var(--ledger-line-strong)',
           boxShadow: '-16px 0 48px rgba(0,0,0,0.22)',
           transform: open ? 'translateX(0)' : 'translateX(105%)',
           visibility: open ? 'visible' : 'hidden',
@@ -92,7 +92,7 @@ export default function OffCanvas({ open, onClose, title, subtitle, footer, chil
         {footer && (
           <div style={{
             flexShrink: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom, 0px))',
-            borderTop: '1px solid var(--ledger-line)', background: '#FFFFFF', display: 'grid', gap: 8,
+            borderTop: '1px solid var(--ledger-line)', background: 'var(--ledger-bg-card)', display: 'grid', gap: 8,
           }}>
             {footer}
           </div>

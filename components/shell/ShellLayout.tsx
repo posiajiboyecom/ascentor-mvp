@@ -268,8 +268,8 @@ function ShellInner({
         {sidebarExtra && <div className="sh-sidebar-extra">{sidebarExtra}</div>}
 
         <div className="sh-sidebar-foot">
-          {/* Light / dark switch: member app only (admin stays light). */}
-          {variant === 'app' && <ThemeToggle />}
+          {/* Light / dark switch (member app and admin). */}
+          <ThemeToggle />
           <div className="sh-user">
             <Link
               href={settingsHref}

@@ -93,11 +93,11 @@ export default function AdminShell({
 
   const headerActions = (
     <div className="adm-hdr-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span className="adm-role-pill" title="Your role" style={{ height: 28, padding: '0 10px', borderRadius: 999, border: '1px solid #cfcac2', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>{roleName}</span>
+      <span className="adm-role-pill" title="Your role" style={{ height: 28, padding: '0 10px', borderRadius: 999, border: '1px solid var(--sh-border-2, #cfcac2)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>{roleName}</span>
       {isAdmin && viewAsOptions.length > 0 && (
         <label className="adm-viewas" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
           <span style={{ whiteSpace: 'nowrap' }}>View as</span>
-          <select aria-label="View as a teammate" value={viewingAsId ?? ''} onChange={(e) => onViewAs(e.target.value)} style={{ height: 32, maxWidth: 190, borderRadius: 8, border: '1px solid #cfcac2', background: 'transparent', color: 'inherit', fontSize: 12 }}>
+          <select aria-label="View as a teammate" value={viewingAsId ?? ''} onChange={(e) => onViewAs(e.target.value)} style={{ height: 32, maxWidth: 190, borderRadius: 8, border: '1px solid var(--sh-border-2, #cfcac2)', background: 'transparent', color: 'inherit', fontSize: 12 }}>
             <option value="">Myself (Admin)</option>
             {viewAsOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>

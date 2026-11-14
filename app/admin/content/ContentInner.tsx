@@ -1779,9 +1779,9 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
         <textarea value={hooks} onChange={e => setHooks(e.target.value)} rows={3} placeholder={"My manager said I wasn't ready for a promotion. My Ascentor mentor asked me one question that changed everything.\nI almost quit my job. My mentor showed me I wasn't stuck, I was just invisible to the right people."} style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2DDD4', borderRadius: 8, background: '#F5F3EE', fontSize: 12, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08', resize: 'vertical', lineHeight: 1.65 }} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F5F3EE', border: '1px solid #E2DDD4', borderRadius: 8, padding: '10px 16px', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--admin-bg-deep, #F5F3EE)', border: '1px solid var(--admin-border-strong, #E2DDD4)', borderRadius: 8, padding: '10px 16px', marginBottom: 16 }}>
         <span style={{ fontSize: 12, color: '#6B6860', fontFamily: "Metropolis, 'Inter', sans-serif" }}>Estimated cost</span>
-        <span style={{ fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × ${PRICE_PER_IMAGE})</span></span>
+        <span style={{ fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", color: 'var(--admin-text-heading, #0C0B08)' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × ${PRICE_PER_IMAGE})</span></span>
       </div>
 
       <button onClick={run} disabled={running} style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: 'none', cursor: running?'not-allowed':'pointer', background: running?'#9E9B94':'#0C0B08', color: '#fff', fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.04em' }}>
