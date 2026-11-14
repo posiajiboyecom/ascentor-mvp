@@ -5,6 +5,7 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deliverPaidEmails, deliverCompTicket, resendUnsentBatch, describeEmailFailure, sendReferralInviteEmail } from '@/lib/summitEmails';
 import { count } from '@/lib/admin/revenue-util';
+import { whatsappCsv, emailCsv, exportNote, toCsv, toIntlPhone } from '@/lib/admin/contact-csv';
 import type { ScreenModule, ScreenSpec, ActionResult } from '@/lib/admin/types';
 
 export const spec: ScreenSpec = {
@@ -59,8 +60,18 @@ export const spec: ScreenSpec = {
       confirm: "Send the referral program email to all confirmed registrants who haven't received it yet?"
     },
     {
+      id: "export-whatsapp",
+      label: "Export WhatsApp numbers",
+      needs: "full"
+    },
+    {
+      id: "export-emails",
+      label: "Export emails",
+      needs: "full"
+    },
+    {
       id: "export-list",
-      label: "Export list",
+      label: "Export full list",
       needs: "full"
     }
   ]
@@ -134,6 +145,42 @@ const screen: ScreenModule = {
   },
 
   async button(_ctx, buttonId): Promise<ActionResult> {
+    if (buttonId === 'export-whatsapp' || buttonId === 'export-emails' || buttonId === 'export-list') {
+      // Everyone, not just the 500 shown on screen. Pages of 1,000 until the table runs out.
+      const all: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabaseAdmin.from('summit_registrations').select('*')
+          .order('created_at', { ascending: false }).range(from, from + 999);
+        if (error) return { ok: false, error: `Could not load registrations: ${error.message}` };
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      if (!all.length) return { ok: false, error: 'There are no registrations to export yet.' };
+      const day = new Date().toISOString().slice(0, 10);
+      const people = all.map((r) => ({ name: r.full_name, phone: r.whatsapp, email: r.email }));
+
+      if (buttonId === 'export-whatsapp') {
+        const out = whatsappCsv(people, 'Elevation Summit');
+        return { ok: true, message: exportNote('WhatsApp number', out), download: { filename: `elevation-summit-whatsapp-numbers-${day}.csv`, mime: 'text/csv;charset=utf-8', content: out.content } };
+      }
+      if (buttonId === 'export-emails') {
+        const out = emailCsv(people);
+        return { ok: true, message: exportNote('email', out), download: { filename: `elevation-summit-emails-${day}.csv`, mime: 'text/csv;charset=utf-8', content: out.content } };
+      }
+      const safe = (v: unknown) => { const t = v == null ? '' : String(v); return /^[=+\-@\t\r]/.test(t) ? `'${t}` : t; };
+      const rows = all.map((r) => {
+        const c = [
+          r.full_name, r.email, '', r.location, r.organisation, r.current_role,
+          r.attendance_type === 'virtual' ? 'Virtual' : 'Physical', r.payment_status === 'paid' ? 'Confirmed' : 'Not confirmed',
+          r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : '', r.source,
+        ].map(safe);
+        c[2] = toIntlPhone(r.whatsapp) ?? ''; // digits and + only, so no formula guard needed
+        return c;
+      });
+      const content = toCsv([['Name', 'Email', 'WhatsApp', 'City / country', 'Company / institution', 'Role', 'Ticket', 'Status', 'Registered', 'Registered via'], ...rows]);
+      return { ok: true, message: `Exported ${rows.length} registration${rows.length === 1 ? '' : 's'}.`, download: { filename: `elevation-summit-registrations-${day}.csv`, mime: 'text/csv;charset=utf-8', content } };
+    }
+
     if (buttonId === 'resend-all-unsent') {
       // A small batch per press (4 people, spaced out) keeps each press inside the page time limit and inside the mailbox's
       // sending limit. Press again to continue; people already sent are never picked up twice.
