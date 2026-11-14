@@ -25,8 +25,9 @@ export const toCsv = (rows: string[][]) => '﻿' + rows.map((r) => r.map(cell).j
 export interface Person { name: string | null; phone?: string | null; email?: string | null }
 export interface ContactCsv { content: string; count: number; duplicates: number; missing: number }
 
-/** One row per WhatsApp number, Google Contacts columns, every contact under `label`. */
-export function whatsappCsv(people: Person[], label: string): ContactCsv {
+/** One row per WhatsApp number, Google Contacts columns, every contact under `label`.
+ *  `nameTag` is added to the end of each name (e.g. "Ada Obi TES2026") so the contacts are easy to find in a phone. */
+export function whatsappCsv(people: Person[], label: string, nameTag = ''): ContactCsv {
   const seen = new Set<string>();
   const rows: string[][] = [];
   let missing = 0;
@@ -36,7 +37,8 @@ export function whatsappCsv(people: Person[], label: string): ContactCsv {
     if (seen.has(num)) continue;
     seen.add(num);
     const parts = safeText((p.name || '').trim()).split(/\s+/);
-    rows.push([parts[0] ?? '', parts.slice(1).join(' '), 'Mobile', num, label]);
+    const last = [parts.slice(1).join(' '), nameTag].filter(Boolean).join(' ');
+    rows.push([parts[0] ?? '', last, 'Mobile', num, label]);
   }
   const header = ['First Name', 'Last Name', 'Phone 1 - Label', 'Phone 1 - Value', 'Labels'];
   return { content: toCsv([header, ...rows]), count: rows.length, duplicates: people.length - missing - rows.length, missing };

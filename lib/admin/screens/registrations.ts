@@ -160,7 +160,7 @@ const screen: ScreenModule = {
       const people = all.map((r) => ({ name: r.full_name, phone: r.whatsapp, email: r.email }));
 
       if (buttonId === 'export-whatsapp') {
-        const out = whatsappCsv(people, 'Elevation Summit');
+        const out = whatsappCsv(people, 'Elevation Summit', 'TES2026');
         return { ok: true, message: exportNote('WhatsApp number', out), download: { filename: `elevation-summit-whatsapp-numbers-${day}.csv`, mime: 'text/csv;charset=utf-8', content: out.content } };
       }
       if (buttonId === 'export-emails') {
