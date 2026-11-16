@@ -146,6 +146,8 @@ const PUBLIC_ROUTES = [
   '/door',
   // Summit walk-in self check-in (QR poster at the entrance); open only on the day unless an admin opens it.
   '/walk-in',
+  // Reward code landing page (Summit referral prize). Redeeming itself needs a session (app/redeem/actions.ts).
+  '/redeem',
 ];
 
 // Origins allowed to make state-changing API calls besides the request's own host

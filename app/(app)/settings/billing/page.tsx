@@ -9,6 +9,7 @@ import { loadBillingView } from '@/lib/billing/member-view';
 import BillingClient from '@/components/billing/BillingClient';
 import SettingsTabs from '@/components/billing/SettingsTabs';
 import PlanChanger from '@/components/billing/PlanChanger';
+import RedeemCode from '@/components/billing/RedeemCode';
 import { closedPlanIds } from '@/lib/admin/plans-open';
 import '@/styles/rx-settings.css';
 import '@/styles/rx-billing.css';
@@ -31,6 +32,7 @@ export default async function BillingPage() {
       <div className="rx-two">
         <div className="rx-stack-lg">
           <BillingClient data={data} tz={me.tz} checkoutOn={checkoutOn} />
+          <RedeemCode />
           {canChange && sub && <PlanChanger tier={sub.tier} cycle={sub.cycle} trial={sub.state === 'trial'} nextChargeAt={sub.nextChargeAt} scheduled={sub.scheduled} currency={data.currency} closed={closed} tz={me.tz} />}
         </div>
         <Aside>
