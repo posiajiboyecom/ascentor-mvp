@@ -6,6 +6,8 @@ import { requireMember, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
 import { DM_POLICIES, LANGUAGES, NOTIF_TYPES } from '@/lib/rx/constants';
 import { TZC, tzInfo } from '@/lib/rx/timezones';
+import { normalizeCity } from '@/lib/rx/city-names';
+import { joinCityGroup } from '@/lib/rx/city-groups';
 
 async function patch(values: Record<string, unknown>): Promise<ActionResult> {
   try {
@@ -41,7 +43,7 @@ export async function saveTimezone(zone: string): Promise<ActionResult> {
     new Intl.DateTimeFormat('en-US', { timeZone: zone });
   } catch { return { ok: false, error: 'That time zone isn’t valid.' }; }
   const info = tzInfo(zone);
-  return patch({ timezone: zone, timezone_label: `${info.city}, ${info.country} (${info.off})`, city: info.city, country: TZC[zone] ?? info.country });
+  return patch({ timezone: zone, timezone_label: `${info.city}, ${info.country} (${info.off})`, country: TZC[zone] ?? info.country });
 }
 
 export async function unblockMember(blockedId: string): Promise<ActionResult> {
@@ -58,11 +60,12 @@ export async function unblockMember(blockedId: string): Promise<ActionResult> {
 export async function saveProfile(input: { name: string; headline: string; city: string }): Promise<ActionResult> {
   const name = (input.name ?? '').trim();
   const headline = (input.headline ?? '').trim();
-  const city = (input.city ?? '').trim();
+  const typed = (input.city ?? '').trim();
+  const city = typed ? normalizeCity(typed) : null;
   if (!name) return { ok: false, error: 'Add a display name.' };
   if (name.length > 80) return { ok: false, error: 'Keep your display name under 80 characters.' };
   if (headline.length > 120) return { ok: false, error: 'Keep your headline under 120 characters.' };
-  if (city.length > 80) return { ok: false, error: 'That city name is too long.' };
+  if (typed && !city) return { ok: false, error: 'Type the name of your city or town.' };
   try {
     const { db, userId } = await requireMember();
     const { error } = await db.from('profiles').update({ full_name: name, what_building: headline || null, updated_at: new Date().toISOString() }).eq('id', userId);
@@ -71,5 +74,18 @@ export async function saveProfile(input: { name: string; headline: string; city:
     revalidatePath('/profile');
     await revalidateShell(userId); // bust cached shell name/avatar
   } catch (e) { return fail(e); }
-  return patch({ city: city || null });
+  try {
+    const { db, userId } = await requireMember();
+    const { data: cur } = await db.from('member_profile').select('city, baseline').eq('user_id', userId).maybeSingle();
+    const res = await patch({ city, ...(city ? { baseline: { ...((cur?.baseline as Record<string, unknown>) ?? {}), cityTyped: true } } : {}) });
+    if (!res.ok) return res;
+    // A new city puts the member in that city's group (created if they're the first from there).
+    // Their old city group stays: they can leave it from the group if they want.
+    if (city && city !== cur?.city) {
+      await joinCityGroup(userId, city).catch((e) => console.error('[settings] city group', (e as Error).message));
+      revalidatePath('/community/cities');
+      await revalidateShell(userId);
+    }
+    return res;
+  } catch (e) { return fail(e); }
 }

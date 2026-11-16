@@ -15,6 +15,8 @@ import {
 import { TZC, tzInfo } from '@/lib/rx/timezones';
 import { DEFAULT_TZ } from '@/lib/rx/dates';
 import { loadAnswers, saveAnswers, scoreWave } from '@/lib/rx/survey';
+import { normalizeCity } from '@/lib/rx/city-names';
+import { joinCityGroup } from '@/lib/rx/city-groups';
 
 export interface OnboardingInput {
   interests?: string[];
@@ -26,6 +28,7 @@ export interface OnboardingInput {
   slots?: string[];
   timezone?: string;
   timezoneLabel?: string;
+  city?: string;
   language?: string;
   answers?: (number | null)[];
   consent?: boolean;
@@ -56,9 +59,16 @@ export async function saveOnboardingStep(step: ObStep, input: OnboardingInput): 
         const info = tzInfo(z);
         row.timezone = z;
         row.timezone_label = cleanText(input.timezoneLabel, 120) || `${info.city}, ${info.country} (${info.off})`;
-        row.city = info.city;
         row.country = TZC[z] ?? info.country;
       }
+    }
+    if (input.city !== undefined) {
+      const city = normalizeCity(input.city);
+      if (!city) throw new Error('Please type the city or town you live in.');
+      row.city = city;
+      // Marks a city the member typed (older rows hold the time zone's city, which is Lagos for all of Nigeria).
+      const { data: cur } = await db.from('member_profile').select('baseline').eq('user_id', userId).maybeSingle();
+      row.baseline = { ...((cur?.baseline as Record<string, unknown>) ?? {}), cityTyped: true };
     }
     if (input.answers) await saveAnswers(userId, 'baseline', input.answers.slice(0, SURVEY.length).map(scale));
     if (input.consent) row.chat_consent_at = new Date().toISOString();
@@ -89,7 +99,7 @@ export async function finishOnboarding(): Promise<ActionResult<{ result: FinishR
     const { data: mp } = await db.from('member_profile').select('*').eq('user_id', userId).maybeSingle();
     if (!mp) throw new Error('Please answer the earlier questions first.');
 
-    const baseline = (mp.baseline ?? {}) as { goals?: { g: string; who: string }[] };
+    const baseline = (mp.baseline ?? {}) as { goals?: { g: string; who: string }[]; cityTyped?: boolean };
     const stage = deriveStage({ purpose: mp.purpose_score, lead: mp.lead_exp, project: mp.project_exp });
     const goals = (baseline.goals ?? []).filter((x) => x.g);
 
@@ -129,6 +139,10 @@ export async function finishOnboarding(): Promise<ActionResult<{ result: FinishR
     if (pErr) throw pErr;
 
     await db.from('member_profile').update({ stage, onboarded_at: new Date().toISOString(), onboarding_step: 'stage', timezone: mp.timezone ?? DEFAULT_TZ }).eq('user_id', userId);
+
+    // City group: join the member's city group, creating it if this is the first member from that city.
+    // Never blocks finishing onboarding.
+    if (baseline.cityTyped) await joinCityGroup(userId, mp.city as string | null).catch((e) => console.error('[onboarding] city group', (e as Error).message));
 
     // Sage's first notes: plain facts the member gave us, visible and editable under "What Sage knows".
     const { count: noteCount } = await db.from('sage_memories').select('id', { count: 'exact', head: true }).eq('user_id', userId);

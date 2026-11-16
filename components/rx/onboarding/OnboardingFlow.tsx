@@ -16,6 +16,7 @@ import {
   SLOT_OPTIONS, STAGE_COPY, SURVEY_QUESTIONS, WHO_SUGGEST, type ObStep, type Stage,
 } from '@/lib/rx/constants';
 import { detectedZone, searchZones, type TzInfo } from '@/lib/rx/timezones';
+import { CITY_SUGGESTIONS, normalizeCity } from '@/lib/rx/city-names';
 import { answerOpenHouse, finishOnboarding, recordChatConsent, saveOnboardingStep, type FinishResult, type OnboardingInput } from '@/app/onboarding/actions';
 import { useToast } from '@/components/rx/Toast';
 import { usePush } from '@/components/PushPermission';
@@ -36,6 +37,7 @@ export interface OnboardingInitial {
   slots: string[];
   timezone: string | null;
   timezoneLabel: string | null;
+  city: string | null;
   language: string | null;
   answers: (number | null)[];
 }
@@ -47,7 +49,7 @@ const DIM_ICON: Record<string, React.ReactNode> = {
   Finance: <Coins aria-hidden />, Relationships: <HeartHandshake aria-hidden />, Community: <Users aria-hidden />, Legacy: <Sprout aria-hidden />,
 };
 
-const FLOW: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'slots', 'language', 'purpose', 'goal', 'serve', 'survey', 'stage', 'forming'];
+const FLOW: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'city', 'slots', 'language', 'purpose', 'goal', 'serve', 'survey', 'stage', 'forming'];
 
 export default function OnboardingFlow({ initial }: { initial: OnboardingInitial }) {
   const router = useRouter();
@@ -76,6 +78,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
     return { id: detected.id, label: `${detected.city}, ${detected.country} (${detected.off})`, src: 'detected' };
   });
   const [tzq, setTzq] = useState('');
+  const [city, setCity] = useState<string>(initial.city ?? '');
   const [language, setLanguage] = useState<string>(initial.language ?? 'English');
   const [answers, setAnswers] = useState<(number | null)[]>(initial.answers.length ? initial.answers : SURVEY_QUESTIONS.map(() => null));
   const [sq, setSq] = useState(0);
@@ -93,6 +96,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
   const canContinue =
     step === 'interests' ? interests.length > 0 :
     step === 'goal' ? goal.g.trim().length > 0 :
+    step === 'city' ? normalizeCity(city) !== null :
     step === 'survey' ? answers[sq] !== null :
     true;
 
@@ -184,7 +188,8 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
       case 'purpose': return save('purpose', { purpose, effort, lead, project }, () => setStep('goal'));
       case 'goal': return save('goal', { goals }, () => setStep('serve'));
       case 'serve': return save('serve', { goals }, () => setStep('survey'));
-      case 'timezone': return save('timezone', { timezone: tz.id, timezoneLabel: tz.label }, () => setStep('slots'));
+      case 'timezone': return save('timezone', { timezone: tz.id, timezoneLabel: tz.label }, () => setStep('city'));
+      case 'city': return save('city', { city }, () => setStep('slots'));
       case 'slots': return save('slots', { slots }, () => setStep('language'));
       case 'tzlist': return setStep('timezone');
       case 'language': return save('language', { language }, () => setStep('purpose'));
@@ -200,6 +205,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
   const continueLabel = step === 'notify' ? 'Turn on reminders' : step === 'tzlist' ? 'Back' : 'Continue';
   const footNote: Record<string, string> = {
     timezone: `Chosen: ${tz.label}`,
+    city: normalizeCity(city) ? `You’ll join the ${normalizeCity(city)} group` : 'Type your city or pick one',
     tzlist: 'Pick a zone to return',
     interests: `${interests.length} chosen`,
     survey: `Question ${sq + 1} of ${SURVEY_QUESTIONS.length}`,
@@ -479,6 +485,24 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
                 <button type="button" className="rx-tzrow" onClick={() => setStep('tzlist')}>
                   <span className="rx-tzc"><span>Another time zone</span><span className="rx-sm">Search by city or country</span></span><ArrowRight aria-hidden style={{ width: 18, height: 18, color: 'var(--rx-muted)' }} />
                 </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'city' && (
+            <div className="rx-stack rx-rise">
+              <div className="rx-obicon"><MapPin aria-hidden /></div>
+              <h1 className="rx-big" style={{ fontSize: 26 }}>Which city do you live in?</h1>
+              <p className="rx-sm">We’ll add you to your city’s group so you can meet members near you. You can change it later in Settings.</p>
+              <label className="rx-label" htmlFor="ob-city">City or town</label>
+              <input id="ob-city" className="rx-in" autoComplete="address-level2" placeholder="For example, Akure" maxLength={60}
+                value={city} onChange={(e) => setCity(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && normalizeCity(city)) { e.preventDefault(); onContinue(); } }} />
+              <p className="rx-label" style={{ marginTop: 4 }}>Quick picks</p>
+              <div className="rx-opts">
+                {CITY_SUGGESTIONS.map((c) => (
+                  <button key={c} type="button" className="rx-opt" aria-pressed={normalizeCity(city) === c} onClick={() => setCity(c)}>{c}</button>
+                ))}
               </div>
             </div>
           )}

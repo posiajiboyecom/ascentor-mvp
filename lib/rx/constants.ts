@@ -31,13 +31,13 @@ export type PostType = (typeof POST_TYPES)[number];
 // ── onboarding ───────────────────────────────────────────────────────────────
 export type ObStep =
   | 'welcome' | 'notify' | 'interests' | 'purpose' | 'goal' | 'serve'
-  | 'slots' | 'timezone' | 'language' | 'survey' | 'stage' | 'forming';
+  | 'slots' | 'timezone' | 'city' | 'language' | 'survey' | 'stage' | 'forming';
 
-export const OB_ORDER: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'slots', 'language', 'purpose', 'goal', 'serve', 'survey', 'stage', 'forming'];
+export const OB_ORDER: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'city', 'slots', 'language', 'purpose', 'goal', 'serve', 'survey', 'stage', 'forming'];
 
 /** Which of the six progress segments a step belongs to. */
 export const OB_SEG: Partial<Record<ObStep, number>> = {
-  notify: 0, interests: 1, timezone: 2, slots: 2, language: 2, purpose: 3, goal: 4, serve: 4, survey: 5,
+  notify: 0, interests: 1, timezone: 2, city: 2, slots: 2, language: 2, purpose: 3, goal: 4, serve: 4, survey: 5,
 };
 
 export const OB_SAGE: Partial<Record<ObStep, string>> = {
@@ -48,6 +48,7 @@ export const OB_SAGE: Partial<Record<ObStep, string>> = {
   serve: 'Goals that serve someone stick.',
   slots: 'This helps us find your Circle a time.',
   timezone: 'So every time you see is yours.',
+  city: 'You’ll join members near you.',
   language: 'Pick what feels natural.',
   survey: 'Your first instinct is fine.',
 };

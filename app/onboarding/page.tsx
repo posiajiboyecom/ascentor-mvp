@@ -35,6 +35,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams?: 
   if (saved && (OB_ORDER as string[]).includes(saved) && saved !== 'welcome') {
     const i = OB_ORDER.indexOf(saved as ObStep);
     step = OB_ORDER[Math.min(i + 1, OB_ORDER.indexOf('survey'))];
+    // Members part-way through before the city question existed answer it on their way back in.
+    if (i >= OB_ORDER.indexOf('city') && !(mp?.baseline as { cityTyped?: boolean } | undefined)?.cityTyped) step = 'city';
   }
 
   const initial: OnboardingInitial = {
@@ -52,6 +54,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams?: 
     slots: (mp?.slots as string[]) ?? [],
     timezone: (mp?.timezone as string | null) ?? null,
     timezoneLabel: (mp?.timezone_label as string | null) ?? null,
+    // Only a city the member typed: older rows hold the time zone's city (Lagos for all of Nigeria).
+    city: (mp?.baseline as { cityTyped?: boolean } | undefined)?.cityTyped ? ((mp?.city as string | null) ?? null) : null,
     language: (mp?.language as string | null) ?? null,
     answers: s.answers ?? [],
   };

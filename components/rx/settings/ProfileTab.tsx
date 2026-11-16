@@ -24,7 +24,7 @@ export default function ProfileTab({ userId, name, headline, city, cities, stage
   const [vis, setVis] = useState('All members');
   const [wins, setWins] = useState(true);
   const [showCity, setShowCity] = useState(true);
-  const cityOpts = Array.from(new Set([...(city ? [city] : []), ...cities, 'Somewhere else']));
+  const cityOpts = Array.from(new Set([...(city ? [city] : []), ...cities]));
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,7 +54,7 @@ export default function ProfileTab({ userId, name, headline, city, cities, stage
   };
 
   const save = () => start(async () => {
-    const r = await saveProfile({ name: nm, headline: hl, city: ct === 'Somewhere else' ? '' : ct });
+    const r = await saveProfile({ name: nm, headline: hl, city: ct });
     toast(r.ok ? 'Profile saved.' : r.error);
   });
 
@@ -73,10 +73,9 @@ export default function ProfileTab({ userId, name, headline, city, cities, stage
         <div className="rx-fld"><label htmlFor="pfh">Headline</label><input id="pfh" className="rx-in" placeholder="What you’re building" value={hl} maxLength={120} onChange={(e) => setHl(e.target.value)} /><span className="rx-sm">Shown under your name in messages and groups.</span></div>
         <div className="rx-grid2">
           <div className="rx-fld"><label htmlFor="pfc">City</label>
-            <select id="pfc" className="rx-in" value={cityOpts.includes(ct) ? ct : ''} onChange={(e) => setCt(e.target.value)}>
-              {!ct && <option value="">Choose a city</option>}
-              {cityOpts.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select></div>
+            <input id="pfc" className="rx-in" list="pfc-cities" autoComplete="address-level2" placeholder="For example, Akure" maxLength={60} value={ct} onChange={(e) => setCt(e.target.value)} />
+            <datalist id="pfc-cities">{cityOpts.map((c) => <option key={c} value={c} />)}</datalist>
+            <span className="rx-sm">You’ll be added to your city’s group.</span></div>
           <div className="rx-fld"><span className="rx-fld-label">Stage</span><div className="rx-row" style={{ minHeight: 48, gap: 8 }}><span className="rx-tag">{stage || 'Not set yet'}</span><span className="rx-sm">Set from onboarding</span></div></div>
         </div>
         <div className="rx-fld"><label htmlFor="pfb">About</label><textarea id="pfb" className="rx-in" value={about} onChange={(e) => setAbout(e.target.value)} /></div>
