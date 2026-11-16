@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { requireArea } from '@/lib/admin/access';
 import { loadReferrals } from '@/lib/summitReferralAdmin';
 import ReviewButtons from './ReviewButtons';
+import WinnerRewards, { type WinnerRow } from './WinnerRewards';
+import { listSummitWinners, WINNER_MONTHS } from '@/lib/rewards/access-codes';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Summit referrals' };
@@ -28,12 +30,21 @@ export default async function Page() {
   const canReview = level === 'edit' || level === 'full';
   let data: Awaited<ReturnType<typeof loadReferrals>> | null = null;
   try { data = await loadReferrals(); } catch (e) { console.error('[admin/referrals] load failed:', e); }
+  let winners: WinnerRow[] = [];
+  try {
+    winners = (await listSummitWinners()).map((w) => ({
+      registrationId: w.registrationId, name: w.name, email: w.email, confirmed: w.confirmed,
+      months: w.code?.months ?? WINNER_MONTHS, above: !!w.code?.above_and_beyond, code: w.code?.code ?? null,
+      emailedAt: w.code?.emailed_at ?? null, emailedMonths: w.code?.emailed_months ?? null, redeemedAt: w.code?.redeemed_at ?? null,
+    }));
+  } catch (e) { console.error('[admin/referrals] winners load failed:', e); }
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px 64px' }}>
       <Link href="/admin/c/registrations" style={{ fontSize: 14 }}>← Registrations</Link>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: '12px 0 4px' }}>Summit referrals</h1>
       <p style={{ opacity: 0.75, margin: '0 0 20px' }}>A referral counts as soon as the friend registers. Suspicious signups are held below for review. Ranked by referrals who attended, then by confirmed referrals.</p>
       {!data ? <p role="alert">We could not load referrals. Has the referrals migration been applied?</p> : (<>
+        <WinnerRewards winners={winners} canEdit={canReview} />
         <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Leaderboard</h2>
         <p style={{ fontSize: 14, opacity: 0.75, margin: '0 0 8px' }}>{data.leaders.filter((l) => l.verified >= GOAL).length} {data.leaders.filter((l) => l.verified >= GOAL).length === 1 ? 'person has' : 'people have'} reached {GOAL} confirmed referrals.</p>
         <div style={{ overflowX: 'auto', marginBottom: 32 }}>

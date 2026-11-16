@@ -43,5 +43,6 @@ export async function loadPublicBoard(): Promise<PublicBoard> {
     reachedCount: sorted.filter((x) => x.n >= REFERRAL_GOAL).length,
     totalConfirmed: sorted.reduce((s, x) => s + x.n, 0),
     referrers: sorted.length,
+    winners: sorted.filter((x) => x.n >= REFERRAL_GOAL).map((x) => ({ name: publicName(names.get(x.id)), confirmed: x.n })),
   };
 }

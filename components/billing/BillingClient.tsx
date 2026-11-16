@@ -32,7 +32,17 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
   const formatNaira = (minor: number) => formatMoney(minor, data.currency);
   const hasGroupPrice = groupDiscountApplies(data.currency);
 
-  const words = sub
+  // A reward period (Summit prize, other codes): a live plan with nothing to pay and nothing to resume.
+  const rewardLive = !!sub?.gift && sub.state === 'cancelled' && sub.access === 'full';
+  const words = rewardLive && sub
+    ? {
+        label: 'Reward', tone: 'gold' as const,
+        headline: `${sub.planName.split(',')[0]} is free until ${fmt(sub.periodEnd)}.`,
+        detail: sub.gift === 'summit_referral'
+          ? 'This is your Elevation Summit referral reward. Nothing is charged. When it ends you move to light access, and you can choose a plan any time to keep everything.'
+          : 'This came from a reward code. Nothing is charged. When it ends you move to light access, and you can choose a plan any time to keep everything.',
+      }
+    : sub
     ? stateWords({
         state: sub.state, cancelAtPeriodEnd: sub.cancelAtPeriodEnd, trialEndsAt: sub.trialEndsAt, nextChargeAt: sub.nextChargeAt,
         periodEnd: sub.periodEnd, graceEndsAt: sub.graceEndsAt, amountLabel: next ? formatNaira(next.payKobo) : null, now: new Date(),
@@ -62,9 +72,9 @@ export default function BillingClient({ data, tz, checkoutOn = true }: { data: B
       trial ? 'Your trial is cancelled and you will not be charged.' : `Your plan is cancelled. You keep full access until ${fmt((b.accessUntil as string | null) ?? sub.periodEnd)}.`);
   };
 
-  const resumable = !!sub && ((sub.state === 'active' && sub.cancelAtPeriodEnd) || (sub.state === 'cancelled' && !!sub.periodEnd && new Date(sub.periodEnd).getTime() > Date.now()));
+  const resumable = !!sub && !sub.gift && ((sub.state === 'active' && sub.cancelAtPeriodEnd) || (sub.state === 'cancelled' && !!sub.periodEnd && new Date(sub.periodEnd).getTime() > Date.now()));
   const cancellable = !!sub && ((sub.state === 'trial') || (sub.state === 'active' && !sub.cancelAtPeriodEnd) || sub.state === 'grace');
-  const reactivatable = !!sub && (sub.state === 'lapsed' || (sub.state === 'cancelled' && !resumable));
+  const reactivatable = !!sub && !rewardLive && (sub.state === 'lapsed' || (sub.state === 'cancelled' && !resumable));
 
   const amountRow = next && (
     next.creditKobo > 0

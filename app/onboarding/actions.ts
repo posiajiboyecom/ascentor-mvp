@@ -17,6 +17,9 @@ import { DEFAULT_TZ } from '@/lib/rx/dates';
 import { loadAnswers, saveAnswers, scoreWave } from '@/lib/rx/survey';
 import { normalizeCity } from '@/lib/rx/city-names';
 import { joinCityGroup } from '@/lib/rx/city-groups';
+import { cookies } from 'next/headers';
+import { redeemCode } from '@/lib/rewards/access-codes';
+import { REWARD_COOKIE } from '@/lib/rewards/cookie';
 
 export interface OnboardingInput {
   interests?: string[];
@@ -143,6 +146,17 @@ export async function finishOnboarding(): Promise<ActionResult<{ result: FinishR
     // City group: join the member's city group, creating it if this is the first member from that city.
     // Never blocks finishing onboarding.
     if (baseline.cityTyped) await joinCityGroup(userId, mp.city as string | null).catch((e) => console.error('[onboarding] city group', (e as Error).message));
+
+    // A reward code remembered from /redeem (Summit prize): use it now that the member has an account.
+    try {
+      const jar = await cookies();
+      const pending = jar.get(REWARD_COOKIE)?.value;
+      if (pending) {
+        const r = await redeemCode(userId, decodeURIComponent(pending));
+        if (r.ok || !/try again/i.test(r.error)) jar.delete(REWARD_COOKIE);
+        if (!r.ok) console.warn('[onboarding] reward code not used:', r.error);
+      }
+    } catch (e) { console.error('[onboarding] reward code', (e as Error).message); }
 
     // Sage's first notes: plain facts the member gave us, visible and editable under "What Sage knows".
     const { count: noteCount } = await db.from('sage_memories').select('id', { count: 'exact', head: true }).eq('user_id', userId);

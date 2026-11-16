@@ -26,6 +26,8 @@ export interface BillingViewData {
     scheduled: { tier: Tier; cycle: Cycle; planName: string } | null;
     trialEndsAt: string | null; nextChargeAt: string | null; periodEnd: string | null; graceEndsAt: string | null;
     cancelAtPeriodEnd: boolean; failedCount: number; access: 'full' | 'light';
+    /** The plan came from a reward code (never charged). */
+    gift: string | null;
   };
   next: NextChargePreview | null;
   creditBalanceKobo: number;
@@ -66,7 +68,7 @@ export async function loadBillingView(userId: string, visitorCurrency: Currency 
       planName: `${tierLabel(sub.tier)}, ${sub.cycle === 'yearly' ? 'yearly' : 'monthly'}`,
       scheduled: change && (change.tier !== sub.tier || change.cycle !== sub.cycle) ? { ...change, planName: `${tierLabel(change.tier)}, ${change.cycle === 'yearly' ? 'yearly' : 'monthly'}` } : null,
       trialEndsAt: iso(sub.trialEndsAt), nextChargeAt: iso(sub.nextChargeAt), periodEnd: iso(sub.periodEnd), graceEndsAt: iso(sub.graceEndsAt),
-      cancelAtPeriodEnd: sub.cancelAtPeriodEnd, failedCount: sub.failedCount,
+      cancelAtPeriodEnd: sub.cancelAtPeriodEnd, failedCount: sub.failedCount, gift: sub.giftSource,
       access: accessLevel({ state: sub.state, periodEnd: sub.periodEnd }, now),
     };
   }

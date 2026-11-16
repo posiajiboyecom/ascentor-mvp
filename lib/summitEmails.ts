@@ -706,3 +706,31 @@ export async function sendReferralInviteEmail(i: ReferralInvitePayload): Promise
     }),
   });
 }
+
+// ── Referral winners: their Ascentor reward code ─────────────────────────────────────────────────────
+export interface RewardCodePayload { to: string; fullName: string; code: string; months: number; confirmed: number; aboveAndBeyond: boolean; redeemBy: string }
+
+export async function sendRewardCodeEmail(i: RewardCodePayload): Promise<void> {
+  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://joinascentor.com';
+  const link = `${site.replace(/\/+$/, '')}/redeem?code=${encodeURIComponent(i.code)}`;
+  const by = new Date(i.redeemBy).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Lagos' });
+  const first = (i.fullName || '').trim().split(/\s+/)[0] || 'there';
+  await sendSummitMail({
+    to: i.to,
+    subject: `Your Elevation Summit reward: ${i.months} months of Ascentor Builder`,
+    html: brandedEmailLayout({
+      preheader: `You brought ${i.confirmed} people to The Elevation Summit. Here is your reward.`,
+      eyebrow: 'Elevation Summit · Referral winner',
+      heading: i.aboveAndBeyond ? 'You went above and beyond.' : 'You did it. Thank you.',
+      recipient: i.to,
+      content:
+        p(`Hi ${esc(first)},`) +
+        p(`You brought <strong>${i.confirmed} people</strong> to The Elevation Summit. ${i.aboveAndBeyond ? 'You went well beyond the goal, and we noticed.' : 'You reached the goal, and we are grateful.'}`) +
+        p(`Your reward is <strong>${i.months} months of Ascentor Builder, free</strong>: your Circle, Sage your AI coach, mentor sessions and every Learn track. No card is needed and nothing is charged.`) +
+        summaryBox(summaryRow('Your code', `<span style="font-family:'Courier New',monospace;letter-spacing:2px;">${esc(i.code)}</span>`) + summaryRow('Reward', `Builder · ${i.months} months`) + summaryRow('Use by', esc(by))) +
+        goldButton('Claim my reward', esc(link)) +
+        p('<span style="color:#6B7280;font-size:13px;">New to Ascentor? Open the link, create your account and finish setting up on the same device: your reward is added automatically. Already a member? Sign in and the code is ready to use. You can also enter it any time in Settings, then Billing.</span>') +
+        p('<span style="color:#6B7280;font-size:13px;">This code is for you alone and works once.</span>'),
+    }),
+  });
+}

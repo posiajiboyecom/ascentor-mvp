@@ -21,7 +21,8 @@ export type BillingEventType =
   | 'card_verify_refunded' | 'card_verify_refund_failed' | 'subscription_cancelled' | 'subscription_resumed' | 'plan_change_scheduled' | 'trial_ending_sent' | 'seat_release_pending'
   | 'seat_released' | 'seat_restored' | 'circle_waiting' | 'would_release_seat'
   | 'leader_cycle_ended' | 'would_end_leader_cycle'
-  | 'group_admin_alert_sent' | 'would_alert_group' | 'would_warn_group';
+  | 'group_admin_alert_sent' | 'would_alert_group' | 'would_warn_group'
+  | 'reward_redeemed';
 
 export async function logBillingEvent(userId: string | null, type: BillingEventType, data: Record<string, unknown> = {}): Promise<void> {
   try {

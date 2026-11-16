@@ -63,6 +63,8 @@ export interface Subscription {
   lastChargeAt: Date | null;
   lastChargeRef: string | null;
   lockedGroupPriceUntil: Date | null;
+  /** Set when the plan came from a reward code (lib/rewards/access-codes.ts), e.g. 'summit_referral'. */
+  giftSource: string | null;
 }
 
 type Row = Record<string, unknown>;
@@ -90,6 +92,7 @@ export function toSubscription(r: Row): Subscription {
     lastChargeAt: dt(r.last_charge_at),
     lastChargeRef: (r.last_charge_ref as string | null) ?? null,
     lockedGroupPriceUntil: dt(r.locked_group_price_until),
+    giftSource: (r.gift_source as string | null) ?? null,
   };
 }
 
@@ -383,7 +386,8 @@ export async function syncProfile(userId: string, now = new Date()): Promise<voi
       case 'active': status = sub.cancelAtPeriodEnd ? 'cancelled' : 'active'; end = sub.periodEnd; break;
       case 'grace': status = 'active'; end = sub.graceEndsAt; break;
       case 'lapsed': status = 'free'; end = sub.periodEnd; break;
-      default: status = 'cancelled'; end = sub.periodEnd ?? now; break;
+      // A reward period is stored as 'cancelled' (so it is never charged) but is a live plan until it ends.
+      default: status = sub.giftSource && sub.periodEnd && sub.periodEnd > now ? 'active' : 'cancelled'; end = sub.periodEnd ?? now; break;
     }
     const patch: Record<string, unknown> = {
       subscription_plan: sub.tier, subscription_status: status, subscription_end: end ? end.toISOString() : null,
