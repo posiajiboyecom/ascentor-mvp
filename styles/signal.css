@@ -49,6 +49,13 @@
 /* Your own camera is mirrored, as in a mirror; thumbnails just flip. */
 .sg video.mirror { transform: scaleX(-1); }
 .sg-feed.screen { background: #000; }
+/* A picture whose shape doesn't match its box (an upright phone on a wide screen, a laptop in a tall box) shows whole. */
+.sg video.whole { object-fit: contain; }
+.sg-feed video.sg-backdrop { inset: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(32px) brightness(.5) saturate(1.15); transform: scale(1.05); }
+.sg-feed video.sg-backdrop.mirror { transform: scale(1.05) scaleX(-1); }
+.sg-feed video.sg-backdrop[hidden] { display: none; }
+.sg-pinned { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 5px 11px; min-height: 30px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+.sg-pinned svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sg-feed.screen video { object-fit: contain; }
 .sg-sil { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 52%; max-width: 520px; display: block; }
 .sg-sil path, .sg-sil ellipse { fill: rgba(255,255,255,0.18); }
@@ -182,6 +189,27 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
 
 /* mobile strip and agenda bar (hidden on desktop) */
 .sg-strip-w, .sg-agbar { display: none; }
+/* tiles (phones, upright or sideways) */
+.sg-tile { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; border: 2px solid transparent; background: var(--sg-stage); }
+.sg-tile:only-child { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
+.sg-tile.speaking { border-color: var(--sg-gold-mark); box-shadow: 0 0 0 2px rgba(202,162,40,0.25); }
+.sg-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sg-tile .sg-sil { width: 50%; }
+.sg-tile-n { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-tile-n.gold { color: #CAA228; }
+.sg-tile.sg-tile-wait { grid-column: 1 / -1; aspect-ratio: auto; min-height: 96px; padding: 0 14px; display: flex; align-items: center; justify-content: center; background: var(--sg-ctl); border: 1.5px dashed var(--sg-ctl-bd); font-size: 11px; font-weight: 600; color: var(--sg-ink2); }
+.sg-tile-m { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: #9B1C31; display: flex; align-items: center; justify-content: center; }
+.sg-tile-m svg { width: 11px; height: 11px; stroke: #fff; }
+.sg-tile .sg-pres { top: 4px; left: 4px; bottom: auto; }
+.sg-tile .sg-feed { background: var(--sg-stage); }
+.sg-tile video.whole { object-fit: contain; }
+/* Tap a tile to put that person on the big screen (tap again to let it follow the speaker). */
+.sg-tile-btn { position: absolute; inset: 0; z-index: 2; border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer; border-radius: inherit; }
+.sg-tile-btn:focus-visible { outline: 2px solid var(--sg-rust-ink); outline-offset: -2px; }
+.sg-tile-m, .sg-tile-n, .sg-tile .sg-pres { z-index: 3; pointer-events: none; }
+.sg-tile.pinned { border-color: var(--sg-rust); }
+.sg-tile.pinned::after { content: 'Pinned'; position: absolute; z-index: 3; top: 6px; left: 6px; padding: 2px 7px; border-radius: 999px; background: var(--sg-rust); color: #fff; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; pointer-events: none; }
+button.sg-row[aria-pressed='true'] { background: var(--sg-rust-bg); }
 
 /* ── mobile ───────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -199,17 +227,6 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
   .sg-strip-w::-webkit-scrollbar { display: none; }
   .sg-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
   .sg-strip::-webkit-scrollbar { display: none; }
-  .sg-tile { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; border: 2px solid transparent; background: var(--sg-stage); }
-  .sg-tile:only-child { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
-  .sg-tile.speaking { border-color: var(--sg-gold-mark); box-shadow: 0 0 0 2px rgba(202,162,40,0.25); }
-  .sg-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .sg-tile .sg-sil { width: 50%; }
-  .sg-tile-n { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sg-tile-n.gold { color: #CAA228; }
-  .sg-tile.sg-tile-wait { grid-column: 1 / -1; aspect-ratio: auto; min-height: 96px; padding: 0 14px; display: flex; align-items: center; justify-content: center; background: var(--sg-ctl); border: 1.5px dashed var(--sg-ctl-bd); font-size: 11px; font-weight: 600; color: var(--sg-ink2); }
-  .sg-tile-m { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: #9B1C31; display: flex; align-items: center; justify-content: center; }
-  .sg-tile-m svg { width: 11px; height: 11px; stroke: #fff; }
-  .sg-tile .sg-pres { top: 4px; left: 4px; bottom: auto; }
   .sg-agbar { display: flex; flex: none; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 14px; background: var(--sg-chrome); border-top: 1px solid var(--sg-border); width: 100%; text-align: left; border-left: 0; border-right: 0; border-bottom: 0; cursor: pointer; }
   .sg-agbar-l { min-width: 0; }
   .sg-agbar-k { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--sg-rust-ink); letter-spacing: .06em; }
@@ -256,6 +273,12 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
 .sg-chat-sheet .sg-chat-f { padding: 10px 18px 0; }
 .sg-chat-sheet .sg-chat-f textarea { font-size: 16px; } /* 16px stops iOS zooming into the field */
 @media (min-width: 768px) { .sg-chat-sheet { height: 70vh; } }
+/* Phones: the chat fills the visible screen and shrinks with the keyboard (top and height set from the visual viewport). */
+.sg-chat-sheet.fit { left: 0; right: 0; bottom: auto; width: auto; translate: none; max-height: none; border-radius: 0; border: 0; padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: 8px; animation: none; }
+.sg-chat-sheet.fit .grab { display: none; }
+.sg-chat-sheet.fit .sg-sheet-head { padding-bottom: 8px; border-bottom: 1px solid var(--sg-border); }
+.sg-chat-sheet.fit .sg-chat-list { overscroll-behavior: contain; }
+.sg-chat-sheet.fit .sg-chat-f { padding-bottom: 4px; }
 @media (max-width: 400px) {
   .sg-ctls { gap: 4px; padding-left: 6px; padding-right: 6px; }
   .sg-ctl { min-width: 42px; }
@@ -267,3 +290,27 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
 .sg-people-sheet .sg-row { padding-left: 18px; padding-right: 18px; }
 .sg-people-sheet .sg-row.speaking { padding-left: 15.5px; }
 .sg-people-sheet .sg-mod { padding-left: 18px; padding-right: 18px; }
+
+/* ── phone held sideways: big screen on the left, tiles down the right, slim bars ── */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  .sg-top { min-height: 40px; padding: 6px 16px; padding-top: max(6px, env(safe-area-inset-top)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .sg-elapsed .mono { font-size: 16px; }
+  .sg-elapsed small { display: none; }
+  .sg-body { flex-direction: row; }
+  .sg-pane { flex: 1; height: auto; min-height: 0; }
+  .sg-over { padding: 28px 14px 10px; }
+  .sg-name { font-size: 16px; }
+  .sg-roster { display: none; }
+  .sg-strip-w { display: block; flex: none; width: min(32vw, 260px); min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 8px; padding-right: max(8px, env(safe-area-inset-right)); background: var(--sg-chrome); }
+  .sg-strip-w::-webkit-scrollbar { display: none; }
+  .sg-strip { display: grid; grid-template-columns: 1fr; gap: 8px; list-style: none; margin: 0; padding: 0; }
+  .sg-tile, .sg-tile:only-child { aspect-ratio: 16 / 9; }
+  .sg-tile.sg-tile-wait { min-height: 64px; }
+  .sg-agbar { display: none; }
+  .sg-ctls { min-height: 0; padding: 6px 12px; padding-bottom: max(6px, env(safe-area-inset-bottom)); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); gap: 10px; }
+  .sg-ctl { flex-direction: row; gap: 0; min-width: 0; }
+  .sg-ctl .b { width: 40px; height: 40px; }
+  .sg-ctl > span:last-child { display: none; }
+  .sg-ctl.desk { display: none; }
+  .sg-sheet:not(.sg-chat-sheet) { max-height: 88vh; }
+}

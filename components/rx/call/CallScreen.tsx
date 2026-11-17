@@ -59,6 +59,14 @@ const MIC_CONSTRAINTS: MediaTrackConstraints = { echoCancellation: true, noiseSu
 /** Voice level (Daily's 0..1 scale) above which someone counts as speaking, and how long the light stays on after. */
 const SPEAKING_LEVEL = 0.025;
 const SPEAKING_HOLD_MS = 700;
+// Who gets the big screen, Zoom style: a new voice takes it only after talking steadily, the current speaker keeps it
+// through short pauses and cross-talk, and nobody is swapped out faster than STAGE_MIN_MS. Your own camera never takes
+// the big screen while someone else is on the call (you see yourself in the tiles).
+const STAGE_TAKE_MS = 1000;   // a new speaker must talk this long without a break...
+const STAGE_QUIET_MS = 1500;  // ...while the person on the big screen has been quiet this long...
+const STAGE_MIN_MS = 3000;    // ...and the big screen has shown them at least this long.
+/** Phones and tablets: chat and people open as full sheets (portrait, or a phone held sideways). */
+export const PHONE_MQ = '(max-width: 767px), (orientation: landscape) and (max-height: 520px) and (pointer: coarse)';
 type MicIssue = null | 'blocked' | 'missing' | 'in-use' | 'interrupted';
 /** A microphone to (re)open: the chosen one if it is still plugged in, else the system default, else the first one found. */
 async function micDeviceId(c: DailyCall, wanted: string): Promise<string> {
@@ -127,7 +135,14 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [micOk, setMicOk] = useState<'unknown' | 'granted' | 'blocked'>('unknown');
   const [level, setLevel] = useState(0);
   const [parts, setParts] = useState<DailyParticipant[]>([]);
-  const [speaker, setSpeaker] = useState<string | null>(null);
+  // The person on the big screen (chosen by the rules above), and anyone the member pinned there by tapping their tile.
+  const [stageId, setStageId] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null);
+  const stageRef = useRef<{ id: string | null; since: number }>({ id: null, since: 0 });
+  const talkStart = useRef<Record<string, number>>({});
+  const partsRef = useRef<DailyParticipant[]>([]);
+  // The visible part of the screen on phones (shrinks when the keyboard opens), so the chat sheet always fits above it.
+  const [vv, setVv] = useState<{ top: number; h: number } | null>(null);
   const [muted, setMuted] = useState(false);
   // Everyone whose voice is above the speaking level right now (several people can be talking at once, as on Zoom).
   const [speakingKey, setSpeakingKey] = useState('');
@@ -180,6 +195,21 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const agendaRef = useRef<LiveAgenda | null>(null);
   agendaRef.current = agenda;
   chatRef.current = chat;
+  partsRef.current = parts;
+  useEffect(() => {
+    const v = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (sheet !== 'chat' || !v || !window.matchMedia(PHONE_MQ).matches) { setVv(null); return; }
+    const sync = () => {
+      setVv({ top: Math.round(v.offsetTop), h: Math.round(v.height) });
+      // iOS scrolls the page up to make room for the keyboard; the call screen is fixed, so put the page back.
+      if (window.scrollY) window.scrollTo(0, 0);
+    };
+    sync();
+    v.addEventListener('resize', sync); v.addEventListener('scroll', sync);
+    return () => { v.removeEventListener('resize', sync); v.removeEventListener('scroll', sync); };
+  }, [sheet]);
+  useEffect(() => { if (pinned && !parts.some((p) => p.session_id === pinned)) setPinned(null); }, [parts, pinned]);
+  const togglePin = (id: string) => setPinned((cur) => (cur === id ? null : id));
   chatOpenRef.current = panel === 'chat' || sheet === 'chat';
 
   useEffect(() => { setIos(isIOS()); setMicId(lsGet(MIC_KEY)); setSinkId(lsGet(SPEAKER_KEY)); }, []);
@@ -232,9 +262,40 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   useEffect(() => {
     if (phase !== 'incall') return;
     const t = setInterval(() => {
-      const cut = Date.now() - SPEAKING_HOLD_MS;
-      const key = Object.entries(lastLoud.current).filter(([, at]) => at > cut).map(([id]) => id).sort().join(',');
+      const now = Date.now();
+      const cut = now - SPEAKING_HOLD_MS;
+      const talking = Object.entries(lastLoud.current).filter(([, at]) => at > cut).map(([id]) => id);
+      const key = [...talking].sort().join(',');
       setSpeakingKey((k) => (k === key ? k : key));
+
+      // When each person's current stretch of talking began (a pause longer than SPEAKING_HOLD_MS ends it).
+      const ts = talkStart.current;
+      for (const id of Object.keys(ts)) if (!talking.includes(id)) delete ts[id];
+      for (const id of talking) if (!ts[id]) ts[id] = now;
+
+      // Big screen: only other people; you only when you're alone.
+      const remotes = partsRef.current.filter((p) => !p.local);
+      const cur = stageRef.current;
+      const setStage = (id: string | null) => {
+        if (id === cur.id) return;
+        stageRef.current = { id, since: now };
+        setStageId(id);
+      };
+      if (!remotes.length) { setStage(null); return; }
+      const curOk = !!cur.id && remotes.some((p) => p.session_id === cur.id);
+      if (!curOk) {
+        // First pick (or they left): whoever spoke most recently, else whoever has been here longest.
+        const recent = remotes.map((p) => [p.session_id, lastLoud.current[p.session_id] ?? 0] as const).sort((a, b) => b[1] - a[1])[0];
+        setStage(recent && recent[1] > 0 ? recent[0] : [...remotes].sort((a, b) => joinedMs(a) - joinedMs(b))[0].session_id);
+        return;
+      }
+      if (now - cur.since < STAGE_MIN_MS) return;
+      const curQuiet = now - (lastLoud.current[cur.id!] ?? 0);
+      if (curQuiet < STAGE_QUIET_MS) return;
+      const next = remotes
+        .filter((p) => p.session_id !== cur.id && ts[p.session_id] && now - ts[p.session_id] >= STAGE_TAKE_MS)
+        .sort((a, b) => ts[a.session_id] - ts[b.session_id])[0];
+      if (next) setStage(next.session_id);
     }, 250);
     return () => clearInterval(t);
   }, [phase]);
@@ -410,7 +471,6 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         }
       });
       call.on('participant-updated', refreshParts).on('participant-left', (e) => { refreshParts(); setHands((h) => h.filter((x) => x !== e?.participant?.session_id)); });
-      call.on('active-speaker-change', (e) => { const id = e?.activeSpeaker?.peerId; if (id) setSpeaker(id); });
       call.on('local-audio-level', (e) => {
         const id = call.participants()?.local?.session_id;
         if (id && (e?.audioLevel ?? 0) > SPEAKING_LEVEL) lastLoud.current[id] = Date.now();
@@ -610,12 +670,12 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     void save().then((r) => (r.ok || r.status < 500 ? r : save())).catch(() => setTimeout(() => { void save().catch(() => {}); }, 3000));
   }
   function openPeople() {
-    if (window.matchMedia('(max-width: 767px)').matches) setSheet('people');
+    if (window.matchMedia(PHONE_MQ).matches) setSheet('people');
     else setPanel((p) => (p === 'people' ? null : 'people'));
   }
   function openChat() {
     setUnread(0);
-    if (window.matchMedia('(max-width: 767px)').matches) setSheet('chat');
+    if (window.matchMedia(PHONE_MQ).matches) setSheet('chat');
     else setPanel((p) => (p === 'chat' ? 'people' : 'chat'));
   }
 
@@ -665,8 +725,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     const ownerLabel = kind === 'circle' ? 'Facilitator' : 'Mentor';
     // You first, then the facilitator or mentor, then everyone else in the order they arrived.
     const roster = [...parts].sort((a, b) => Number(b.local) - Number(a.local) || Number(b.owner) - Number(a.owner) || joinedMs(a) - joinedMs(b));
-    const known = speaker && parts.some((p) => p.session_id === speaker) ? speaker : null;
-    const stage = sharer ?? parts.find((p) => p.session_id === known) ?? parts.find((p) => !p.local) ?? me;
+    const pin = pinned ? parts.find((p) => p.session_id === pinned) : undefined;
+    const stage = sharer ?? pin ?? parts.find((p) => p.session_id === stageId && !p.local) ?? parts.find((p) => !p.local) ?? me;
     const speakingNow = new Set(speakingKey ? speakingKey.split(',') : []);
     const isTalking = (p: DailyParticipant) => speakingNow.has(p.session_id) && (p.local ? !muted : !!p.audio);
     const audioOut: AudioOut = { sinkId, onBlocked: () => setSoundBlocked(true) };
@@ -715,7 +775,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     const stageFeed = sharer
       ? <div className="sg-feed screen"><TrackVideo track={sharer.tracks?.screenVideo?.persistentTrack} label={`${nameOf(sharer)}'s shared screen`} /></div>
       : stage && cameraOn(stage)
-        ? <div className="sg-feed" style={{ background: feedFor(stage.user_id || stage.session_id) }}><TrackVideo track={stage.tracks?.video?.persistentTrack} mirror={stage.local} label={`${nameOf(stage)}'s camera`} /></div>
+        ? <div className="sg-feed" style={{ background: feedFor(stage.user_id || stage.session_id) }}><TrackVideo track={stage.tracks?.video?.persistentTrack} mirror={stage.local} label={`${nameOf(stage)}'s camera`} backdrop /></div>
         : <div className="sg-feed" style={{ background: stage ? feedFor(stage.user_id || stage.session_id) : undefined }}><Silhouette /></div>;
 
     // Mobile: the speaker has the stage and the strip holds everyone else (everyone, while a screen is on the stage).
@@ -744,9 +804,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
                   <li key={p.session_id}>
                     {canMod
                       ? <button type="button" className={cls} aria-expanded={modFor === p.session_id} aria-label={`${nameOf(p)}, ${role.text}. Options`} onClick={() => setModFor((m) => (m === p.session_id ? null : p.session_id))}>{row}</button>
-                      : <div className={cls}>{row}</div>}
+                      : <button type="button" className={cls} aria-pressed={pinned === p.session_id} aria-label={pinned === p.session_id ? `Unpin ${nameOf(p)}` : `Show ${nameOf(p)} on the big screen`} onClick={() => togglePin(p.session_id)}>{row}</button>}
                     {canMod && modFor === p.session_id && (
                       <div className="sg-mod">
+                        <button type="button" onClick={() => { togglePin(p.session_id); setModFor(null); }}>{pinned === p.session_id ? 'Unpin' : 'Pin'}</button>
                         <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setAudio: false }); setModFor(null); }}>Mute</button>
                         {cameraOn(p) && <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setVideo: false }); setModFor(null); }}>Camera off</button>}
                         {sharesScreen(p) && <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setScreenShare: false }); setModFor(null); }}>Stop share</button>}
@@ -788,6 +849,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
               <div className="sg-over-l">
                 {stage && (<>
                   <p className="sg-name">{nameOf(stage)}{stage.local && <span className="sg-you">You</span>}</p>
+                  {pin && !sharer && <button type="button" className="sg-pinned" onClick={() => setPinned(null)} aria-label={`Unpin ${nameOf(pin)}`}><IcPin />Pinned · tap to unpin</button>}
                   {sharer
                     ? <div className="sg-presenting-tag"><IcScreenSmall />{sharer.local ? 'You are presenting your screen' : 'Presenting their screen'}</div>
                     : isTalking(stage)
@@ -825,7 +887,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
               {strip.map((p) => {
                 const h = handIdx(p) >= 0;
                 return (
-                  <li key={p.session_id} className={`sg-tile${isTalking(p) ? ' speaking' : ''}`}>
+                  <li key={p.session_id} className={`sg-tile${isTalking(p) ? ' speaking' : ''}${pinned === p.session_id ? ' pinned' : ''}`}>
+                    <button type="button" className="sg-tile-btn" aria-pressed={pinned === p.session_id} aria-label={pinned === p.session_id ? `Unpin ${nameOf(p)}` : `Show ${nameOf(p)} on the big screen`} onClick={() => togglePin(p.session_id)} />
                     {thumb(p, 'sg-feed')}
                     {!p.audio && <span className="sg-tile-m" aria-label="Muted"><IcSmallMicOff /></span>}
                     <span className={`sg-tile-n${h ? ' gold' : ''}`}>{h ? '✋ ' : ''}{nameOf(p)}{p.local ? ' (you)' : ''}</span>
@@ -943,10 +1006,12 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
           </div>
         )}
         {sheet === 'chat' && (
-          <div className="sg-sheet sg-chat-sheet" role="dialog" aria-modal="true" aria-labelledby="sg-chat-h">
+          <div className={`sg-sheet sg-chat-sheet${vv ? ' fit' : ''}`} role="dialog" aria-modal="true" aria-labelledby="sg-chat-h"
+            style={vv ? { top: vv.top, height: vv.h } : undefined}>
             <div className="grab" aria-hidden />
             <div className="sg-sheet-head"><h2 id="sg-chat-h">Chat</h2><button type="button" className="sg-btn" onClick={() => setSheet(null)}>Close</button></div>
-            <ChatPanel messages={chat} onSend={sendChat} autoFocus />
+            {/* No keyboard on open (as on Zoom): the member reads first and taps the box to type. */}
+            <ChatPanel messages={chat} onSend={sendChat} />
           </div>
         )}
         {sheet === 'agenda' && (
@@ -1044,3 +1109,5 @@ const IcBlur = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="9"
 const IcSliders = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>;
 const IcChat = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /></svg>;
 const IcScreenSmall = () => <svg viewBox="0 0 24 24" aria-hidden width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>;
+
+const IcPin = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M9 4h6l-1 6 3 3v2H7v-2l3-3-1-6zM12 15v5" /></svg>;

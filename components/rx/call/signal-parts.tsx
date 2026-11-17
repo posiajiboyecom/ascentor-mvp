@@ -3,7 +3,7 @@
 // Building blocks for the Signal call interface: icons, the camera-off silhouette, video elements bound to Daily
 // tracks, and the agenda list used in the roster block and in the agenda sheet.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DailyParticipant } from '@daily-co/daily-js';
 import type { AgendaItem } from '@/lib/rx/agenda';
 import { clock } from '@/lib/rx/agenda';
@@ -56,17 +56,57 @@ export const sharesScreen = (p: DailyParticipant) => LIVE.has(String(p.tracks?.s
 export const cameraOn = (p: DailyParticipant) => !!p.video && !!p.tracks?.video?.persistentTrack;
 
 /** A <video> bound to a MediaStreamTrack. Muted: sound plays through RemoteAudio. */
-export function TrackVideo({ track, mirror, label }: { track: MediaStreamTrack | undefined; mirror?: boolean; label: string }) {
+/**
+ * A camera or screen on the call. Each picture is checked for its own shape (a phone held upright, a phone or laptop
+ * sideways, a shared screen) against the box it sits in, and resized as it changes (someone turning their phone):
+ * - same shape as the box: it fills the box, like Zoom;
+ * - a different shape (an upright phone on a wide screen, say): the whole picture shows, never cropped, and with
+ *   `backdrop` a soft blurred copy fills the space around it instead of black bars.
+ */
+export function TrackVideo({ track, mirror, label, backdrop, fit = 'auto' }: { track: MediaStreamTrack | undefined; mirror?: boolean; label: string; backdrop?: boolean; fit?: 'auto' | 'contain' }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const backRef = useRef<HTMLVideoElement>(null);
+  const [whole, setWhole] = useState(fit === 'contain');
+  const [shape, setShape] = useState<'portrait' | 'landscape' | ''>('');
+
   useEffect(() => {
     const el = ref.current;
+    const back = backRef.current;
     if (!el || !track) return;
-    el.srcObject = new MediaStream([track]);
+    const stream = new MediaStream([track]);
+    el.srcObject = stream;
     void el.play().catch(() => undefined);
-    return () => { el.srcObject = null; };
-  }, [track]);
+    if (back) { back.srcObject = stream; void back.play().catch(() => undefined); }
+    return () => { el.srcObject = null; if (back) back.srcObject = null; };
+  }, [track, backdrop]);
+
+  useEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    const check = () => {
+      const vw = el.videoWidth, vh = el.videoHeight, bw = box.clientWidth, bh = box.clientHeight;
+      if (!vw || !vh || !bw || !bh) return;
+      const v = vw / vh, b = bw / bh;
+      setShape(v < 0.95 ? 'portrait' : 'landscape');
+      if (fit === 'contain') { setWhole(true); return; }
+      // Crop only when the shapes are close (cropping less than about a quarter of the picture).
+      setWhole(Math.max(v, b) / Math.min(v, b) > 1.34);
+    };
+    check();
+    el.addEventListener('loadedmetadata', check);
+    el.addEventListener('resize', check); // fires when the sender rotates their phone
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    ro?.observe(box);
+    return () => { el.removeEventListener('loadedmetadata', check); el.removeEventListener('resize', check); ro?.disconnect(); };
+  }, [track, fit]);
+
   // Mirroring is a class (not an inline transform) so the stage can combine it with its own scale in CSS.
-  return <video ref={ref} className={mirror ? 'mirror' : undefined} autoPlay playsInline muted aria-label={label} />;
+  const cls = [mirror ? 'mirror' : '', whole ? 'whole' : '', shape].filter(Boolean).join(' ');
+  return (<>
+    {backdrop && <video ref={backRef} className={`sg-backdrop${mirror ? ' mirror' : ''}`} hidden={!whole} autoPlay playsInline muted aria-hidden tabIndex={-1} />}
+    <video ref={ref} className={cls || undefined} autoPlay playsInline muted aria-label={label} />
+  </>);
 }
 
 /** How the call plays sound: which speaker to use, and who to tell when the browser refuses to play it. */
