@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tasks } from "@trigger.dev/sdk/v3";
-import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
 import { safeEqual } from '@/lib/security';
@@ -36,29 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing email or userId" }, { status: 400 });
     }
 
-    // 1. Add to MailerLite as an app user + trigger nurture sequence
-    try {
-      await addOrUpdateSubscriber({
-        email,
-        firstName: name || email.split("@")[0],
-        groups: [ML_GROUPS.APP_USERS, ML_GROUPS.FREE_USERS],
-        fields: {
-          source: "app_signup",
-          user_id: userId,
-          plan: "free",
-        },
-      });
-
-      // Trigger the full 14-email welcome/nurture automation
-      if (ML_AUTOMATIONS.WELCOME_SEQUENCE) {
-        await triggerAutomation(email, ML_AUTOMATIONS.WELCOME_SEQUENCE);
-      }
-    } catch (mlError) {
-      // Non-fatal - log and continue
-      console.error("[welcome] MailerLite error (non-fatal):", mlError);
-    }
-
-    // 2. Also fire the Trigger.dev task (sends immediate transactional welcome via Resend)
+    // Send the welcome email (Trigger.dev task, sent via Resend).
     const handle = await tasks.trigger("send-welcome-email", {
       email,
       name: name || email.split("@")[0],

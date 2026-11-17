@@ -1,13 +1,13 @@
 // lib/auth/complete-signin.ts
 // What happens AFTER a provider sign-in has produced a Supabase session: the location-risk check, the partner whitelist, the
-// MailerLite sync and the post-login routing. Shared by /auth/callback (Supabase's redirect flow) and
+// the post-login routing. Shared by /auth/callback (Supabase's redirect flow) and
 // /api/auth/google/callback (our own Google flow), so both land people in exactly the same place.
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { assessLogin } from '@/lib/auth/login-security';
-import { resolvePostLoginPath, syncMailerLite } from '@/lib/auth/post-login';
+import { resolvePostLoginPath } from '@/lib/auth/post-login';
 import { markSplashPending } from '@/lib/splash';
 
 const supabaseService = createServiceClient(
@@ -52,8 +52,6 @@ export async function completeSignIn(opts: {
     .select("subscription_status, subscription_plan, full_name, email")
     .eq("id", user.id)
     .maybeSingle();
-
-  await syncMailerLite(user, profile);
 
   const destination = await resolvePostLoginPath(supabase, user, next);
   // Plays the splash once on the first app page after this sign-in.

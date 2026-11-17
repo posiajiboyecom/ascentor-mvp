@@ -42,25 +42,3 @@ export async function resolvePostLoginPath(
   if (profile?.full_name && profile?.primary_dimension) return '/onboarding?step=2';
   return '/onboarding';
 }
-
-/** Best-effort MailerLite sync. Never throws. */
-export async function syncMailerLite(
-  user: User,
-  profile: { subscription_status?: string | null; subscription_plan?: string | null; full_name?: string | null; email?: string | null } | null,
-) {
-  try {
-    const email = user.email || profile?.email;
-    if (!email) return;
-    const { addOrUpdateSubscriber, ML_GROUPS } = await import('@/lib/mailerlite');
-    const isPaid = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
-    await addOrUpdateSubscriber({
-      email,
-      firstName: (profile?.full_name || email.split('@')[0] || '').split(' ')[0],
-      groups: [ML_GROUPS.APP_USERS, isPaid ? ML_GROUPS.PAID_USERS : ML_GROUPS.FREE_USERS].filter(Boolean),
-      fields: { source: 'app_login', plan: profile?.subscription_plan || 'free' },
-      resubscribe: false,
-    });
-  } catch (err) {
-    console.error('[post-login] MailerLite sync error (non-fatal):', err instanceof Error ? err.message : err);
-  }
-}
