@@ -186,6 +186,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   // The microphone track the "Allow microphone" check already has permission for. We hand this straight to Daily when
   // joining instead of asking the browser for a second, separate microphone grant.
   const micTrack = useRef<MediaStreamTrack | null>(null);
+  // The microphone handed to Daily at join. Daily does not stop a track it was given, so we do when the call ends.
+  const handedMic = useRef<MediaStreamTrack | null>(null);
   const camTrack = useRef<MediaStreamTrack | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Whose camera is on, as of the last check — lets us tell "just switched on" from "was already on" so the camera
@@ -376,7 +378,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     if (!newer) return;
     void (async () => {
       try { if (sharing) callRef.current?.stopScreenShare(); await callRef.current?.leave(); } catch { /* already gone */ }
-      camTrack.current?.stop(); camTrack.current = null; camMode.current = null; setCamOn(false); setSharing(false);
+      releaseMedia(); setCamOn(false); setSharing(false);
       endAttendance(); setPhase('moved');
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -436,7 +438,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       handed?.addEventListener('ended', () => {
         if (callRef.current === call) void micDeviceId(call, lsGet(MIC_KEY)).then((id) => call.setInputDevicesAsync({ audioDeviceId: id })).catch(() => undefined);
       }, { once: true });
-      micTrack.current = null; // Daily owns it now
+      handedMic.current = handed;
+      micTrack.current = null; // Daily uses it now; releaseMedia() stops it when the call ends
       callRef.current = call;
       lastLoud.current = {}; setSpeakingKey(''); setSoundBlocked(false); remoteMuted.current = false;
       call.on('joined-meeting', async () => {
@@ -510,14 +513,15 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       call.on('network-connection', (e) => setReconnecting(e?.event === 'interrupted'));
       call.on('network-quality-change', (e) => setPoor(e?.threshold === 'low' || e?.threshold === 'very-low'));
       // No "call ended" page to land on — once we've left, go straight back to the Circle (or Sessions).
-      call.on('left-meeting', () => { playEndSoundOnce(); endAttendance(); router.replace(backHref); });
+      call.on('left-meeting', () => { playEndSoundOnce(); endAttendance(); setTimeout(releaseMedia, 0); router.replace(backHref); });
       call.on('nonfatal-error', (e) => {
         if (String(e?.type ?? '').includes('screen-share')) { setSharing(false); setShareBusy(false); toast('Your screen couldn’t be shared. Check that your browser can share your screen.'); }
       });
       call.on('error', (e) => {
         console.error('[call] daily error', e?.errorMsg ?? e);
         // Removed from the room: the member moved the call to another device, or the facilitator removed them.
-        if (e?.error?.type === 'ejected' || /eject/i.test(String(e?.errorMsg ?? ''))) { playEndSoundOnce(); endAttendance(); setPhase('moved'); return; }
+        if (e?.error?.type === 'ejected' || /eject/i.test(String(e?.errorMsg ?? ''))) { playEndSoundOnce(); endAttendance(); setTimeout(releaseMedia, 0); setPhase('moved'); return; }
+        setTimeout(releaseMedia, 0);
         setError('The call dropped. You can rejoin while it is still open.'); setPhase('error');
       });
       await call.join({ url: info.url, token: info.token, startVideoOff: true });
@@ -541,14 +545,41 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     if (navigator.sendBeacon) navigator.sendBeacon('/api/rx/call/attendance', new Blob([body], { type: 'application/json' }));
     else void fetch('/api/rx/call/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true });
   }
-  useEffect(() => { const onUnload = () => endAttendance(); window.addEventListener('pagehide', onUnload); return () => { window.removeEventListener('pagehide', onUnload); callRef.current?.destroy(); }; }, []);
+  // Leaving the page any way at all (back button, closing the tab or app, a link) ends the call on this device.
+  useEffect(() => {
+    const onUnload = (e: PageTransitionEvent) => { endAttendance(); if (!e.persisted) { try { void callRef.current?.leave(); } catch { /* gone */ } releaseMedia(); } };
+    window.addEventListener('pagehide', onUnload);
+    return () => { window.removeEventListener('pagehide', onUnload); endAttendance(); releaseMedia(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Switches off everything the call opened on this device: microphone, camera, screen share, the Daily call object.
+   * Without this the browser keeps the microphone open after leaving (the red recording dot stays on the tab).
+   * Safe to call more than once.
+   */
+  function releaseMedia() {
+    const c = callRef.current;
+    callRef.current = null;
+    try {
+      const lp = c?.participants()?.local;
+      for (const t of [lp?.tracks?.audio, lp?.tracks?.video, lp?.tracks?.screenAudio, lp?.tracks?.screenVideo]) t?.persistentTrack?.stop();
+    } catch { /* already gone */ }
+    handedMic.current?.stop(); handedMic.current = null;
+    micTrack.current?.stop(); micTrack.current = null;
+    camTrack.current?.stop(); camTrack.current = null; camMode.current = null;
+    try { meterStop.current(); } catch { /* no meter */ }
+    meterStop.current = () => undefined;
+    if (c) void c.destroy().catch(() => undefined);
+    try { if ('mediaSession' in navigator) { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none'; } } catch { /* not supported */ }
+  }
 
   async function leave(auto = false) {
     if (auto) toast('The call has ended.');
     playEndSoundOnce();
     try { if (sharing) callRef.current?.stopScreenShare(); } catch { /* already stopped */ }
     try { await callRef.current?.leave(); } catch { /* already gone */ }
-    camTrack.current?.stop(); camTrack.current = null; camMode.current = null; setCamOn(false); setSharing(false);
+    releaseMedia(); setCamOn(false); setSharing(false);
     // 'left-meeting' (above) usually fires too and would try this again — playEndSoundOnce and endAttendance both
     // no-op the second time, so this is harmless whichever gets there first.
     endAttendance(); router.replace(backHref);
@@ -576,6 +607,77 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   }
   function pickSpeaker(id: string) { setSinkId(id); lsSet(SPEAKER_KEY, id); }
   /** Asks the browser for the microphone again (after allowing it in site settings, or closing the app that held it). */
+  // ── Staying in the call when the member switches apps ─────────────────────────────────────────────
+  // Phones show the call as ongoing (lock screen, notification shade), the screen stays awake during the call, and
+  // when the member comes back everything that the phone paused (microphone, camera, sound) is turned back on.
+  // iPhone limit: Apple pauses the microphone of a web app or installed web app while it is not on screen.
+  const camOnRef = useRef(false);
+  camOnRef.current = camOn;
+  const mutedRef = useRef(false);
+  mutedRef.current = muted;
+  // The latest versions of these, for handlers set up once per call (lock-screen buttons, coming back to the app).
+  const latest = useRef({ leave: (): Promise<void> => Promise.resolve(), toggleMute: () => {}, toggleCamera: (): Promise<void> => Promise.resolve(), restartCamera: async (_c: DailyCall) => {} });
+  useEffect(() => {
+    if (phase !== 'incall') return;
+    let lock: { release: () => Promise<void> } | null = null;
+    let hiddenAt = 0;
+    const wake = async () => {
+      try {
+        const wl = (navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock;
+        if (wl && document.visibilityState === 'visible') lock = await wl.request('screen');
+      } catch { /* not allowed or not supported */ }
+    };
+    void wake();
+
+    // The call as a media session: phones and browsers show it as ongoing, with hang-up and mute buttons where supported.
+    const ms = 'mediaSession' in navigator ? navigator.mediaSession : null;
+    try {
+      if (ms) {
+        ms.metadata = new MediaMetadata({ title: info?.circleName ?? title, artist: 'Ascentor call', artwork: [{ src: '/icon/icon-192.png', sizes: '192x192', type: 'image/png' }] });
+        ms.playbackState = 'playing';
+        const set = (a: string, fn: () => void) => { try { ms.setActionHandler(a as MediaSessionAction, fn); } catch { /* action not supported */ } };
+        set('hangup', () => void latest.current.leave());
+        set('togglemicrophone', () => latest.current.toggleMute());
+        set('togglecamera', () => void latest.current.toggleCamera());
+      }
+    } catch { /* not supported */ }
+
+    const back = async () => {
+      const c = callRef.current; if (!c) return;
+      const away = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = 0;
+      void wake();
+      // Sound: play every voice again (iOS pauses audio elements in the background).
+      const soundOk = await resumeCallAudio();
+      if (!soundOk) setSoundBlocked(true);
+      // Microphone: if the phone cut it while we were away, open it again (unless the member had muted).
+      const a = c.participants()?.local?.tracks?.audio;
+      const micDead = !a?.persistentTrack || a.persistentTrack.readyState === 'ended' || a.state === 'interrupted' || a.state === 'blocked';
+      if (micDead && !mutedRef.current) {
+        try { await c.setInputDevicesAsync({ audioDeviceId: await micDeviceId(c, lsGet(MIC_KEY)) }); c.setLocalAudio(true); setMicIssue(null); }
+        catch { /* the mic notice offers Try again */ }
+      }
+      // Camera: phones stop the camera in the background; turn it back on if it was on.
+      if (camOnRef.current) {
+        const v = c.participants()?.local?.tracks?.video;
+        const camDead = !v?.persistentTrack || v.persistentTrack.readyState === 'ended' || v.state === 'interrupted' || v.state === 'off';
+        if (camDead) { try { await latest.current.restartCamera(c); } catch { setCamOn(false); toast('Your camera stopped while you were away. Tap Camera to turn it back on.'); } }
+      }
+      if (ios && away > 4000) flash('Welcome back. On iPhone, your microphone pauses while you are in another app.');
+    };
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      void back();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      void lock?.release().catch(() => undefined);
+      try { if (ms) { for (const a of ['hangup', 'togglemicrophone', 'togglecamera']) ms.setActionHandler(a as MediaSessionAction, null); } } catch { /* not supported */ }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   async function retryMic() {
     const c = callRef.current; if (!c) return;
     try { await c.setInputDevicesAsync({ audioDeviceId: await micDeviceId(c, micId) }); c.setLocalAudio(true); setMicIssue(null); }
@@ -718,6 +820,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const isOwner = info?.state === 'open' ? info.isOwner : false;
   const left = info ? new Date(info.endsAt).getTime() - now : 0;
   const title = info?.title ?? (kind === 'circle' ? 'Weekly Circle call' : kind === 'private' ? 'Private mentor session' : 'Mentor session');
+
+  latest.current = { leave: () => leave(), toggleMute, toggleCamera, restartCamera: async (c: DailyCall) => { await stopCamera(c); await startCamera(c, blurOn); } };
 
   // ── the Signal interface ──────────────────────────────────────────────────
   if (phase === 'incall' && info) {
