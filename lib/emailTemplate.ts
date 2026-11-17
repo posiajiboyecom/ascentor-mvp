@@ -14,7 +14,6 @@ const SITE_URL = 'https://joinascentor.com';
 const LOGO_URL = `${SITE_URL}/images/ascentor-logo-email-light.png`;
 
 const SOCIALS = [
-  { label: 'WhatsApp', url: 'https://wa.me/+2348168692012', icon: `${SITE_URL}/images/email/icon-whatsapp.png` },
   { label: 'X', url: 'https://x.com/joinascentor', icon: `${SITE_URL}/images/email/icon-x.png` },
   { label: 'LinkedIn', url: 'https://linkedin.com/company/joinascentor', icon: `${SITE_URL}/images/email/icon-linkedin.png` },
   { label: 'Instagram', url: 'https://instagram.com/joinascentor', icon: `${SITE_URL}/images/email/icon-instagram.png` },
