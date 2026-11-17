@@ -1,10 +1,9 @@
 // POST /api/shop/free: lead magnet for FREE shop items.
-// Name + email in, lead recorded (and added to MailerLite), download link returned and emailed.
+// Name + email in, lead recorded, download link returned and emailed.
 // Only products that are free, published and have a file can be fetched this way.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { addOrUpdateSubscriber } from '@/lib/mailerlite';
 import { sendEmail } from '@/lib/nodemailer';
 import { brandedEmailLayout, esc, goldButton, p } from '@/lib/emailTemplate';
 import { parseJson } from '@/lib/validation/http';
@@ -28,14 +27,6 @@ export async function POST(req: NextRequest) {
   }
 
   await supabaseAdmin.from('shop_leads').insert({ product_id: product.id, email, full_name: fullName });
-  try {
-    await addOrUpdateSubscriber({
-      email, firstName: fullName.split(' ')[0], groups: [],
-      fields: { lead_magnet: product.name, lead_source: 'shop' },
-    });
-  } catch (e) {
-    console.error('[shop/free] MailerLite error:', (e as Error).message); // non-fatal
-  }
 
   const url = freeDownloadUrl(APP_URL, product.id, email);
   // Best-effort copy by email; the link is also returned so the buyer is never stuck waiting on mail.

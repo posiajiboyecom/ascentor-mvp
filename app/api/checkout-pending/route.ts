@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
 import { limitPublic } from '@/lib/security';
@@ -11,9 +10,7 @@ import { limitPublic } from '@/lib/security';
 // Called when a user completes onboarding steps 1+2 and lands
 // on checkout - but before they pay.
 //
-// Purpose (Fix #5): identify unpaid users who stopped at
-// checkout and add them to a MailerLite nurture segment so
-// they receive targeted conversion emails.
+// Purpose: record unpaid users who stopped at checkout, for admin.
 //
 // This is intentionally lightweight - it never blocks the user.
 // ─────────────────────────────────────────────────────────────
@@ -32,27 +29,9 @@ export async function POST(req: NextRequest) {
     const { email, name, userId } = parsed.data;
     if (!email) return NextResponse.json({ ok: true });
 
-    const emailClean = email.trim().toLowerCase();
-    const firstName = (name || emailClean.split('@')[0]).split(' ')[0];
+    void name;
 
-    // 1. Add to MailerLite - App Users + Free Users groups
-    //    Custom field checkout_pending = true so you can segment in ML
-    try {
-      await addOrUpdateSubscriber({
-        email: emailClean,
-        firstName,
-        groups: [ML_GROUPS.APP_USERS, ML_GROUPS.FREE_USERS],
-        fields: {
-          checkout_pending: 'true',
-          checkout_reached_at: new Date().toISOString().split('T')[0],
-          source: 'onboarding_checkout',
-        },
-      });
-    } catch (mlErr: any) {
-      console.error('[checkout-pending] ML error (non-fatal):', mlErr.message);
-    }
-
-    // 2. Record in Supabase for admin visibility
+    // Record in Supabase for admin visibility
     //    Uses profiles table - set a checkout_pending flag
     if (userId) {
       try {

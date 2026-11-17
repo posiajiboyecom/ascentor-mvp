@@ -63,16 +63,6 @@ export const batchIngest = z.strictObject({
 });
 
 // ── Email / CRM ───────────────────────────────────────────────────────────────
-export const mailerlite = z.union([
-  z.strictObject({ action: z.enum(['get-groups', 'ensure-groups', 'sync']).default('sync') }),
-  z.strictObject({
-    action: z.literal('sync-user'),
-    email,
-    firstName: optionalText(80),
-    groups: z.array(z.string().max(40)).max(20).optional(),
-  }),
-]);
-
 // ── Marketing CMS ─────────────────────────────────────────────────────────────
 const draft = z.unknown().refine((v) => v !== undefined, 'draftData required');
 export const marketingCms = z.discriminatedUnion('action', [

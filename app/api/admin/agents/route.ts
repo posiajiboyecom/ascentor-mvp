@@ -53,9 +53,9 @@ const AGENT_REGISTRY = [
     name: "Email Sequence Manager",
     triggerTaskId: "send-welcome-email",
     type: "event-driven",
-    description: "New Supabase signup → MailerLite sequence enrol → tracks cold leads",
+    description: "New Supabase signup → welcome email → tracks cold leads",
     schedule: "Continuous (event-driven)",
-    toolStack: "Supabase + MailerLite API",
+    toolStack: "Supabase + Ascentor email",
   },
   {
     id: "5",
@@ -64,7 +64,7 @@ const AGENT_REGISTRY = [
     type: "scheduled",
     description: "Behaviour analysis → score 1–100 → upgrade notification at 70+",
     schedule: "Daily 02:00 UTC",
-    toolStack: "Supabase + MailerLite Tags",
+    toolStack: "Supabase + Ascentor email",
   },
   {
     id: "6",

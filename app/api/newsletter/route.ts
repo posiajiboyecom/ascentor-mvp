@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
 import { limitPublic } from '@/lib/security';
@@ -32,23 +31,6 @@ export async function POST(req: NextRequest) {
     if (error && error.code !== "23505") {
       console.error("[newsletter] Supabase error:", error);
       return NextResponse.json({ error: "Newsletter request failed" }, { status: 500 });
-    }
-
-    // 2. Add to MailerLite - non-blocking (failure doesn't break response)
-    try {
-      await addOrUpdateSubscriber({
-        email,
-        firstName: firstName || undefined,
-        groups: [ML_GROUPS.NEWSLETTER].filter(Boolean),
-        fields: { source: resolvedSource },
-      });
-
-      // Trigger the 14-email nurture sequence if automation ID is configured
-      if (ML_AUTOMATIONS.WELCOME_SEQUENCE) {
-        await triggerAutomation(email, ML_AUTOMATIONS.WELCOME_SEQUENCE);
-      }
-    } catch (mlError) {
-      console.error("[newsletter] MailerLite error (non-fatal):", mlError);
     }
 
     return NextResponse.json({ success: true });

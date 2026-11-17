@@ -9,7 +9,7 @@ import SageLoader from '@/components/SageLoader';
 // ============================================================
 // MASTER ADMIN, /admin/master
 // Full Ascentor Marketing System Dashboard
-// Sections: KPIs · MailerLite · Content Calendar · Lead Magnets
+// Sections: KPIs · Content Calendar · Lead Magnets
 //           Social Queue · AI Agents
 // Brand: var(--admin-bg) · #E8A020 · Metropolis · Metropolis · DM Mono
 // ============================================================
@@ -25,20 +25,6 @@ interface KPIData {
   conversionRate: number;
   referralPct: number;
   coachingSessions7d: number;
-}
-
-interface MailerLiteData {
-  totalSubscribers: number;
-  activeSubscribers: number;
-  avgOpenRate: number;
-  avgClickRate: number;
-  unsubscribed: number;
-  groups: { id: string; name: string; total: number }[];
-  recentCampaigns: {
-    id: string; name: string; subject: string;
-    opens_count: number; clicks_count: number;
-    sent_at: string; status: string;
-  }[];
 }
 
 interface ContentItem {
@@ -172,7 +158,6 @@ export default function MasterAdminPage() {
 
   const [activeTab, setActiveTab]       = useState<'kpi' | 'email' | 'content' | 'leads' | 'social' | 'agents'>('kpi');
   const [kpi,       setKpi]             = useState<KPIData | null>(null);
-  const [mlData,    setMlData]          = useState<MailerLiteData | null>(null);
   const [content,   setContent]         = useState<ContentItem[]>([]);
   const [magnets,   setMagnets]         = useState<LeadMagnet[]>([]);
   const [social,    setSocial]          = useState<SocialPost[]>([]);
@@ -206,7 +191,6 @@ export default function MasterAdminPage() {
     setLoading(p => ({ ...p, [tab]: true }));
     try {
       if (tab === 'kpi') await loadKPI();
-      if (tab === 'email') await loadMailerLite();
       if (tab === 'content') await loadContent();
       if (tab === 'leads') await loadMagnets();
       if (tab === 'social') await loadSocial();
@@ -254,19 +238,6 @@ export default function MasterAdminPage() {
       referralPct:    newMonth > 0 ? Math.round((refCount / newMonth) * 100) : 0,
       coachingSessions7d: sessions7d.count || 0,
     });
-  }
-
-  // ── MailerLite loader ────────────────────────────────────────────────────────
-  async function loadMailerLite() {
-    try {
-      const res = await fetch('/api/admin/mailerlite');
-      if (!res.ok) throw new Error('MailerLite API error');
-      const data = await res.json();
-      setMlData(data);
-    } catch {
-      // Fallback: show empty state so UI doesn't break
-      setMlData({ totalSubscribers: 0, activeSubscribers: 0, avgOpenRate: 0, avgClickRate: 0, unsubscribed: 0, groups: [], recentCampaigns: [] });
-    }
   }
 
   // ── Content loader ───────────────────────────────────────────────────────────
@@ -365,7 +336,6 @@ export default function MasterAdminPage() {
 
   const tabs = [
     { id: 'kpi',     label: 'KPI Dashboard'   },
-    { id: 'email',   label: 'MailerLite'       },
     { id: 'content', label: 'Content Calendar' },
     { id: 'leads',   label: 'Lead Magnets'     },
     { id: 'social',  label: 'Social Queue'     },
@@ -472,7 +442,7 @@ export default function MasterAdminPage() {
           Master Admin
         </h1>
         <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', letterSpacing: '0.08em', marginTop: 6 }}>
-          Ascentor Master Marketing System · MailerLite · 4 Systems Fully Automated
+          Ascentor Master Marketing System
         </p>
       </div>
 
@@ -550,7 +520,7 @@ export default function MasterAdminPage() {
               {[
                 { stage: 'AWARENESS',  tactic: 'LinkedIn + Twitter + SEO', status: 'building' },
                 { stage: 'INTEREST',   tactic: 'Free session + Lead magnets', status: 'building' },
-                { stage: 'DESIRE',     tactic: '14-email nurture (MailerLite)', status: 'building' },
+                { stage: 'DESIRE',     tactic: '14-email nurture', status: 'building' },
                 { stage: 'ACTION',     tactic: 'Promo codes + Paystack', status: 'active' },
                 { stage: 'RETENTION',  tactic: 'Community + Expert sessions', status: 'active' },
                 { stage: 'ADVOCACY',   tactic: 'Referral rewards + UGC', status: 'active' },
@@ -559,119 +529,6 @@ export default function MasterAdminPage() {
                   <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.12em', color: '#E8A020', margin: '0 0 6px' }}>{f.stage}</p>
                   <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', margin: '0 0 8px', lineHeight: 1.4 }}>{f.tactic}</p>
                   <StatusBadge status={f.status as any} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2, MAILERLITE                                               */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {activeTab === 'email' && !isLoading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <SectionHeader eyebrow="Email Marketing" title="MailerLite Dashboard"
-            right={<button onClick={() => load('email')} style={{ ...inputStyle, width: 'auto', padding: '7px 14px', cursor: 'pointer', fontSize: 11 }}>↻ Refresh</button>}
-          />
-
-          {!mlData ? (
-            <div style={{ ...card, padding: 40, textAlign: 'center' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', marginBottom: 12 }}>
-                MAILERLITE NOT CONNECTED
-              </p>
-              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text-muted)', lineHeight: 1.6 }}>
-                Add <code style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 12, color: '#E8A020' }}>MAILERLITE_API_KEY</code> to your Vercel environment variables and redeploy.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Stats row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-                <KPICard label="Total Subscribers"  value={mlData.totalSubscribers.toLocaleString()} sub="Target: 500 M3 · 10k M12" color="#E8A020" />
-                <KPICard label="Active"             value={mlData.activeSubscribers.toLocaleString()} color="#10B981" />
-                <KPICard label="Avg Open Rate"      value={`${mlData.avgOpenRate}%`} sub="Target: 35%+" trend={mlData.avgOpenRate >= 35 ? 'up' : 'down'} color="#3B82F6" />
-                <KPICard label="Avg Click Rate"     value={`${mlData.avgClickRate}%`} color="#14B8A6" />
-                <KPICard label="Unsubscribed"       value={mlData.unsubscribed.toLocaleString()} trend="down" color="#EF4444" />
-              </div>
-
-              {/* Groups */}
-              {mlData.groups.length > 0 && (
-                <div style={{ ...card, padding: 20 }}>
-                  <p style={mono('Subscriber Groups / Sequences', true, false)}>Subscriber Groups</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 14 }}>
-                    {mlData.groups.map((g, i) => (
-                      <div key={g.id} className="ma-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < mlData.groups.length - 1 ? '1px solid var(--admin-bg-input)' : 'none' }}>
-                        <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>{g.name}</span>
-                        <span style={{ fontFamily: "'Metropolis', serif", fontSize: 20, fontWeight: 700, color: '#E8A020' }}>{g.total.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recent campaigns */}
-              {mlData.recentCampaigns.length > 0 && (
-                <div style={{ ...card, overflow: 'hidden' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-bg-input)' }}>
-                    <p style={mono('Recent Campaigns', true, false)}>Recent Campaigns</p>
-                  </div>
-                  {mlData.recentCampaigns.map((c, i) => (
-                    <div key={c.id} className="ma-row" style={{ padding: '14px 20px', borderBottom: i < mlData.recentCampaigns.length - 1 ? '1px solid var(--admin-bg-input)' : 'none', display: 'grid', gridTemplateColumns: '1fr auto auto auto auto', gap: 16, alignItems: 'center' }}>
-                      <div>
-                        <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)', margin: '0 0 2px', fontWeight: 600 }}>{c.name}</p>
-                        <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.06em' }}>{c.subject}</p>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontFamily: "'Metropolis', serif", fontSize: 18, color: '#3B82F6', margin: 0 }}>{c.opens_count}</p>
-                        <p style={mono('opens')}>opens</p>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontFamily: "'Metropolis', serif", fontSize: 18, color: '#10B981', margin: 0 }}>{c.clicks_count}</p>
-                        <p style={mono('clicks')}>clicks</p>
-                      </div>
-                      <StatusBadge status={c.status === 'sent' ? 'published' : 'scheduled'} />
-                      <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)' }}>
-                        {c.sent_at ? new Date(c.sent_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* 14-email sequence tracker */}
-          <div style={{ ...card, padding: 20 }}>
-            <p style={mono('14-Email Welcome & Nurture Sequence', true, false)}>14-Email Welcome Sequence</p>
-            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Write once · load into MailerLite Automation · fires automatically for every new subscriber · 30-day nurture to conversion</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                { day: 0,  tag: 'WELCOME',     subject: 'Your access to Ascentor is ready',                   goal: 'Deliver, orient, build trust immediately' },
-                { day: 1,  tag: 'STORY',       subject: 'The problem no one talks about in your career',       goal: 'Name the pain: talent without access to guidance' },
-                { day: 3,  tag: 'VALUE',       subject: 'What a mentor actually changes (it is not what you think)', goal: 'Reframe mentorship from networking to decision quality' },
-                { day: 5,  tag: 'PRODUCT',     subject: 'Meet Sage, a coach who never sleeps',               goal: 'Demo Sage. Show the 2am before-a-big-meeting moment' },
-                { day: 7,  tag: 'PROOF',       subject: '[Name] got promoted. Here is exactly what changed',  goal: 'Transformation story. Specific, real, relatable' },
-                { day: 10, tag: 'EDUCATION',   subject: 'The 3 decisions that determine every career outcome', goal: 'Pure value. No pitch. Build authority.' },
-                { day: 12, tag: 'OBJECTION',   subject: 'Can AI really coach me? (honest answer)',            goal: 'Handle the biggest objection head-on' },
-                { day: 14, tag: 'COMMUNITY',   subject: 'The people in your cohort are already moving',       goal: 'FOMO on peer community. You are missing it.' },
-                { day: 18, tag: 'VALUE',       subject: 'One question that changes how you show up at work',  goal: 'Practical, shareable insight. Re-engagement hook.' },
-                { day: 21, tag: 'CASE STUDY',  subject: 'From "not ready yet" to Director in 11 months',      goal: 'Detailed transformation. Obstacle → Ascentor → result' },
-                { day: 24, tag: 'CTA',         subject: 'Founding Member offer, 50% off, this week only',    goal: 'First hard CTA. Urgency + exclusivity + discount' },
-                { day: 26, tag: 'FAQ',         subject: 'Your questions about Ascentor, answered',           goal: 'Remove every remaining friction point to purchase' },
-                { day: 28, tag: 'URGENCY',     subject: 'Offer closes in 48 hours',                           goal: 'Final CTA. Countdown. Simple and direct.' },
-                { day: 30, tag: 'BREAKUP',     subject: 'Is this still relevant to you?',                     goal: 'Re-permission email. Either they convert or self-select out.' },
-              ].map((email, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>
-                  <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', width: 44, flexShrink: 0, letterSpacing: '0.06em', paddingTop: 2 }}>Day {email.day}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                      <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 100, background: 'rgba(232,160,32,0.1)', color: '#E8A020', flexShrink: 0 }}>{email.tag}</span>
-                      <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.subject}</span>
-                    </div>
-                    <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.02em' }}>{email.goal}</p>
-                  </div>
-                  <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', flexShrink: 0, paddingTop: 2 }}>#{i + 1}</span>
                 </div>
               ))}
             </div>
@@ -968,7 +825,7 @@ export default function MasterAdminPage() {
 
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>TARGET: 3 ACTIVE LEAD MAGNETS MINIMUM</p>
-            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>Each magnet feeds a dedicated MailerLite automation sequence · A subscriber is 40× more likely to convert than a social follower</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>A subscriber is 40× more likely to convert than a social follower</p>
           </div>
 
           {/* Lead magnets, Ascentor global platform */}
@@ -983,7 +840,6 @@ export default function MasterAdminPage() {
                 persona: 'Builder · Climber',
                 problem: "I want to grow but I don't know what to focus on",
                 desc: '12-page PDF: the exact framework Sage uses, how to set a 90-day leadership goal, make it specific, track it, and make your progress visible to the people who decide your future.',
-                mlGroup: 'MAILERLITE_GROUP_LEAD_PLAYBOOK',
                 url: '/free/leadership-playbook',
                 cta: 'Get the free playbook',
                 conversionPath: 'Download → 7-day email sequence → Founding Member offer on Day 5',
@@ -997,7 +853,6 @@ export default function MasterAdminPage() {
                 persona: 'Builder',
                 problem: 'I work hard and deliver results but keep getting passed over',
                 desc: '8-page PDF: the 3 real reasons promotions go to less talented people, and the 5 specific moves that change the outcome. The core Ascentor thesis in a document.',
-                mlGroup: 'MAILERLITE_GROUP_LEAD_PROMOTION',
                 url: '/free/promotion-blueprint',
                 cta: 'Get the free guide',
                 conversionPath: 'Download → 5-day email sequence → cohort waitlist CTA on Day 3',
@@ -1011,7 +866,6 @@ export default function MasterAdminPage() {
                 persona: 'Explorer · Builder',
                 problem: "I don't know how to ask for what I'm worth without damaging the relationship",
                 desc: '5 word-for-word scripts: opening the conversation, responding to a low offer, countering, negotiating without an offer, following up after silence. Copy-paste ready.',
-                mlGroup: 'MAILERLITE_GROUP_LEAD_SALARY',
                 url: '/free/salary-scripts',
                 cta: 'Get the free scripts',
                 conversionPath: 'Download → 4-day email sequence → Sage demo on Day 2 → CTA on Day 4',
@@ -1025,7 +879,6 @@ export default function MasterAdminPage() {
                 persona: 'All stages',
                 problem: "I feel stuck but I can't pinpoint exactly why",
                 desc: '10 questions that identify exactly where you are stuck and why. Output: personalised action plan + routed into the right Ascentor plan (Explorer / Builder / Climber). This is the segmentation engine.',
-                mlGroup: 'MAILERLITE_GROUP_LEAD_AUDIT',
                 url: '/free/career-audit',
                 cta: 'Take the free audit',
                 conversionPath: 'Complete → tagged Explorer/Builder/Climber → routed into persona-specific email sequence → plan-matched CTA',
@@ -1041,7 +894,6 @@ export default function MasterAdminPage() {
                     </div>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#E8A020', letterSpacing: '0.08em', margin: '0 0 4px' }}>{m.priority}</p>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', margin: '0 0 8px' }}>{m.persona}</p>
-                    <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-muted)', margin: 0, wordBreak: 'break-all' as const }}>{m.mlGroup}</p>
                   </div>
                   {/* Centre: content */}
                   <div style={{ flex: 1, minWidth: 200 }}>

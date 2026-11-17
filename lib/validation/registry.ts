@@ -83,7 +83,6 @@ export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/admin/knowledge/ingest-url': admin.ingestUrl,
   '/api/admin/knowledge/ingest-youtube': admin.ingestYoutube,
   '/api/admin/knowledge/batch-ingest': admin.batchIngest,
-  '/api/admin/mailerlite': admin.mailerlite,
   '/api/admin/marketing-cms': admin.marketingCms,
   '/api/admin/partners': admin.partnerAdminAction,
   '/api/admin/permissions': admin.permissionsAction,
