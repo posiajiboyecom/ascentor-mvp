@@ -60,12 +60,24 @@ export function ChatPanel({ messages, onSend, autoFocus }: { messages: ChatMsg[]
   const listRef = useRef<HTMLOListElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }); }, [messages.length]);
+  // Stay at the newest message: when one arrives, and when the list gets shorter (the phone keyboard opening).
+  const atEnd = useRef(true);
+  useEffect(() => { if (atEnd.current) listRef.current?.scrollTo({ top: listRef.current.scrollHeight }); }, [messages.length]);
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const onScroll = () => { atEnd.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; };
+    const ro = new ResizeObserver(() => { if (atEnd.current) el.scrollTop = el.scrollHeight; });
+    el.addEventListener('scroll', onScroll, { passive: true });
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); };
+  }, []);
   useEffect(() => { if (autoFocus) inputRef.current?.focus({ preventScroll: true }); }, [autoFocus]);
 
   const send = () => {
     const t = cleanText(draft);
     if (!t) return;
+    atEnd.current = true;
     onSend(t);
     setDraft('');
     inputRef.current?.focus();
