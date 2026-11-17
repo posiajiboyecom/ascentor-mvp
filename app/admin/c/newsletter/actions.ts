@@ -47,6 +47,9 @@ async function statsFor(ids: string[]): Promise<Map<string, Stats>> {
 export async function loadOverview(): Promise<R<{ overview: Overview }>> {
   try {
     await staffAt('view');
+    // Gather new sign-ups (Summit registrants, members, subscribers…) first, so the counts on screen are current.
+    // Cheap and safe to repeat; if it fails the page still loads with the last list.
+    { const { error } = await db().rpc('email_sync_contacts'); if (error) console.error('[email] contact refresh failed:', error.message); }
     const [settings, sent24, { data: src }, { data: tags }, { count: contacts }, { count: reachable }, { data: camps }] = await Promise.all([
       getSettings(), sentLast24h(),
       db().rpc('email_source_counts'), db().rpc('email_tag_counts'),
