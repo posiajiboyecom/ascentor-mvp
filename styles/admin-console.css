@@ -82,8 +82,8 @@
 /* drawer & modal */
 .admc .scrim{position:fixed;inset:0;background:var(--scrim);z-index:40;animation:admc-fade .2s ease-out both}
 .admc .drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:41;background:var(--surface);border-left:1px solid var(--border);box-shadow:-12px 0 32px rgba(0,0,0,.18);display:flex;flex-direction:column;animation:admc-slide .25s ease-out both}
-.admc .dhead{display:flex;align-items:flex-start;gap:12px;padding:20px 20px 14px;border-bottom:1px solid var(--border)}
-.admc .dbody{flex:1;overflow-y:auto;padding:16px 20px 24px;display:flex;flex-direction:column;gap:16px}
+.admc .dhead{display:flex;align-items:flex-start;gap:12px;padding:20px 20px 14px;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-right:max(20px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--border)}
+.admc .dbody{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:16px 20px 24px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
 .admc .kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;font-size:14px}
 .admc .kv dt{color:var(--muted)}
 .admc .kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
