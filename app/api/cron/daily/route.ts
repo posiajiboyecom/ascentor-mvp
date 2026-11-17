@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { pingDatabase } from '@/lib/keepalive';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { reconcilePayments } from '@/lib/paymentReconciliation';
 import { sendEventDayEmails } from '@/lib/summitEventDay';
 import { sendCommitmentReminders, sendUpcomingSessionReminders } from '@/lib/reminders';
@@ -67,6 +68,11 @@ export async function GET(req: NextRequest) {
     await step('circle-formation', () => formCircles({ reportWaiting: true })),
     await step('mentor-agendas', () => sendMentorAgendas()),
     // Last, with the time that's left: a safety net in case the Trigger.dev dispatcher isn't deployed.
+    await step('email-contacts', async () => {
+      const { error, data } = await supabaseAdmin.rpc('email_sync_contacts');
+      if (error) throw new Error(error.message);
+      return data;
+    }),
     await step('email-dispatch', async () => {
       const left = 52_000 - (Date.now() - t0);
       return left > 15_000 ? dispatchEmail({ budgetMs: left, owner: 'cron-daily' }) : { ran: false, reason: 'No time left in this run.' };
