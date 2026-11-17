@@ -54,3 +54,15 @@
 .admc .em-gauge { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
 .admc .btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
 .admc .em-toolbar button[aria-pressed='true'] { background: var(--surface); border-color: var(--rust); color: var(--rustt); }
+
+/* Button builder (Composer → Button) */
+.admc .em-btnpanel { border: 1px solid var(--line); border-bottom: 0; background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.admc .em-btnkinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.admc .em-btnkinds button { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--raised); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; }
+.admc .em-btnkinds button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.admc .em-btnkinds button[aria-pressed='true'] { border-color: var(--rust); color: var(--rustt); background: var(--surface); }
+.admc .em-btnfields { display: grid; gap: 10px; }
+.admc .em-btnrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.admc .em-btnfoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.admc .em-btnprev > span { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 8px; color: #fff; font: 700 15px/20px Arial, Helvetica, sans-serif; }
+.admc .em-btnprev img { width: 18px; height: 18px; display: block; }

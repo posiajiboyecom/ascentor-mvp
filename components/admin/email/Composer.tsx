@@ -7,9 +7,12 @@ import {
   audienceCount, previewCampaign, saveCampaign, saveTemplate, scheduleCampaign, sendTestEmail, startCampaign, type Draft,
 } from '@/app/admin/c/newsletter/actions';
 import { MERGE_FIELDS, MERGE_KEYS, SENDERS, parseSender, type Audience } from '@/lib/email/describe';
+import { BUTTONS, INK, RUST, buttonHref, buttonHtml, buttonPreset, type ButtonKind } from '@/lib/email/buttons';
 import { fmt, type Ctx } from './EmailConsole';
 
 const tagLabel = (t: string) => (t.startsWith('event:') ? t.slice(6) : t);
+// Where the button icons are hosted. Absolute https, because inboxes only load images from the web.
+const ICON_HOST = (process.env.NEXT_PUBLIC_SITE_URL || 'https://joinascentor.com').replace(/\/$/, '');
 const MERGE = MERGE_FIELDS;
 
 export default function Composer({ ctx, initial, templateMode, templateId, onClose }: {
@@ -28,6 +31,10 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   const [dirty, setDirty] = useState(false);
   const [tested, setTested] = useState(false);
   const editor = useRef<HTMLDivElement>(null);
+  // Button builder: which kind, what was typed, and where the caret was when it opened (so the button lands there).
+  const [btn, setBtn] = useState<{ open: boolean; kind: ButtonKind; value: string; message: string; text: string; color: 'brand' | 'rust' | 'ink'; align: 'left' | 'center' }>(
+    { open: false, kind: 'whatsapp', value: '', message: '', text: buttonPreset('whatsapp').defaultText, color: 'brand', align: 'left' });
+  const savedRange = useRef<Range | null>(null);
   const ro = !canEdit;
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => { setD((x) => ({ ...x, [k]: v })); setDirty(true); };
@@ -54,6 +61,29 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   const syncFromEditor = () => { if (editor.current) set('body_html', editor.current.innerHTML); };
   const askUrl = (label: string, initialValue = 'https://') => { const u = window.prompt(label, initialValue)?.trim(); return u && (/^(https?:\/\/|mailto:)/i.test(u) || /^\{\{\s*referral_link\s*\}\}$/i.test(u)) ? u : null; };
   const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+  const openButton = () => {
+    const sel = window.getSelection();
+    savedRange.current = sel && sel.rangeCount && editor.current?.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
+    setBtn((b) => ({ ...b, open: true }));
+  };
+  const pickKind = (kind: ButtonKind) => setBtn((b) => {
+    // Swap the button text for the new kind's, unless it was rewritten by hand.
+    const wasDefault = !b.text.trim() || b.text === buttonPreset(b.kind).defaultText;
+    return { ...b, kind, value: '', message: '', text: wasDefault ? buttonPreset(kind).defaultText : b.text };
+  });
+  const btnColor = btn.color === 'rust' ? RUST : btn.color === 'ink' ? INK : buttonPreset(btn.kind).color;
+  const btnHref = buttonHref(btn.kind, btn.value, { message: btn.message });
+  const insertButton = () => {
+    if (!btnHref) return;
+    const html = buttonHtml({ kind: btn.kind, href: btnHref, text: btn.text, color: btnColor, align: btn.align }, ICON_HOST);
+    editor.current?.focus();
+    const sel = window.getSelection();
+    if (savedRange.current && sel) { sel.removeAllRanges(); sel.addRange(savedRange.current); }
+    insertHtml(`${html}<p></p>`);
+    savedRange.current = null;
+    setBtn((b) => ({ ...b, open: false, value: '', message: '' }));
+  };
 
   async function persist(): Promise<string | null> {
     if (templateMode) {
@@ -145,12 +175,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
                 <button type="button" title="Numbered list" onMouseDown={(e) => { e.preventDefault(); exec('insertOrderedList'); }}>1. List</button>
                 <span className="sep" />
                 <button type="button" title="Link" onMouseDown={(e) => { e.preventDefault(); const u = askUrl('Link to (https://…)'); if (u) exec('createLink', u); }}>Link</button>
-                <button type="button" title="Button" onMouseDown={(e) => {
-                  e.preventDefault();
-                  const label = window.prompt('Button text', 'Register now')?.trim(); if (!label) return;
-                  const u = askUrl('Button link (https://… or {{referral_link}})'); if (!u) return;
-                  insertHtml(`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;"><tr><td style="background:#B6502A;border-radius:8px;"><a href="${escAttr(u)}" style="display:inline-block;padding:12px 22px;color:#ffffff;font-weight:bold;text-decoration:none;font-family:Arial,Helvetica,sans-serif;">${escAttr(label)}</a></td></tr></table><p></p>`);
-                }}>Button</button>
+                <button type="button" title="Add a button: WhatsApp, Instagram, Facebook, X, LinkedIn, YouTube, website, email, phone or a plain link" aria-expanded={btn.open} onMouseDown={(e) => { e.preventDefault(); if (btn.open) setBtn((b) => ({ ...b, open: false })); else openButton(); }}>Button</button>
                 <button type="button" title="Image" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt('Image address (must start with https://)', 'https://')?.trim(); if (u && /^https:\/\//i.test(u)) insertHtml(`<img src="${escAttr(u)}" alt="" style="max-width:100%;height:auto;border-radius:8px;" /><p></p>`); }}>Image</button>
                 <button type="button" title="Divider" onMouseDown={(e) => { e.preventDefault(); insertHtml('<hr style="border:0;border-top:1px solid #E8E6E1;margin:20px 0;" /><p></p>'); }}>—</button>
                 <span className="sep" />
@@ -160,6 +185,67 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
                 </select>
               </>)}
             </div>
+            {mode === 'visual' && btn.open && !ro && (
+              <div className="em-btnpanel" role="group" aria-label="Add a button">
+                <div className="em-btnkinds">
+                  {BUTTONS.map((b) => (
+                    <button key={b.kind} type="button" aria-pressed={btn.kind === b.kind} onClick={() => pickKind(b.kind)}>
+                      <i style={{ background: b.color }} aria-hidden="true" />{b.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="em-btnfields">
+                  <div className="fld">
+                    <label htmlFor="em-btn-val">{buttonPreset(btn.kind).field}</label>
+                    <input id="em-btn-val" className="in" value={btn.value} onChange={(e) => setBtn((b) => ({ ...b, value: e.target.value }))}
+                      placeholder={buttonPreset(btn.kind).placeholder} autoComplete="off" />
+                    {btn.value.trim() && !btnHref && <span className="sm" style={{ color: 'var(--err)' }}>That doesn’t look right for {buttonPreset(btn.kind).label}. Check it, or paste the full https:// link.</span>}
+                    {btnHref && <span className="sm em-mono" style={{ wordBreak: 'break-all' }}>Opens {btnHref}</span>}
+                  </div>
+                  {btn.kind === 'whatsapp' && (
+                    <div className="fld">
+                      <label htmlFor="em-btn-msg">Message they start with <span className="sm">(optional)</span></label>
+                      <input id="em-btn-msg" className="in" value={btn.message} onChange={(e) => setBtn((b) => ({ ...b, message: e.target.value }))}
+                        placeholder="Hi Posi, I registered for The Elevation Summit. My name is " autoComplete="off" />
+                    </div>
+                  )}
+                  <div className="fld">
+                    <label htmlFor="em-btn-text">Button text</label>
+                    <input id="em-btn-text" className="in" value={btn.text} maxLength={60} onChange={(e) => setBtn((b) => ({ ...b, text: e.target.value }))} />
+                  </div>
+                  <div className="em-btnrow">
+                    <div className="fld">
+                      <label htmlFor="em-btn-color">Colour</label>
+                      <select id="em-btn-color" className="in" value={btn.color} onChange={(e) => setBtn((b) => ({ ...b, color: e.target.value as 'brand' | 'rust' | 'ink' }))}>
+                        <option value="brand">{buttonPreset(btn.kind).color === RUST ? 'Ascentor rust' : `${buttonPreset(btn.kind).label} colour`}</option>
+                        {buttonPreset(btn.kind).color !== RUST && <option value="rust">Ascentor rust</option>}
+                        <option value="ink">Black</option>
+                      </select>
+                    </div>
+                    <div className="fld">
+                      <label htmlFor="em-btn-align">Position</label>
+                      <select id="em-btn-align" className="in" value={btn.align} onChange={(e) => setBtn((b) => ({ ...b, align: e.target.value as 'left' | 'center' }))}>
+                        <option value="left">Left</option>
+                        <option value="center">Centre</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="em-btnfoot">
+                  <span className="em-btnprev" aria-label="Preview">
+                    <span style={{ background: btnColor }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- small static icon in an admin preview */}
+                      {buttonPreset(btn.kind).icon && <img src={`/images/email/btn/${buttonPreset(btn.kind).icon}`} alt="" width={18} height={18} />}
+                      {btn.text.trim() || buttonPreset(btn.kind).defaultText}
+                    </span>
+                  </span>
+                  <span style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className="btn bs" onClick={() => setBtn((b) => ({ ...b, open: false }))}>Cancel</button>
+                    <button type="button" className="btn bp" disabled={!btnHref} onClick={insertButton}>Insert button</button>
+                  </span>
+                </div>
+              </div>
+            )}
             {mode === 'visual'
               ? <div ref={editor} className="em-editor" contentEditable={!ro} suppressContentEditableWarning role="textbox" aria-multiline="true" aria-label="Email body" data-placeholder="Write your message. Use “Insert field…” to greet each person by name." onInput={syncFromEditor} onBlur={syncFromEditor} />
               : <textarea className="in em-html" value={d.body_html} disabled={ro} onChange={(e) => set('body_html', e.target.value)} aria-label="Email body HTML" spellCheck={false} />}
