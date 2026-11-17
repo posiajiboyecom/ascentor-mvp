@@ -55,30 +55,25 @@ const LIVE = new Set(['playable', 'sendable', 'loading']);
 export const sharesScreen = (p: DailyParticipant) => LIVE.has(String(p.tracks?.screenVideo?.state ?? '')) && !!p.tracks?.screenVideo?.persistentTrack;
 export const cameraOn = (p: DailyParticipant) => !!p.video && !!p.tracks?.video?.persistentTrack;
 
-/** A <video> bound to a MediaStreamTrack. Muted: sound plays through RemoteAudio. */
 /**
- * A camera or screen on the call. Each picture is checked for its own shape (a phone held upright, a phone or laptop
- * sideways, a shared screen) against the box it sits in, and resized as it changes (someone turning their phone):
- * - same shape as the box: it fills the box, like Zoom;
- * - a different shape (an upright phone on a wide screen, say): the whole picture shows, never cropped, and with
- *   `backdrop` a soft blurred copy fills the space around it instead of black bars.
+ * A camera or screen on the call, bound to a MediaStreamTrack (muted: sound plays through RemoteAudio).
+ * Cameras always fill their box, the way Zoom ("pan and scan") and WhatsApp do: when the picture's shape differs from
+ * the box (an upright phone on a wide screen, a laptop in a tall tile), the edges are cropped, never letterboxed.
+ * When the top and bottom are cropped, the crop sits a little high so faces stay in view.
+ * Shared screens (`fit="contain"`) always show whole, since every part of a slide matters.
  */
-export function TrackVideo({ track, mirror, label, backdrop, fit = 'auto' }: { track: MediaStreamTrack | undefined; mirror?: boolean; label: string; backdrop?: boolean; fit?: 'auto' | 'contain' }) {
+export function TrackVideo({ track, mirror, label, fit = 'fill' }: { track: MediaStreamTrack | undefined; mirror?: boolean; label: string; fit?: 'fill' | 'contain' }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const backRef = useRef<HTMLVideoElement>(null);
-  const [whole, setWhole] = useState(fit === 'contain');
   const [shape, setShape] = useState<'portrait' | 'landscape' | ''>('');
+  const [tall, setTall] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
-    const back = backRef.current;
     if (!el || !track) return;
-    const stream = new MediaStream([track]);
-    el.srcObject = stream;
+    el.srcObject = new MediaStream([track]);
     void el.play().catch(() => undefined);
-    if (back) { back.srcObject = stream; void back.play().catch(() => undefined); }
-    return () => { el.srcObject = null; if (back) back.srcObject = null; };
-  }, [track, backdrop]);
+    return () => { el.srcObject = null; };
+  }, [track]);
 
   useEffect(() => {
     const el = ref.current;
@@ -89,9 +84,7 @@ export function TrackVideo({ track, mirror, label, backdrop, fit = 'auto' }: { t
       if (!vw || !vh || !bw || !bh) return;
       const v = vw / vh, b = bw / bh;
       setShape(v < 0.95 ? 'portrait' : 'landscape');
-      if (fit === 'contain') { setWhole(true); return; }
-      // Crop only when the shapes are close (cropping less than about a quarter of the picture).
-      setWhole(Math.max(v, b) / Math.min(v, b) > 1.34);
+      setTall(v < b * 0.98); // picture taller than its box: top and bottom get cropped
     };
     check();
     el.addEventListener('loadedmetadata', check);
@@ -99,14 +92,11 @@ export function TrackVideo({ track, mirror, label, backdrop, fit = 'auto' }: { t
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
     ro?.observe(box);
     return () => { el.removeEventListener('loadedmetadata', check); el.removeEventListener('resize', check); ro?.disconnect(); };
-  }, [track, fit]);
+  }, [track]);
 
   // Mirroring is a class (not an inline transform) so the stage can combine it with its own scale in CSS.
-  const cls = [mirror ? 'mirror' : '', whole ? 'whole' : '', shape].filter(Boolean).join(' ');
-  return (<>
-    {backdrop && <video ref={backRef} className={`sg-backdrop${mirror ? ' mirror' : ''}`} hidden={!whole} autoPlay playsInline muted aria-hidden tabIndex={-1} />}
-    <video ref={ref} className={cls || undefined} autoPlay playsInline muted aria-label={label} />
-  </>);
+  const cls = [mirror ? 'mirror' : '', fit === 'contain' ? 'whole' : '', tall && fit !== 'contain' ? 'tall' : '', shape].filter(Boolean).join(' ');
+  return <video ref={ref} className={cls || undefined} autoPlay playsInline muted aria-label={label} />;
 }
 
 /** How the call plays sound: which speaker to use, and who to tell when the browser refuses to play it. */

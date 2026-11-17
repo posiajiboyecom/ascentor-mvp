@@ -877,9 +877,9 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     );
 
     const stageFeed = sharer
-      ? <div className="sg-feed screen"><TrackVideo track={sharer.tracks?.screenVideo?.persistentTrack} label={`${nameOf(sharer)}'s shared screen`} /></div>
+      ? <div className="sg-feed screen"><TrackVideo track={sharer.tracks?.screenVideo?.persistentTrack} label={`${nameOf(sharer)}'s shared screen`} fit="contain" /></div>
       : stage && cameraOn(stage)
-        ? <div className="sg-feed" style={{ background: feedFor(stage.user_id || stage.session_id) }}><TrackVideo track={stage.tracks?.video?.persistentTrack} mirror={stage.local} label={`${nameOf(stage)}'s camera`} backdrop /></div>
+        ? <div className="sg-feed" style={{ background: feedFor(stage.user_id || stage.session_id) }}><TrackVideo track={stage.tracks?.video?.persistentTrack} mirror={stage.local} label={`${nameOf(stage)}'s camera`} /></div>
         : <div className="sg-feed" style={{ background: stage ? feedFor(stage.user_id || stage.session_id) : undefined }}><Silhouette /></div>;
 
     // Mobile: the speaker has the stage and the strip holds everyone else (everyone, while a screen is on the stage).

@@ -49,11 +49,10 @@
 /* Your own camera is mirrored, as in a mirror; thumbnails just flip. */
 .sg video.mirror { transform: scaleX(-1); }
 .sg-feed.screen { background: #000; }
-/* A picture whose shape doesn't match its box (an upright phone on a wide screen, a laptop in a tall box) shows whole. */
+/* Cameras fill their box and crop the edges, like Zoom and WhatsApp. When the top and bottom are cropped
+   (an upright phone in a wide box), the crop sits high so faces stay in view. Shared screens show whole. */
+.sg video.tall { object-position: 50% 30%; }
 .sg video.whole { object-fit: contain; }
-.sg-feed video.sg-backdrop { inset: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(32px) brightness(.5) saturate(1.15); transform: scale(1.05); }
-.sg-feed video.sg-backdrop.mirror { transform: scale(1.05) scaleX(-1); }
-.sg-feed video.sg-backdrop[hidden] { display: none; }
 .sg-pinned { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 5px 11px; min-height: 30px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
 .sg-pinned svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sg-feed.screen video { object-fit: contain; }
@@ -202,7 +201,6 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
 .sg-tile-m svg { width: 11px; height: 11px; stroke: #fff; }
 .sg-tile .sg-pres { top: 4px; left: 4px; bottom: auto; }
 .sg-tile .sg-feed { background: var(--sg-stage); }
-.sg-tile video.whole { object-fit: contain; }
 /* Tap a tile to put that person on the big screen (tap again to let it follow the speaker). */
 .sg-tile-btn { position: absolute; inset: 0; z-index: 2; border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer; border-radius: inherit; }
 .sg-tile-btn:focus-visible { outline: 2px solid var(--sg-rust-ink); outline-offset: -2px; }
