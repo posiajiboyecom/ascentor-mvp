@@ -256,33 +256,55 @@ export default function WatchClient() {
         </div>
       )}
 
-      {result.state === 'paid' && result.eventStarted && result.streamEnabled && (
-        <div style={{ maxWidth: '960px', margin: '0 auto', ...noCopy }}>
-          <p style={{ textAlign: 'center', fontSize: '1.0625rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '1.25rem' }}>
-            Welcome, {result.fullName.split(' ')[0]}. Enjoy the Summit.
-          </p>
-          <div style={{ position: 'relative', paddingTop: '56.25%', background: '#0F0F0E', borderRadius: '1rem', overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
-            <iframe
-              key={reloadKey}
-              src={
-                (result.videoId
-                  ? `https://www.youtube-nocookie.com/embed/${result.videoId}`
-                  : `https://www.youtube-nocookie.com/embed/live_stream?channel=${result.channelId}`
-                ) + '?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1'
-              }
-              title="The Elevation Summit livestream"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-            />
+      {result.state === 'paid' && result.eventStarted && result.streamEnabled && (() => {
+        const base = result.videoId
+          ? `https://www.youtube-nocookie.com/embed/${result.videoId}`
+          : `https://www.youtube-nocookie.com/embed/live_stream?channel=${result.channelId}`;
+        const playerSrc = `${base}${base.includes('?') ? '&' : '?'}autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1`;
+        const youtubeUrl = result.videoId ? `https://www.youtube.com/watch?v=${result.videoId}` : `${result.channelUrl}/live`;
+        // YouTube's live chat can only be embedded for a known video, and only on the domain we name here.
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'joinascentor.com';
+        const chatSrc = result.videoId ? `https://www.youtube.com/live_chat?v=${result.videoId}&embed_domain=${encodeURIComponent(host)}` : null;
+        return (
+          <div style={{ maxWidth: chatSrc ? '1320px' : '960px', margin: '0 auto', ...noCopy }}>
+            {/* Chat sits beside the video on wide screens. On phones YouTube's embedded chat often doesn't load, so there is a button to YouTube instead. */}
+            <style>{`.watch-row{display:flex;flex-wrap:wrap;gap:1rem;align-items:stretch}.watch-video{flex:3 1 640px;min-width:0}.watch-chat{display:none;flex:1 1 320px;min-width:300px;min-height:420px;border-radius:1rem;overflow:hidden;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,0.12)}.watch-chat-btn{display:inline-block}@media (min-width:1000px){.watch-chat{display:block}.watch-chat-btn{display:none}}`}</style>
+            <p style={{ textAlign: 'center', fontSize: '1.0625rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '1.25rem' }}>
+              Welcome, {result.fullName.split(' ')[0]}. Enjoy the Summit.
+            </p>
+            <div className="watch-row">
+              <div className="watch-video">
+                <div style={{ position: 'relative', paddingTop: '56.25%', background: '#0F0F0E', borderRadius: '1rem', overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+                  <iframe
+                    key={reloadKey}
+                    src={playerSrc}
+                    title="The Elevation Summit livestream"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+                  />
+                </div>
+              </div>
+              {chatSrc && (
+                <div className="watch-chat">
+                  <iframe key={`chat-${reloadKey}`} src={chatSrc} title="Live chat" style={{ width: '100%', height: '100%', minHeight: '420px', border: 0, display: 'block' }} />
+                </div>
+              )}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+              <a className="watch-chat-btn" href={youtubeUrl} target="_blank" rel="noopener noreferrer"
+                style={{ background: '#B6502A', color: '#FFFFFF', fontWeight: 700, fontSize: '0.9375rem', padding: '0.8rem 1.4rem', borderRadius: '0.6rem', textDecoration: 'none' }}>
+                Join the live chat on YouTube
+              </a>
+            </div>
+            <p style={{ textAlign: 'center', color: '#9CA3AF', fontSize: '0.8125rem', marginTop: '1.25rem' }}>
+              To post in the chat, sign in to YouTube. Video not showing yet?{' '}
+              <button type="button" onClick={() => setReloadKey((k) => k + 1)} style={{ background: 'none', border: 'none', padding: 0, color: '#6B7280', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Reload the stream</button>
+              {' '}or <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', textDecoration: 'underline' }}>watch it on YouTube</a>.
+            </p>
           </div>
-          <p style={{ textAlign: 'center', color: '#9CA3AF', fontSize: '0.8125rem', marginTop: '1.25rem' }}>
-            Video not showing yet?{' '}
-            <button type="button" onClick={() => setReloadKey((k) => k + 1)} style={{ background: 'none', border: 'none', padding: 0, color: '#6B7280', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Reload the stream</button>
-            {' '}or <a href={result.videoId ? `https://www.youtube.com/watch?v=${result.videoId}` : `${result.channelUrl}/live`} target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', textDecoration: 'underline' }}>watch it on YouTube</a>.
-          </p>
-        </div>
-      )}
+        );
+      })()}
     </main>
   );
 }
