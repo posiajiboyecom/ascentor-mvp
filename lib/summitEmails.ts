@@ -260,7 +260,7 @@ export async function sendEventDayPhysicalEmail(to: string, fullName: string, re
     subject: "Today's the day: your Elevation Summit entry code",
     attachments: [{ filename: 'elevation-summit-entry-code.png', content: qr, contentType: 'image/png', cid: ENTRY_QR_CID }],
     html: brandedEmailLayout({
-      preheader: `Show this QR code at the entrance today, ${SUMMIT_DATETIME_LABEL}.`,
+      preheader: `Show this QR code at the entrance today, ${SUMMIT_DATETIME_LABEL}. Can't make it? Join the livestream.`,
       eyebrow: `Elevation Summit · Today`,
       heading: 'Today is the day.',
       recipient: to,
@@ -270,6 +270,9 @@ export async function sendEventDayPhysicalEmail(to: string, fullName: string, re
         entryQrBlock(fullName) +
         p('Turn your screen brightness up when you reach the door. The code is also attached to this email, so you can save it to your photos in case the venue has a weak signal.') +
         p('This code admits one person, once. Please do not share it.') +
+        // In case they can't make it to the venue after all: the livestream is open to every confirmed registrant.
+        p('<strong>Can\'t make it in person?</strong> You can still join us online. Open the livestream and enter the email address you registered with.') +
+        goldButton('Join the livestream →', SUMMIT_WATCH_URL) +
         p('<span style="color:#9CA3AF;font-size:13px;">See you soon.</span>'),
     }),
   });
