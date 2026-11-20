@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import SummitAccess from '@/components/auth/SummitAccess';
 
-export const metadata: Metadata = { title: 'Claim your free year · Ascentor', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Claim your free year', robots: { index: false, follow: false } };
 
 export default function SummitAccessPage() {
   return (
