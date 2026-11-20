@@ -50,6 +50,11 @@ export const spec: ScreenSpec = {
       href: "/admin/c/registrations/referrals"
     },
     {
+      id: "free-year",
+      label: "Free year for attendees",
+      href: "/admin/c/registrations/free-year"
+    },
+    {
       id: "delivery",
       label: "Delivery and resend all",
       href: "/admin/c/registrations/delivery"

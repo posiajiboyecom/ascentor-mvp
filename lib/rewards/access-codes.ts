@@ -142,7 +142,7 @@ export async function redeemCode(userId: string, raw: string, now = new Date()):
   }
 }
 
-async function grantMonths(userId: string, tier: string, months: number, source: string, now: Date): Promise<{ until: string; extendedPaidPlan: boolean }> {
+export async function grantMonths(userId: string, tier: string, months: number, source: string, now: Date): Promise<{ until: string; extendedPaidPlan: boolean }> {
   const sub = await getSubscription(userId);
   const stamp = now.toISOString();
 

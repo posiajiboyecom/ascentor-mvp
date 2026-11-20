@@ -56,3 +56,12 @@ export const welcome = z.strictObject({
   userId: z.string().max(64).optional(),
   name: text(80).optional(),
 });
+
+// Elevation Summit free year (/summit-access): email -> code -> password.
+export const summitAccessStart = z.strictObject({ email, captchaToken: captcha });
+export const summitAccessVerify = z.strictObject({ email, code: code6 });
+export const summitAccessComplete = z.strictObject({
+  token: z.string().min(10).max(600),
+  fullName: text(80, 'Your name').refine((v) => v.length >= 2, 'Please enter your full name'),
+  password: z.string().min(1, 'Password is required.').max(256),
+});

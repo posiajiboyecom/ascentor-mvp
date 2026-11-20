@@ -91,6 +91,8 @@ const PUBLIC_API_ROUTES = [
   '/api/shop',
   '/api/welcome',
   '/api/auth',
+  // Summit free year claim: each route checks the approved list, the emailed code and rate limits itself.
+  '/api/summit-access',
   // Paystack webhook - verified internally via HMAC signature
   '/api/pay/webhook',
   // Checkout pending - non-destructive marketing hook, called pre-auth
@@ -148,6 +150,8 @@ const PUBLIC_ROUTES = [
   '/walk-in',
   // Reward code landing page (Summit referral prize). Redeeming itself needs a session (app/redeem/actions.ts).
   '/redeem',
+  // Summit attendees claim their free year (email -> code -> password); gated by the approved list (lib/summit-access.ts).
+  '/summit-access',
 ];
 
 // Origins allowed to make state-changing API calls besides the request's own host
