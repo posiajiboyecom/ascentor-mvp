@@ -14,7 +14,8 @@ import { AgreementWorkspace, CapacityStepper, CircleRequestActions, ScheduleGrid
 
 export const dynamic = 'force-dynamic';
 
-export default async function MentoringPage() {
+export default async function MentoringPage({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
+  const { welcome } = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
   const mentor = await myMentorProfile();
@@ -36,6 +37,12 @@ export default async function MentoringPage() {
       <BackLink href="/sessions">Sessions</BackLink>
       <p className="rx-sm" style={{ marginTop: 8 }}>Mentor view · {mentor.name}</p>
       <Title>Mentoring</Title>
+      {welcome === '1' && (
+        <div className="rx-card rx-stack-sm" role="status" style={{ marginBottom: 16 }}>
+          <p className="rx-h3" style={{ margin: 0 }}>Welcome, you are an Ascentor mentor</p>
+          <p className="rx-p">One step left: add a few times you are free below. Circles can only choose and book you once you have open times.</p>
+        </div>
+      )}
       <div className="rx-two">
         <div className="rx-stack-lg">
           <div className="rx-card rx-stack">

@@ -26,7 +26,7 @@ export default async function AdminHumanMentorsPage() {
           </div>
           <Aside>
             <MentorForm isNew initial={{ email: '', name: '', headline: '', bio: '', tags: '', langs: 'English', formats: 'Video', capacity: 3, accepting: true, active: true }} />
-            <p className="rx-sm">These are people who mentor members one to one. The AI coach personas are under Mentors in the content section. Mentors add their open times from Sessions, in the mentor view.</p>
+            <p className="rx-sm">To add a new mentor, use Mentors › Invite a mentor: it makes a personal link so they join straight as a mentor. This form is for editing mentors, or for making an existing member a mentor. These are people who mentor members one to one. The AI coach personas are under Mentors in the content section. Mentors add their open times from Sessions, in the mentor view.</p>
           </Aside>
         </div>
       </div>

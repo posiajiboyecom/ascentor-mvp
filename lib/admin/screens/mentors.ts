@@ -46,7 +46,7 @@ export const spec: ScreenSpec = {
     {
       id: "invite-a-mentor",
       label: "Invite a mentor",
-      href: "/admin/human-mentors"
+      href: "/admin/c/mentors/invite"
     }
   ]
 };
@@ -86,7 +86,7 @@ const screen: ScreenModule = {
       const { error } = await supabaseAdmin.from('human_mentors').update({ active: on }).eq('id', rowId);
       return error ? { ok: false, error: 'We could not save that. Please try again.' } : { ok: true };
     }
-    if (actionId === 'reject') return { ok: false, error: 'Mentors are added by an admin, so there are no applications to reject. Use Pause instead.' };
+    if (actionId === 'reject') return { ok: false, error: 'Mentors join through a personal link from Invite a mentor, so there are no applications to reject. Use Pause instead.' };
     return { ok: false, error: 'Unknown action.' };
   },
   // human_mentors has no application state, so nothing is ever Pending.
